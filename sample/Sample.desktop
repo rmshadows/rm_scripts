@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=显示的名称
+GenericName=
+Comment=
+Exec=/home/$USER/Prog/Application/
+Icon=/home/$USER/Prog/Application/
+Terminal=true
+Type=Application
+Categories=Application;
+StartupNotify=false

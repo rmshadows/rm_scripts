@@ -1,0 +1,12 @@
+[Unit]
+Description=自定义的服务
+After=network.target 
+
+[Service]
+ExecStart=
+Type=forking
+PrivateTmp=True
+
+[Install]
+WantedBy=multi-user.target
+
