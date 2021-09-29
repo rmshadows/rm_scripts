@@ -6,7 +6,8 @@ Version：0.0.1
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 !说明
-
+# root用户密码
+ROOT_PASSWD=""
 ## 检查点一：
 # 使用的APT源
 :<<!
@@ -235,7 +236,7 @@ prompt () {
   case ${1} in
     "-s"|"--success")
       echo -e "${b_CGSC}${@/-s/}${CDEF}";;          # print success message
-    "-ss"|"--exec")
+    "-x"|"--exec")
       echo -e "日志：${b_CGSC}${@/-s/}${CDEF}";;          # print exec message
     "-e"|"--error")
       echo -e "${b_CRER}${@/-e/}${CDEF}";;          # print error message
@@ -243,10 +244,10 @@ prompt () {
       echo -e "${b_CWAR}${@/-w/}${CDEF}";;          # print warning message
     "-i"|"--info")
       echo -e "${b_CCIN}${@/-i/}${CDEF}";;          # print info message
-    "-ii"|"--iinfo")
+    "-m"|"--msg")
       echo -e "信息：${b_CCIN}${@/-i/}${CDEF}";;          # print iinfo message
-    "-k"|"--kv") # TODO
-      echo -e "${b_CGSC}${@/-s/}${CDEF}";;          # print success message
+    "-k"|"--kv")  # 三个参数
+      echo -e "${b_CCIN} ${2} ${b_CWAR} ${3} ${CDEF}";;          # print success message
     *)
     echo -e "$@"
     ;;
@@ -271,15 +272,48 @@ fi
 # 如果用户按下Ctrl+c
 trap "onSigint" SIGINT
 
-# 程序中断处理方法
+# 程序中断处理方法,包含正常退出该执行的代码
 onSigint () {
+    prompt -w "捕获到中断信号..."
+    onExit
+    exit 1
+}
+
+# 正常退出需要执行的
+onExit () {
     # 临时加入sudoer，退出时清除
     if [ $TEMPORARILY_SUDOER -eq 1 ] ;then
-        prompt -ss "清除临时sudoer免密权限。"
+        prompt -x "清除临时sudoer免密权限。"
         sudo sed -i "s/$TEMPORARILY_SUDOER_STRING/ /g" /etc/sudoers
+        check_var=" "
+        if [ `sudo tail -n 1 /etc/sudoers` == $check_var ] > /dev/null ;then
+            # 删除最后一行
+            sudo sed -i '$d' /etc/sudoers
+        fi
     fi
-    prompt -w "捕获到中断信号..."
+}
+
+
+# 以root身份运行
+doAsRoot () {
+su - root <<!>/dev/null 2>&1
+$ROOT_PASSWD
+echo " Exec $1 as root"
+$1
+!
+}
+
+# 检查root密码是否正确
+checkRootPasswd () {
+su - root <<! >/dev/null 2>/dev/null
+$ROOT_PASSWD
+pwd
+!
+# echo $?
+if [ "$?" -ne 0 ] ;then
+    prompt -e "Root 用户密码不正确！"
     exit 1
+fi
 }
 
 comfirm () {
@@ -567,14 +601,24 @@ fi
 
 :<<!预先检查
 获取当前用户名
+获取root密码
+检查root密码
 检查是否在sudo组中
 是的话检查是否免密码
 检查是否GNOME
 如果不是sudo组，加入sudo组、设置免密码
 !预先检查
-
 # 获取当前用户名
 CURRENT_USER=$USER
+
+if [ "$ROOT_PASSWD" == "" ];then
+    prompt -w "未在脚本里定义root用户密码，请输入root用户密码: "
+    read -r input
+    ROOT_PASSWD=$input
+fi
+# 检查密码
+checkRootPasswd
+
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
 # 检查是否在sudo组中 0 false 1 true
@@ -589,7 +633,7 @@ if groups| grep sudo > /dev/null ; then
     is_sudoer="TRUE"
     # 检查是否免密码sudo
     check_var="ALL=(ALL)NOPASSWD:ALL"
-    if sudo cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null ;then
+    if doAsRoot "cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null" ;then
         # sudo免密码
         IS_SUDO_NOPASSWD=1
         is_sudo_nopasswd="TRUE"
@@ -618,12 +662,12 @@ else
 fi
 
 prompt -i "__________________________________________________________"
-prompt -w "用户名：$CURRENT_USER"
-prompt -w "终端：$CURRENT_SHELL"
-prompt -w "是否为Sudo组成员：$is_sudoer"
-prompt -w "Sudo是否免密码：$is_sudo_nopasswd"
-prompt -w "是否是Debian Sid：$IS_DEBIAN_SID"
-prompt -w "是否是GNOME：$IS_GNOME_DE ( $DESKTOP_SESSION )"
+prompt -k "用户名：" "$CURRENT_USER"
+prompt -k "终端：" "$CURRENT_SHELL"
+prompt -k "是否为Sudo组成员：" "$is_sudoer"
+prompt -k "Sudo是否免密码：" "$is_sudo_nopasswd"
+prompt -k "是否是Debian Sid：" "$IS_DEBIAN_SID"
+prompt -k "是否是GNOME：" "$IS_GNOME_DE ( $DESKTOP_SESSION )"
 prompt -i "__________________________________________________________"
 prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止运行。"
 
@@ -633,7 +677,7 @@ prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止
 comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车」[y/N]\e[0m"
 choice=$?
 if [ $choice == 1 ];then
-    prompt -ii "开始部署……"
+    prompt -m "开始部署……"
 elif [ $choice == 2 ];then
     prompt -w "感谢您的关注！——  https://rmshadows.gitee.io"
     exit 0
@@ -645,24 +689,23 @@ fi
 检查点一
 
 # 如果没有sudo免密码，临时加入。
-if [ "$IS_SUDO_NOPASSWD" -nq 1 ];then
-    prompt -ss "临时成为免密码sudoer……"
-    prompt -w "请输入 root 用户密码："
+if [ "$IS_SUDO_NOPASSWD" -ne 1 ];then
+    prompt -x "临时成为免密码sudoer……"
     # 临时成为sudo用户
-    su - root -c "echo $TEMPORARILY_SUDOER_STRING >> /etc/sudoers"
+    doAsRoot "echo '$TEMPORARILY_SUDOER_STRING' >> /etc/sudoers"
     TEMPORARILY_SUDOER=1
 fi
 
 # 如果没有在sudo组,添加用户到sudo组
 if [ "$IS_SUDOER" -eq 0 ] && [ "$SET_SUDOER" -eq 1 ];then
-    prompt -ss "添加用户 $CURRENT_USER 到sudo组。"
-    # TODO sudo usermod -a -G sudo $CURRENT_USER
+    prompt -x "添加用户 $CURRENT_USER 到sudo组。"
+    sudo usermod -a -G sudo $CURRENT_USER
     IS_SUDOER=1
 fi
 
 # 如果已经是sudoer，但没有免密码，询问是否免密码
 if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ];then
-    prompt -ss "设置用户 $CURRENT_USER sudo免密码"
+    prompt -x "设置用户 $CURRENT_USER sudo免密码"
     TEMPORARILY_SUDOER=0
 fi
 
@@ -677,3 +720,4 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
         "
 # G
 echo -e "\e[1;32m ————————————    感谢使用    ———————————— \e[0m"
+onSigint
