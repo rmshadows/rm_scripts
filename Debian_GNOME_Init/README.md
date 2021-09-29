@@ -36,6 +36,8 @@
   - 临时成为免密`sudoer`(必选)。
   - 添加用户到`sudo`组。
   - 设置用户`sudo`免密码。
+  - 默认源安装`apt-transport-https`、`ca-certificates`。
+  - 更新源、更新系统。
 
 ## 更新日志
 

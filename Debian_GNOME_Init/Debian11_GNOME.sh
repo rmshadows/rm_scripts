@@ -16,6 +16,15 @@ ROOT_PASSWD=""
 2:清华大学Sid镜像源
 !
 SET_APT_SOURCE=0
+# 更新与安装是否不过问
+SET_APT_UPGRADE_WITHOUT_ASKING=1
+# 是否在安装软件前更新整个系统
+:<<!
+0:just apt update
+1:apt dist-upgrade
+2:apt upgrade
+!
+SET_APT_UPGRADE=0
 # 是否加入sudo组
 SET_SUDOER=0
 # 是否设置sudo无需密码
@@ -208,6 +217,8 @@ ROOT_UID=0
 CURRENT_SHELL=$SHELL
 # 是否临时加入sudoer
 TEMPORARILY_SUDOER=0
+# 第一次运行DoAsRoot
+FIRST_DO_AS_ROOT=1
 
 #### 脚本内置函数调用
 
@@ -275,7 +286,7 @@ trap "onSigint" SIGINT
 # 程序中断处理方法,包含正常退出该执行的代码
 onSigint () {
     prompt -w "捕获到中断信号..."
-    onExit
+    onExit # TODO
     exit 1
 }
 
@@ -284,11 +295,16 @@ onExit () {
     # 临时加入sudoer，退出时清除
     if [ $TEMPORARILY_SUDOER -eq 1 ] ;then
         prompt -x "清除临时sudoer免密权限。"
-        sudo sed -i "s/$TEMPORARILY_SUDOER_STRING/ /g" /etc/sudoers
-        check_var=" "
-        if [ `sudo tail -n 1 /etc/sudoers` == $check_var ] > /dev/null ;then
+        # sudo sed -i "s/$TEMPORARILY_SUDOER_STRING/ /g" /etc/sudoers
+        # 获取最后一行
+        tail_sudo=`sudo tail -n 1 /etc/sudoers`
+        if [ "$tail_sudo" = "$TEMPORARILY_SUDOER_STRING" ] > /dev/null ;then
             # 删除最后一行
             sudo sed -i '$d' /etc/sudoers
+        else
+            # 一般不会出现这个情况吧。。
+            prompt -e "警告：未知错误，请手动删除 $TEMPORARILY_SUDOER_STRING "
+            exit 1
         fi
     fi
 }
@@ -296,6 +312,17 @@ onExit () {
 
 # 以root身份运行
 doAsRoot () {
+# 第一次运行需要询问root密码
+if [ "$FIRST_DO_AS_ROOT" -eq 1 ];then
+    if [ "$ROOT_PASSWD" == "" ] && [ "$IS_SUDOER" -ne 1 ] ;then
+        prompt -w "未在脚本里定义root用户密码，请输入root用户密码: "
+        read -r input
+        ROOT_PASSWD=$input
+    fi
+    # 检查密码
+    checkRootPasswd
+    FIRST_DO_AS_ROOT=0
+fi
 su - root <<!>/dev/null 2>&1
 $ROOT_PASSWD
 echo " Exec $1 as root"
@@ -342,6 +369,29 @@ comfirm () {
   done
 }
 
+# 备份配置文件。先检查是否有bak结尾的备份文件，没有则创建，有则另外覆盖一个newbak文件。$1 :文件名
+backupFile () {
+    # 如果有bak备份文件 ，生成newbak
+    if [ -f "$1" ];then
+        prompt -x "(sudo)正在备份 $1 文件到 $1.bak"
+        sudo cp $1 $1.newbak
+    else
+        # 没有bak文件，创建备份
+        prompt -x "(sudo)正在备份 $1 文件到 $1.newbak (覆盖) "
+        sudo cp $1 $1.bak
+    fi
+} 
+
+# 执行apt命令
+doApt () {
+    if [ "$@" = "update" ];then
+        sudo apt-get update
+    else if [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 0 ];then
+        sudo apt-get $@
+    else if [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 1 ];then
+        sudo apt-get $@ -y
+    fi
+}
 
 :<<配置文件
 这里是配置文件
@@ -611,23 +661,15 @@ fi
 # 获取当前用户名
 CURRENT_USER=$USER
 
-if [ "$ROOT_PASSWD" == "" ];then
-    prompt -w "未在脚本里定义root用户密码，请输入root用户密码: "
-    read -r input
-    ROOT_PASSWD=$input
-fi
-# 检查密码
-checkRootPasswd
-
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
 # 检查是否在sudo组中 0 false 1 true
-IS_SUDOER=0
+IS_SUDOER=-1
 is_sudoer=-1
-IS_SUDO_NOPASSWD=0
+IS_SUDO_NOPASSWD=-1
 is_sudo_nopasswd=-1
 # 检查是否在sudo组
-if groups| grep sudo > /dev/null ; then
+if groups| grep sudo > /dev/null ;then
     # 是sudo组
     IS_SUDOER=1
     is_sudoer="TRUE"
@@ -662,11 +704,11 @@ else
 fi
 
 prompt -i "__________________________________________________________"
+prompt -i "系统信息: "
 prompt -k "用户名：" "$CURRENT_USER"
 prompt -k "终端：" "$CURRENT_SHELL"
 prompt -k "是否为Sudo组成员：" "$is_sudoer"
 prompt -k "Sudo是否免密码：" "$is_sudo_nopasswd"
-prompt -k "是否是Debian Sid：" "$IS_DEBIAN_SID"
 prompt -k "是否是GNOME：" "$IS_GNOME_DE ( $DESKTOP_SESSION )"
 prompt -i "__________________________________________________________"
 prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止运行。"
@@ -674,7 +716,7 @@ prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止
 
 ### 这里是确认运行的模块 TODO
 :<<!
-comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车」[y/N]\e[0m"
+comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车谢谢」[y/N]\e[0m"
 choice=$?
 if [ $choice == 1 ];then
     prompt -m "开始部署……"
@@ -709,6 +751,49 @@ if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOP
     TEMPORARILY_SUDOER=0
 fi
 
+# 更换源
+# 确保https源可用
+doApt update
+doApt install apt-transport-https ca-certificates
+# 添加清华大学 Debian 11 镜像源
+if [ "$SET_APT_SOURCE" -eq 1 ];then
+    backupFile "/etc/apt/sources.list"
+    prompt -x "添加清华大学 Debian 11 镜像源"
+    sudo echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-updates main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-updates main contrib non-free
+
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib non-free
+
+deb https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free" > /etc/apt/sources.list
+# 添加清华大学Debian sid 镜像源
+else if [ "$SET_APT_SOURCE" -eq 2 ];then
+    backupFile "/etc/apt/sources.list"
+    prompt -x "添加清华大学 Debian sid 镜像源"
+    sudo echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+deb https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free" > /etc/apt/sources.list
+fi
+
+# 更新系统
+if [ "$SET_APT_UPGRADE" -eq 0 ];then
+    prompt -x "仅更新仓库索引"
+    doApt update
+else if [ "$SET_APT_UPGRADE" -eq 1 ];then
+    prompt -x "更新整个系统中"
+    doApt dist-upgrade
+else if [ "$SET_APT_UPGRADE" -eq 2 ];then
+    prompt -x "仅更新软件"
+    doApt upgrade
+fi
+
+# TODO
+
+
 # Y
 echo -e "\e[1;32m
 _________  .___ ____   ____.___ _________  _________  _________  _________  _________  
@@ -720,4 +805,4 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
         "
 # G
 echo -e "\e[1;32m ————————————    感谢使用    ———————————— \e[0m"
-onSigint
+onExit
