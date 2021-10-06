@@ -372,12 +372,13 @@ comfirm () {
 # 备份配置文件。先检查是否有bak结尾的备份文件，没有则创建，有则另外覆盖一个newbak文件。$1 :文件名
 backupFile () {
     # 如果有bak备份文件 ，生成newbak
-    if [ -f "$1" ];then
-        prompt -x "(sudo)正在备份 $1 文件到 $1.bak"
+    if [ -f "$1.bak" ];then
+        # bak文件存在
+        prompt -x "(sudo)正在备份 $1 文件到 $1.newbak (覆盖) "
         sudo cp $1 $1.newbak
     else
         # 没有bak文件，创建备份
-        prompt -x "(sudo)正在备份 $1 文件到 $1.newbak (覆盖) "
+        prompt -x "(sudo)正在备份 $1 文件到 $1.bak"
         sudo cp $1 $1.bak
     fi
 } 
