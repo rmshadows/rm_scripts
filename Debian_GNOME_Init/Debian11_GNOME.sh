@@ -9,26 +9,35 @@ Version：0.0.1
 # root用户密码
 ROOT_PASSWD=""
 ## 检查点一：
-# 使用的APT源
+# 使用的APT源 Preset:1
 :<<!
 0:跳过
 1:清华大学镜像源
 2:清华大学Sid镜像源
 !
 SET_APT_SOURCE=0
-# 更新与安装是否不过问
-SET_APT_UPGRADE_WITHOUT_ASKING=1
-# 是否在安装软件前更新整个系统
+# 更新与安装是否不过问 Preset:1
+SET_APT_UPGRADE_WITHOUT_ASKING=0
+# 是否在安装软件前更新整个系统 Preset:1
 :<<!
 0:just apt update
 1:apt dist-upgrade
 2:apt upgrade
 !
 SET_APT_UPGRADE=0
-# 是否加入sudo组
+# 是否加入sudo组 Preset:1
 SET_SUDOER=0
-# 是否设置sudo无需密码
+# 是否设置sudo无需密码 Preset:1
 SET_SUDOER_NOPASSWD=0
+## 检查点二：
+# 是否卸载vim-tiny，安装vim-full Preset:1
+SET_VIM_TINY_TO_FULL=0
+# 是否替换Bash为Zsh（包括root用户） Preset:1
+SET_BASH_TO_ZSH=1
+# 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
+SET_REPLACE_ROOT_RC_FILE=1
+## 检查点三：
+# 配置ZSHRC
 
 
 #### 列表项
@@ -385,12 +394,14 @@ backupFile () {
 
 # 执行apt命令
 doApt () {
-    if [ "$@" = "update" ];then
-        sudo apt-get update
-    else if [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 0 ];then
-        sudo apt-get $@
-    else if [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 1 ];then
-        sudo apt-get $@ -y
+    if [ "$1" = "install" ];then
+        if [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 0 ];then
+            sudo apt-get $@
+        elif [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 1 ];then
+            sudo apt-get $@ -y
+        fi
+    else
+        sudo apt $@
     fi
 }
 
@@ -772,7 +783,7 @@ deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib
 deb https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free
 # deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free" > /etc/apt/sources.list
 # 添加清华大学Debian sid 镜像源
-else if [ "$SET_APT_SOURCE" -eq 2 ];then
+elif [ "$SET_APT_SOURCE" -eq 2 ];then
     backupFile "/etc/apt/sources.list"
     prompt -x "添加清华大学 Debian sid 镜像源"
     sudo echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
@@ -784,12 +795,69 @@ fi
 if [ "$SET_APT_UPGRADE" -eq 0 ];then
     prompt -x "仅更新仓库索引"
     doApt update
-else if [ "$SET_APT_UPGRADE" -eq 1 ];then
+elif [ "$SET_APT_UPGRADE" -eq 1 ];then
     prompt -x "更新整个系统中"
     doApt dist-upgrade
-else if [ "$SET_APT_UPGRADE" -eq 2 ];then
+elif [ "$SET_APT_UPGRADE" -eq 2 ];then
     prompt -x "仅更新软件"
     doApt upgrade
+fi
+
+
+:<<检查点二
+卸载vim-tiny，安装vim-full
+替换Bash为Zsh
+替换root用户shell配置文件
+检查点二
+# 卸载vim-tiny，安装vim-full
+if [ "$SET_VIM_TINY_TO_FULL" -eq 0 ];then
+    prompt -x "保留vim-tiny"
+elif [ "$SET_VIM_TINY_TO_FULL" -eq 1 ];then
+    prompt -x "替换vim-tiny为vim-full"
+    doApt remove vim-tiny
+    doApt install vim
+fi
+# 替换Bash为Zsh
+prompt -i "当前终端：$CURRENT_SHELL"
+if [ "$CURRENT_SHELL" == "/bin/bash" ]; then
+    shell_conf=".bashrc"
+    if [ "$SET_BASH_TO_ZSH" -eq 1 ];then
+        # 判断是否安装zsh
+        if ! [ -x "$(command -v zsh)" ]; then
+            prompt -i 'Error: Zsh is not installed.' >&2
+            prompt -m "安装Zsh"
+            doApt install zsh
+        fi
+        shell_conf=".zshrc"
+        echo "$zshrc_config" > /home/$CURRENT_USER/$shell_conf
+        sudo usermod -s /bin/zsh root
+        sudo usermod -s /bin/zsh $CURRENT_USER
+    elif [ "$SET_BASH_TO_ZSH" -eq 0 ];then
+      prompt -m # TODO
+    else
+      prompt -e "ERROR:未知返回值!"
+      exit 5
+    fi
+  elif [ "$Shell" == "/bin/zsh" ];then
+    shell_conf=".zshrc"
+    comfirm "\e[1;33m已检测到您用的是zsh，是否替换用户本地“.zshrc”为博主CIVICCCCC的配置【将会备份旧的zsh配置文件】? [y/N]\e[0m"
+    choice=$?
+    if [ $choice == 1 ];then
+      if [ -f "/home/$username/$shell_conf.bak" ];then
+        # B
+        echo -e "\e[1;34m用户的$shell_conf.bak文件存在,将新建baknew文件。\e[0m"
+        cp /home/$username/$shell_conf /home/$username/$shell_conf.baknew
+      else
+        # B
+        echo -e "\e[1;34m正在备份原$shell_conf文件。\e[0m"
+        cp /home/$username/$shell_conf /home/$username/$shell_conf.bak
+      fi
+      echo "$zshrc_config" > /home/$username/$shell_conf
+    elif [ $choice == 2 ];then
+      prompt -i "Pass"
+    else
+      prompt -e "ERROR:未知返回值!"
+  exit 5
 fi
 
 # TODO
