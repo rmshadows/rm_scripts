@@ -322,6 +322,12 @@ onExit () {
 }
 
 
+quitThis () {
+    onExit
+    exit
+}
+
+
 # 以root身份运行
 doAsRoot () {
 # 第一次运行需要询问root密码
@@ -720,7 +726,7 @@ if echo $DESKTOP_SESSION | grep $check_var > /dev/null ;then
 else
     IS_GNOME_DE="FALSE"
     prompt -e "警告：不是GNOME桌面环境，慎用。"
-    exit 1
+    quitThis
 fi
 
 prompt -i "__________________________________________________________"
@@ -836,12 +842,17 @@ if [ "$CURRENT_SHELL" == "/bin/bash" ]; then
             prompt -x "安装Zsh"
             doApt install zsh
         fi
-        shell_conf=".zshrc"
-        prompt -x "配置ZSHRC"
-        echo "$ZSHRC_CONFIG" > /home/$CURRENT_USER/$shell_conf
-        prompt -x "为root用户和当前用户设置ZSH"
-        sudo usermod -s /bin/zsh root
-        sudo usermod -s /bin/zsh $CURRENT_USER
+        if ! [ -x "$(command -v zsh)" ]; then
+            prompt -x "ZSH安装失败"
+            quitThis
+        else
+            shell_conf=".zshrc"
+            prompt -x "配置ZSHRC"
+            echo "$ZSHRC_CONFIG" > /home/$CURRENT_USER/$shell_conf
+            prompt -x "为root用户和当前用户设置ZSH"
+            sudo usermod -s /bin/zsh root
+            sudo usermod -s /bin/zsh $CURRENT_USER
+        fi
     elif [ "$SET_BASH_TO_ZSH" -eq 0 ];then
         prompt -m "保留原有SHELL"
     fi
