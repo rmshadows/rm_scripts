@@ -40,6 +40,10 @@
   - 更新源、更新系统。
 - 检查点二
   - 替换vim-tiny为vim-full
+  - 替换Bash为Zsh
+  - 替换默认的ZSHRC文件
+  - 替换root用户的SHELL配置
+  - 添加/usr/sbin到用户的SHELL环境变量
 - 检查点三
   - ​	
 

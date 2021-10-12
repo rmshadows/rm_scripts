@@ -34,10 +34,13 @@ SET_SUDOER_NOPASSWD=0
 SET_VIM_TINY_TO_FULL=0
 # 是否替换Bash为Zsh（包括root用户） Preset:1
 SET_BASH_TO_ZSH=1
+# 是否配置ZSHRC Preset:1
+SET_ZSHRC=0
 # 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
 SET_REPLACE_ROOT_RC_FILE=1
 ## 检查点三：
-# 配置ZSHRC
+# 添加/usr/sbin到环境变量 Preset=1
+SET_ADD_SBIN_ENV=1
 
 
 #### 列表项
@@ -380,15 +383,20 @@ comfirm () {
 
 # 备份配置文件。先检查是否有bak结尾的备份文件，没有则创建，有则另外覆盖一个newbak文件。$1 :文件名
 backupFile () {
-    # 如果有bak备份文件 ，生成newbak
-    if [ -f "$1.bak" ];then
-        # bak文件存在
-        prompt -x "(sudo)正在备份 $1 文件到 $1.newbak (覆盖) "
-        sudo cp $1 $1.newbak
+    if [ -f "$1" ];then
+        # 如果有bak备份文件 ，生成newbak
+        if [ -f "$1.bak" ];then
+            # bak文件存在
+            prompt -x "(sudo)正在备份 $1 文件到 $1.newbak (覆盖) "
+            sudo cp $1 $1.newbak
+        else
+            # 没有bak文件，创建备份
+            prompt -x "(sudo)正在备份 $1 文件到 $1.bak"
+            sudo cp $1 $1.bak
+        fi
     else
-        # 没有bak文件，创建备份
-        prompt -x "(sudo)正在备份 $1 文件到 $1.bak"
-        sudo cp $1 $1.bak
+        # 如果不存在要备份的文件,不执行
+        prompt -e "没有$1文件，不做备份"
     fi
 } 
 
@@ -811,7 +819,7 @@ fi
 检查点二
 # 卸载vim-tiny，安装vim-full
 if [ "$SET_VIM_TINY_TO_FULL" -eq 0 ];then
-    prompt -x "保留vim-tiny"
+    prompt -m "保留vim-tiny"
 elif [ "$SET_VIM_TINY_TO_FULL" -eq 1 ];then
     prompt -x "替换vim-tiny为vim-full"
     doApt remove vim-tiny
@@ -825,39 +833,50 @@ if [ "$CURRENT_SHELL" == "/bin/bash" ]; then
         # 判断是否安装zsh
         if ! [ -x "$(command -v zsh)" ]; then
             prompt -i 'Error: Zsh is not installed.' >&2
-            prompt -m "安装Zsh"
+            prompt -x "安装Zsh"
             doApt install zsh
         fi
         shell_conf=".zshrc"
-        echo "$zshrc_config" > /home/$CURRENT_USER/$shell_conf
+        prompt -x "配置ZSHRC"
+        echo "$ZSHRC_CONFIG" > /home/$CURRENT_USER/$shell_conf
+        prompt -x "为root用户和当前用户设置ZSH"
         sudo usermod -s /bin/zsh root
         sudo usermod -s /bin/zsh $CURRENT_USER
     elif [ "$SET_BASH_TO_ZSH" -eq 0 ];then
-      prompt -m # TODO
-    else
-      prompt -e "ERROR:未知返回值!"
-      exit 5
+        prompt -m "保留原有SHELL"
     fi
-  elif [ "$Shell" == "/bin/zsh" ];then
+elif [ "$CURRENT_SHELL" == "/bin/zsh" ];then
+    # 如果使用zsh，则更改zsh配置
     shell_conf=".zshrc"
-    comfirm "\e[1;33m已检测到您用的是zsh，是否替换用户本地“.zshrc”为博主CIVICCCCC的配置【将会备份旧的zsh配置文件】? [y/N]\e[0m"
-    choice=$?
-    if [ $choice == 1 ];then
-      if [ -f "/home/$username/$shell_conf.bak" ];then
-        # B
-        echo -e "\e[1;34m用户的$shell_conf.bak文件存在,将新建baknew文件。\e[0m"
-        cp /home/$username/$shell_conf /home/$username/$shell_conf.baknew
-      else
-        # B
-        echo -e "\e[1;34m正在备份原$shell_conf文件。\e[0m"
-        cp /home/$username/$shell_conf /home/$username/$shell_conf.bak
-      fi
-      echo "$zshrc_config" > /home/$username/$shell_conf
-    elif [ $choice == 2 ];then
-      prompt -i "Pass"
+    if [ "$SET_ZSHRC" -eq 1 ];then
+        backupFile "/home/$CURRENT_USER/$shell_conf"
+        prompt -x "配置ZSHRC"
+        echo "$ZSHRC_CONFIG" > /home/$CURRENT_USER/$shell_conf
+    elif [ "$SET_ZSHRC" -eq 0 ];then
+      prompt -m "保留原有的ZSHRC配置"
+    fi
+fi
+# 替换root用户的SHELL配置
+if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
+    prompt -m "保留root用户SHELL配置"
+elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
+    backupFile "/root/$shell_conf"
+    prompt -x "替换root用户的SHELL配置文件"
+    sudo cp /home/$CURRENT_SHELL/$shell_conf /root/
+fi
+# 添加/usr/sbin到环境变量
+if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
+    prompt -m "保留root用户SHELL配置"
+elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
+    prompt -x "替换root用户的SHELL配置文件"
+    prompt -m "检查该变量是否已经添加…… "
+    check_var="export PATH=\"\$PATH:/usr/sbin\""
+    if "cat '/home/$CURRENT_USER/$shell_conf' | grep $check_var > /dev/null" ;then
+        prompt -w "环境变量  $check_var  已存在,不执行添加。"
     else
-      prompt -e "ERROR:未知返回值!"
-  exit 5
+        prompt -x "添加/usr/sbin到用户变量"
+        echo "export PATH=\"\$PATH:/usr/sbin\"" >> /home/$CURRENT_USER/$shell_conf
+    fi
 fi
 
 # TODO
