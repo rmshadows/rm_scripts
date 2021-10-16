@@ -10,22 +10,22 @@ Version：0.0.1
 ROOT_PASSWD=""
 ## 检查点一：
 # 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源   Preset:1
-SET_APT_SOURCE=0
+SET_APT_SOURCE=1
 # 更新与安装是否不过问 Preset:1
-SET_APT_UPGRADE_WITHOUT_ASKING=0
+SET_APT_RUN_WITHOUT_ASKING=1
 # 是否在安装软件前更新整个系统 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
 SET_APT_UPGRADE=0
 # 是否加入sudo组 Preset:1
-SET_SUDOER=0
+SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
-SET_SUDOER_NOPASSWD=0
+SET_SUDOER_NOPASSWD=1
 ## 检查点二：
 # 是否卸载vim-tiny，安装vim-full Preset:1
-SET_VIM_TINY_TO_FULL=0
+SET_VIM_TINY_TO_FULL=1
 # 是否替换Bash为Zsh（包括root用户） Preset:1
 SET_BASH_TO_ZSH=1
 # 是否配置ZSHRC Preset:1
-SET_ZSHRC=0
+SET_ZSHRC=1
 # 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
 SET_REPLACE_ROOT_RC_FILE=1
 # 添加/usr/sbin到环境变量 Preset=1
@@ -78,7 +78,7 @@ SET_APT_TO_INSTALL_LATER="
 "
 
 # 轻便安装 (仅我个人认为必要的常用软件)
-SET_APT_TO_INSTALL_INDEX_1="
+APT_TO_INSTALL_INDEX_1="
 - aircrack-ng——aircrack-ng
 - apt-transport-https——apt-transport-https
 - arp-scan——arp-scan
@@ -178,7 +178,7 @@ SET_APT_TO_INSTALL_INDEX_1="
 - zhcon——tty中文虚拟
 "
 # 部分安装(含有娱乐项目、行业软件、调试应用)
-SET_APT_TO_INSTALL_INDEX_2="
+APT_TO_INSTALL_INDEX_2="
 - aircrack-ng——aircrack-ng
 - apt-transport-https——apt-transport-https
 - arp-scan——arp-scan
@@ -329,7 +329,7 @@ SET_APT_TO_INSTALL_INDEX_2="
 "
 
 # 全部安装 请注意查看标记有 注意 二字的条目
-SET_APT_TO_INSTALL_INDEX_3="
+APT_TO_INSTALL_INDEX_3="
 - aircrack-ng——aircrack-ng
 - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
 - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
@@ -494,6 +494,8 @@ CURRENT_SHELL=$SHELL
 TEMPORARILY_SUDOER=0
 # 第一次运行DoAsRoot
 FIRST_DO_AS_ROOT=1
+# 第一次运行APT任务
+FIRST_DO_APT=1
 
 #### 脚本内置函数调用
 
@@ -585,6 +587,7 @@ onExit () {
 }
 
 
+# 中途异常退出脚本要执行的
 quitThis () {
     onExit
     exit
@@ -671,10 +674,16 @@ backupFile () {
 
 # 执行apt命令
 doApt () {
-    if [ "$1" = "install" ];then
-        if [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 0 ];then
+    if [ "$FIRST_DO_APT" -eq 1 ];then
+        prompt -w "WARN：如果APT运行出错，『通常建议是找到对应的APT占用程序，退出即可』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)。"
+        prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg-reconfigure -a"
+        FIRST_DO_APT=0
+        sleep 5
+    fi
+    if [ "$1" = "install" ] || [ "$1" = "remove" ];then
+        if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
             sudo apt-get $@
-        elif [ "$SET_APT_UPGRADE_WITHOUT_ASKING" -eq 1 ];then
+        elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ];then
             sudo apt-get $@ -y
         fi
     else
@@ -1106,8 +1115,8 @@ prompt -i "——————————  检查点二  ———————�
 :<<检查点二
 卸载vim-tiny，安装vim-full
 替换Bash为Zsh
-替换root用户shell配置文件
 添加/usr/sbin到环境变量
+替换root用户shell配置文件
 安装bash-completion
 安装zsh-autosuggestions
 检查点二
@@ -1155,14 +1164,6 @@ elif [ "$CURRENT_SHELL" == "/bin/zsh" ];then
       prompt -m "保留原有的ZSHRC配置"
     fi
 fi
-# 替换root用户的SHELL配置
-if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
-    prompt -m "保留root用户SHELL配置"
-elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
-    backupFile "/root/$shell_conf"
-    prompt -x "替换root用户的SHELL配置文件"
-    sudo cp /home/$CURRENT_SHELL/$shell_conf /root/
-fi
 # 添加/usr/sbin到环境变量
 if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
     prompt -m "保留root用户SHELL配置"
@@ -1177,6 +1178,14 @@ elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
         prompt -x "添加/usr/sbin到用户变量"
         echo "export PATH=\"\$PATH:/usr/sbin\"" >> /home/$CURRENT_USER/$shell_conf
     fi
+fi
+# 替换root用户的SHELL配置
+if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
+    prompt -m "保留root用户SHELL配置"
+elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
+    backupFile "/root/$shell_conf"
+    prompt -x "替换root用户的SHELL配置文件"
+    sudo cp /home/$CURRENT_USER/$shell_conf /root/
 fi
 # 安装bash-completion
 if [ "$SET_BASH_COMPLETION" -eq 1 ];then
@@ -1258,8 +1267,6 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
         prompt -x "启用NetworkManager"
         sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.conf
     fi
-    prompt -x "修改等待时间——/etc/systemd/system/network-online.target.wants/networking.service"
-    sudo sed -i 's/TimeoutStartSec=5min/TimeoutStartSec=5sec/g' /etc/systemd/system/network-online.target.wants/networking.service
     prompt -m "重启NetworkManager.service"
     sudo systemctl enable NetworkManager.service 
     sudo systemctl restart NetworkManager.service
@@ -1280,22 +1287,18 @@ if [ "$SET_ETH0_ALLOW_HOTPLUG" -eq 1 ];then
         prompt -w "您的 eth0 设备似乎已经允许热拔插（如上所列），不做处理。"
     else
         prompt -m "检查 /etc/network/interfaces.d/setup 中是否有eth0设备..."
-        check_var="allow-hotplug eth0"
+        check_var="^auto eth0"
         if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
         then
-            echo -e "\e[1;34m请检查文件内容：
-===============================================================\e[0m"
-            sudo cat /etc/NetworkManager/NetworkManager.conf
-            prompt -w "您的 NetworkManager 似乎已经启用（如上所列），不做处理。"
+            prompt -x "添加 allow-hotplug eth0 到 /etc/network/interfaces.d/setup 中"
+            sudo sed -i 's/auto eth0/# auto eth0\nallow-hotplug eth0/g' /etc/network/interfaces.d/setup
         else
-            prompt -x ""
-            sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.conf
+            prompt -e "似乎没有eth0这个设备或者eth0已被手动配置！"
         fi
     fi
 fi
 
-
-# 配置GRUB网卡默认命名方式
+# 配置GRUB无线网卡默认命名方式
 if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
     prompt -x "配置GRUB网卡默认命名方式"
     prompt -m "检查该变量是否已经添加…… "
@@ -1312,7 +1315,101 @@ if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
     fi
 fi
 
+
+:<<检查点四
+从APT仓库安装常用软件包
+检查点四
+# 从APT仓库安装常用软件包
+if [ "$SET_APT_INSTALL" -eq 1 ];then
+    # 准备安装的包名列表
+    immediately_task=()
+    # 脚本运行结束后要安装的包名
+    later_task=()
+    # 先判断要安装的列表
+    if [ "$SET_APT_INSTALL_LIST_INDEX" -eq 0 ];then
+        # 自定义安装
+        app_list=$SEAPT_TO_INSTALL_INDEX_0
+    elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 1 ];then
+        # 精简安装
+        app_list=$APT_TO_INSTALL_INDEX_1
+    elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 2 ];then
+        # 部分安装
+        app_list=$APT_TO_INSTALL_INDEX_2
+    elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 3 ];then
+        # 全部安装
+        app_list=$APT_TO_INSTALL_INDEX_3
+    fi
+    # 首先，处理稍后要安装的软件包
+    later_list=$SET_APT_TO_INSTALL_LATER
+    later_list=$(echo $later_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
+    later_list=($later_list)
+    later_len=${#later_list[@]}
+    prompt -m "下列是脚本运行结束后要安装的软件包: "
+    for ((i=0;i<$later_len;i++));do
+        each=${later_list[$i]}
+        index=`expr index "$each" —`
+        # 软件包名
+        name=${later_list[$i]/$each/${each:0:($index-1)}}
+        # 添加到列表
+        later_task[$num]=${name}
+        prompt -i "$each"
+    done
+    sleep 8
+    echo "\n\n\n"
+    # 处理app_list列表
+    # 把“- ”转为换行符 然后删除所有空格 最后删除第一行。echo $LST | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d'
+    app_list=$(echo $app_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
+    # 生成新的列表
+    app_list=($app_list)
+    # 接下来打印要安装的软件包列表, 显示的序号从0开始
+    num=0
+    app_len=${#app_list[@]}
+    prompt -m "下列是即将安装的软件包: "
+    for ((i=0;i<$app_len;i++));do
+        # 显示序号
+        echo -en "\e[1;35m$num)\e[0m"
+        each=${app_list[$i]}
+        index=`expr index "$each" —`
+        # 软件包名
+        name=${app_list[$i]/$each/${each:0:($index-1)}}
+        immediately_task[$num]=${name}
+        prompt -i "$each"
+        num=$((num+1))
+    done
+    sleep 10
+    doApt install ${immediately_task[@]}
+    if [ $? != 0 ];then
+        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
+        sleep 2
+        num=1
+        for var in ${immediately_task[@]}
+        do
+            prompt -m "正在安装第 $num 个软件包: $var。"
+            doApt install $var
+            num=$((num+1))
+        done
+    fi 
+fi
+
+
 # TODO
+
+
+# 安装later_task中的软件
+if [ "$SET_APT_INSTALL" -eq 1 ];then
+    doApt install ${later_task[@]}
+    if [ $? != 0 ];then
+        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
+        sleep 2
+        num=1
+        for var in ${later_task[@]}
+        do
+            prompt -m "正在安装第 $num 个软件包: $var。"
+            doApt install $var
+            num=$((num+1))
+        done
+    fi 
+fi
 
 
 # Y
