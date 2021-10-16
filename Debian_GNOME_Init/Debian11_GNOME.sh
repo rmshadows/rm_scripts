@@ -9,21 +9,11 @@ Version：0.0.1
 # root用户密码
 ROOT_PASSWD=""
 ## 检查点一：
-# 使用的APT源 Preset:1
-:<<!
-0:跳过
-1:清华大学镜像源
-2:清华大学Sid镜像源
-!
+# 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源   Preset:1
 SET_APT_SOURCE=0
 # 更新与安装是否不过问 Preset:1
 SET_APT_UPGRADE_WITHOUT_ASKING=0
-# 是否在安装软件前更新整个系统 Preset:1
-:<<!
-0:just apt update
-1:apt dist-upgrade
-2:apt upgrade
-!
+# 是否在安装软件前更新整个系统 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
 SET_APT_UPGRADE=0
 # 是否加入sudo组 Preset:1
 SET_SUDOER=0

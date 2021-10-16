@@ -14,3 +14,6 @@ doApt () {
 }
 
 doApt update
+
+# /var/lib/dpkg/lock-frontend
+# /var/lib/dpkg/lock
