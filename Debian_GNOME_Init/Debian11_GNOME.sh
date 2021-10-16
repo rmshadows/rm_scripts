@@ -1268,11 +1268,18 @@ fi
 # 配置GRUB网卡默认命名方式
 if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
     prompt -x "配置GRUB网卡默认命名方式"
-    backupFile /etc/default/grub
-    prompt -x "添加 GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" 到 /etc/default/grub文件中"
-    sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
-    prompt -x "更新GRUB"
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    prompt -m "检查该变量是否已经添加…… "
+    check_var="GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\""
+    if cat /etc/default/grub | grep "$check_var" > /dev/null
+    then
+        prompt -w "您似乎已经配置过了，本次不执行添加。"
+    else
+        backupFile /etc/default/grub
+        prompt -x "添加 GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" 到 /etc/default/grub文件中"
+        sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
+        prompt -x "更新GRUB"
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+    fi
 fi
 
 # TODO
