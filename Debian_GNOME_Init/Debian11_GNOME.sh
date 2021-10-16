@@ -42,6 +42,8 @@ SET_SYSTEMCTL_SERVICE=1
 SET_NAUTILUS_MENU=1
 # 配置启用NetworkManager、安装net-tools Preset=1
 SET_NETWORK_MANAGER=1
+# 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
+SET_ETH0_ALLOW_HOTPLUG=1
 # 配置GRUB网卡默认命名方式 Preset=1
 SET_GRUB_NETCARD_NAMING=1
 
@@ -1196,6 +1198,7 @@ fi
 配置自定义的systemtl服务
 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
 配置启用NetworkManager、安装net-tools
+设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
 配置GRUB网卡默认命名方式
 检查点三
 prompt -i "——————————  检查点三  ——————————"
@@ -1262,6 +1265,33 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
     sudo systemctl restart NetworkManager.service
     prompt -x "安装Net-tools"
     doApt install net-tools
+fi
+
+# 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
+if [ "$SET_ETH0_ALLOW_HOTPLUG" -eq 1 ];then
+    prompt -m "设置网卡eth0为热拔插模式以缩短开机时间。"
+    prompt -m "检查 /etc/network/interfaces.d/setup 中eth0设备是否设置为热拔插..."
+    check_var="allow-hotplug eth0"
+    if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
+    then
+        echo -e "\e[1;34m请检查文件内容：
+===============================================================\e[0m"
+        sudo cat /etc/network/interfaces.d/setup
+        prompt -w "您的 eth0 设备似乎已经允许热拔插（如上所列），不做处理。"
+    else
+        prompt -m "检查 /etc/network/interfaces.d/setup 中是否有eth0设备..."
+        check_var="allow-hotplug eth0"
+        if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
+        then
+            echo -e "\e[1;34m请检查文件内容：
+===============================================================\e[0m"
+            sudo cat /etc/NetworkManager/NetworkManager.conf
+            prompt -w "您的 NetworkManager 似乎已经启用（如上所列），不做处理。"
+        else
+            prompt -x ""
+            sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.conf
+        fi
+    fi
 fi
 
 
