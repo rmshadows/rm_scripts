@@ -1,0 +1,17 @@
+编辑此文件 /etc/dhcp/dhclient.conf并将 timeout设置为合理的值，例如
+timeout 15
+
+/etc/network/interfaces
+allow-hotplug eth0
+
+sudo nano /etc/systemd/system/network-online.target.wants/networking.service
+TimeoutStartSec=5min
+
+
+# /etc/systemd/system/network-online.target.wants/networking.service
+# TimeoutStartSec=30sec
+
+/etc/systemd/system/networking.service.d/override.conf
+[Service]
+TimeoutStartSec=30sec
+
