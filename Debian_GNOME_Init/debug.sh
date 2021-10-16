@@ -75,7 +75,7 @@ prompt () {
     "-s"|"--success")
       echo -e "${b_CGSC}${@/-s/}${CDEF}";;          # print success message
     "-x"|"--exec")
-      echo -e "日志：${b_CGSC}${@/-s/}${CDEF}";;          # print exec message
+      echo -e "日志：${b_CGSC}${@/-x/}${CDEF}";;          # print exec message
     "-e"|"--error")
       echo -e "${b_CRER}${@/-e/}${CDEF}";;          # print error message
     "-w"|"--warning")
@@ -83,7 +83,7 @@ prompt () {
     "-i"|"--info")
       echo -e "${b_CCIN}${@/-i/}${CDEF}";;          # print info message
     "-m"|"--msg")
-      echo -e "信息：${b_CCIN}${@/-i/}${CDEF}";;          # print iinfo message
+      echo -e "信息：${b_CCIN}${@/-m/}${CDEF}";;          # print iinfo message
     "-k"|"--kv")  # 三个参数
       echo -e "${b_CCIN} ${2} ${b_CWAR} ${3} ${CDEF}";;          # print success message
     *)
@@ -223,29 +223,23 @@ doApt () {
     fi
 }
 
+addFolder () {
+    if [ $# -ne 1 ];then
+        prompt -e "addFolder () 只能有一个参数"
+        exit 1
+    fi
+    if ! [ -d $1 ];then
+        prompt -x "新建文件夹$1 "
+        mkdir $1
+    fi
+}
+
+CURRENT_USER=$USER
+
+
+
 #######################################################################
 
-SET_REPLACE_ROOT_RC_FILE=1
-
-# 添加/usr/sbin到环境变量
-if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
-    prompt -m "保留root用户SHELL配置"
-elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
-    prompt -x "替换root用户的SHELL配置文件"
-    echo -e "\e[1;32m 检查是否已经添加…… \e[0m"
-    check_var="export PATH=\"\$PATH:/usr/sbin\""
-    check_var="123"
-    if `cat "/home/$CURRENT_USER/$shell_conf" | grep $check_var` > /dev/null" ;then
-        prompt -w "环境变量  $check_var  已存在,不执行添加。"
-    else
-        prompt -x "添加/usr/sbin到用户变量"
-        # echo "export PATH=\"\$PATH:/usr/sbin\"" >> /home/$CURRENT_USER/$shell_conf
-    fi
-fi
-
-
-
-
-
+prompt -m "sd"
 
 

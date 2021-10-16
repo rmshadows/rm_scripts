@@ -38,17 +38,156 @@ SET_BASH_TO_ZSH=1
 SET_ZSHRC=0
 # 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
 SET_REPLACE_ROOT_RC_FILE=1
-## 检查点三：
 # 添加/usr/sbin到环境变量 Preset=1
 SET_ADD_SBIN_ENV=1
+# 是否安装bash-completion Preset=1
+SET_BASH_COMPLETION=1
+# 是否安装zsh-autosuggestions Preset=1
+SET_ZSH_AUTOSUGGESTIONS=1
 
+## 检查点三：
+# 是否自定义一个systemctl服务(customize-autorun) Preset=1
+SET_SYSTEMCTL_SERVICE=1
+# 是否配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹 Preset=1
+SET_NAUTILUS_MENU=1
+# 配置启用NetworkManager、安装net-tools Preset=1
+SET_NETWORK_MANAGER=1
+# 配置GRUB网卡默认命名方式 Preset=1
+SET_GRUB_NETCARD_NAMING=1
 
-#### 列表项
-# 『8』LST列表中请不要使用中括号
-LST="
+## 检查点四：
+#从APT源安装常用软件
+# 是否从APT源安装常用软件 Preset=1
+SET_APT_INSTALL=1
+:<<注释
+要安装的的软件的列表
+有几个预选的安装列表供参考:
+0.自定义列表
+1.轻便安装
+2.部分安装
+3.全部安装
+Preset=1
+注释
+SET_APT_INSTALL_LIST_INDEX=1
+:<<注释
+下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
+注意：列表中请不要使用中括号
+注释
+
+# 自定义列表请从INDEX 3列表中选取
+SET_APT_TO_INSTALL_INDEX_0="
+
+"
+
+# 这里是 脚本运行后 要安装的软件。格式同上，注意是稍后安装的，所以会放在脚本执行结束后才安装。
+SET_APT_TO_INSTALL_LATER="
+- apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
+- apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
+"
+
+# 轻便安装 (仅我个人认为必要的常用软件)
+SET_APT_TO_INSTALL_INDEX_1="
 - aircrack-ng——aircrack-ng
-- apt-listbugs——apt显示bug信息
-- apt-listchanges——apt显示更改
+- apt-transport-https——apt-transport-https
+- arp-scan——arp-scan
+- axel——axel下载器
+- bash-completion——终端自动补全
+- bleachbit——系统清理软件
+- build-essential——开发环境
+- clamav——Linux下的杀毒软件
+- cmake——cmake
+- crunch——字典生成
+- cups——cups打印机驱动
+- curl——curl
+- dislocker——查看bitlocker分区
+- dos2unix——将Windows下的文本文档转为Linux下的文本文档
+- drawing——GNOME画图
+- dsniff——网络审计
+- ettercap-graphical——ettercap-graphical
+- fcitx-rime——中州韵输入法
+- flatpak——flatpak平台
+- gedit-plugin*——Gedit插件
+- gimp——gimp图片编辑
+- gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
+- gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
+- gnome-shell-extension-bluetooth-quick-connect——GNOME扩展+蓝牙快速连接
+- gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
+- gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
+- gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
+- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
+- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
+- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
+- gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
+- gnome-shell-extension-gamemode——GNOME扩展+游戏模式
+- gnome-shell-extension-hard-disk-led——GNOME扩展
+- gnome-shell-extension-hide-activities——GNOME扩展
+- gnome-shell-extension-hide-veth——GNOME扩展
+- gnome-shell-extension-impatience——GNOME扩展
+- gnome-shell-extension-kimpanel——GNOME扩展
+- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
+- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
+- gnome-shell-extension-no-annoyance——GNOME扩展
+- gnome-shell-extension-panel-osd——GNOME扩展
+- gnome-shell-extension-pixelsaver——GNOME扩展
+- gnome-shell-extension-prefs——GNOME扩展
+- gnome-shell-extension-redshift——GNOME扩展
+- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
+- gnome-shell-extensions——GNOME扩展
+- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
+- gnome-shell-extension-shortcuts——GNOME扩展
+- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
+- gnome-shell-extension-tilix-shortcut——GNOME扩展
+- gnome-shell-extension-top-icons-plus——GNOME扩展
+- gnome-shell-extension-volume-mixer——GNOME扩展
+- gnome-shell-extension-weather——GNOME扩展+天气
+- gnucash——GNU账本
+- grub-customizer——GRUB或BURG定制器
+- gufw——防火墙
+- handbrake——视频转换
+- hping3——hping3
+- htop——htop彩色任务管理器
+- httrack——网站克隆
+- hydra——hydra
+- inotify-tools——inotify文件监视
+- kompare——文件差异对比
+- konversation——IRC客户端
+- lshw——显示硬件
+- make——make
+- masscan——masscan
+- mdk3——mdk3
+- meld——文件差异合并
+- nautilus-extension-*——nautilus插件
+- net-tools——ifconfig等工具
+- nmap——nmap
+- nodejs——nodejs
+- npm——nodejs包管理器
+- ntpdate——NTP时间同步
+- obs-studio——OBS
+- openssh-server——SSH
+- pwgen——随机密码生成
+- python3-pip——pip3
+- reaver——无线WPS测试
+- screenfetch——显示系统信息
+- sed——文本编辑工具
+- silversearcher-ag——Ag快速搜索工具
+- slowhttptest——慢速HTTP链接测试
+- tcpdump——tcpdump
+- tree——树状显示文件夹
+- traceroute——路由跟踪
+- vim——VIM编辑器
+- vlc——vlc视频播放器
+- wafw00f——网站防火墙检测
+- websploit——Web渗透测试
+- wget——wget网络下载工具
+- wireshark——wireshark
+- xdotool——X自动化工具
+- xprobe——网页防火墙测试
+- xsel——剪贴板操作
+- zhcon——tty中文虚拟
+"
+# 部分安装(含有娱乐项目、行业软件、调试应用)
+SET_APT_TO_INSTALL_INDEX_2="
+- aircrack-ng——aircrack-ng
 - apt-transport-https——apt-transport-https
 - arp-scan——arp-scan
 - axel——axel下载器
@@ -58,7 +197,160 @@ LST="
 - bridge-utils——网桥
 - build-essential——开发环境
 - bustle——D-Bus记录
-- calibre——Epub等多格式电子书阅读器
+- calibre——Epub等多格式电子书阅读器。注意：Epub等多格式电子书阅读器，体积较大，87M
+- cewl——CeWL网站字典生成(关键词采集)
+- cifs-utils——访问Windows共享文件夹
+- clamav——Linux下的杀毒软件
+- cmake——cmake
+- cowpatty——wireless hash
+- crunch——字典生成
+- cups——cups打印机驱动
+- curl——curl
+- dislocker——查看bitlocker分区
+- dos2unix——将Windows下的文本文档转为Linux下的文本文档
+- drawing——GNOME画图
+- dsniff——网络审计
+- ettercap-graphical——ettercap-graphical
+- extremetuxracer——滑雪游戏
+- fcitx-rime——中州韵输入法
+- flatpak——flatpak平台
+- freeplane——思维导图
+- fritzing——电路设计
+- fping——fping
+- fuse——配合dislocker查看bitlocker分区
+- g++——C++
+- gcc——C
+- gedit-plugin*——Gedit插件
+- gimp——gimp图片编辑
+- glance——一个可以代替htop的软件
+- gnome-recipes——GNOME西餐菜单。注意：西餐为主的菜单
+- gnome-shell-extension-appindicator——GNOME扩展
+- gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
+- gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
+- gnome-shell-extension-bluetooth-quick-connect——GNOME扩展+蓝牙快速连接
+- gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
+- gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
+- gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
+- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
+- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
+- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
+- gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
+- gnome-shell-extension-gamemode——GNOME扩展+游戏模式
+- gnome-shell-extension-hamster——GNOME扩展+时间追踪器
+- gnome-shell-extension-hard-disk-led——GNOME扩展
+- gnome-shell-extension-hide-activities——GNOME扩展
+- gnome-shell-extension-hide-veth——GNOME扩展
+- gnome-shell-extension-impatience——GNOME扩展
+- gnome-shell-extension-kimpanel——GNOME扩展
+- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
+- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
+- gnome-shell-extension-no-annoyance——GNOME扩展+关闭应用准备就绪对话框
+- gnome-shell-extension-panel-osd——GNOME扩展
+- gnome-shell-extension-pixelsaver——GNOME扩展
+- gnome-shell-extension-prefs——GNOME扩展
+- gnome-shell-extension-redshift——GNOME扩展
+- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
+- gnome-shell-extensions——GNOME扩展
+- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
+- gnome-shell-extension-shortcuts——GNOME扩展
+- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
+- gnome-shell-extension-system-monitor——GNOME扩展+顶栏资源监视器
+- gnome-shell-extension-tilix-dropdown——GNOME扩展
+- gnome-shell-extension-tilix-shortcut——GNOME扩展
+- gnome-shell-extension-top-icons-plus——GNOME扩展
+- gnome-shell-extension-trash——GNOME扩展
+- gnome-shell-extension-volume-mixer——GNOME扩展
+- gnome-shell-extension-weather——GNOME扩展+天气
+- gnome-software-plugin-flatpak——GNOME Flatpak插件
+- gnucash——GNU账本
+- grub-customizer——GRUB或BURG定制器
+- gtranslator——GNOME本地应用翻译编辑
+- gufw——防火墙
+- handbrake——视频转换
+- hugin——全景照片拼合工具
+- homebank——家庭账本
+- hostapd——AP热点相关
+- hping3——hping3
+- htop——htop彩色任务管理器
+- httrack——网站克隆
+- hydra——hydra
+- inotify-tools——inotify文件监视
+- kdenlive——kdenlive视频编辑
+- kompare——文件差异对比
+- konversation——IRC客户端
+- libblockdev*——文件系统相关的插件
+- libgtk-3-dev——GTK3
+- linux-headers-$(uname -r)——Linux Headers
+- lshw——显示硬件
+- make——make
+- masscan——masscan
+- mc——MidnightCommander
+- mdk3——mdk3
+- meld——文件差异合并
+- nautilus-extension-*——nautilus插件
+- ncrack——ncrack
+- net-tools——ifconfig等工具
+- nmap——nmap
+- nodejs——nodejs
+- npm——nodejs包管理器
+- ntpdate——NTP时间同步
+- obs-studio——OBS
+- openssh-server——SSH
+- paperwork-gtk——办公文档扫描
+- pavucontrol——PulseAudioVolumeControl
+- pinfo——友好的命令帮助手册
+- pkg-config——pkg-config
+- pulseeffects——pulse audio的调音器。注意：可能影响到原音频系统
+- pwgen——随机密码生成
+- python-pip——pip
+- python3-pip——pip3
+- python3-tk——python3 TK界面
+- qmmp——qmmp音乐播放器
+- reaver——无线WPS测试
+- screenfetch——显示系统信息
+- sed——文本编辑工具
+- silversearcher-ag——Ag快速搜索工具
+- slowhttptest——慢速HTTP链接测试
+- sqlmap——sqlmap
+- sshfs——挂载远程SSH目录
+- sslstrip——https降级
+- supertuxkart——Linux飞车游戏
+- sweethome3d——室内设计
+- synaptic——新立得包本地图形化管理器
+- tcpdump——tcpdump
+- tig——tig(类似github桌面)
+- tree——树状显示文件夹
+- traceroute——路由跟踪
+- vim——VIM编辑器
+- vlc——vlc视频播放器
+- wafw00f——网站防火墙检测
+- websploit——Web渗透测试
+- wget——wget网络下载工具
+- wireshark——wireshark
+- xdotool——X自动化工具
+- xprobe——网页防火墙测试
+- xsel——剪贴板操作
+- zenity——显示GTK+对话框
+- zhcon——tty中文虚拟
+- zsh——zsh
+- zsh-autosuggestions——zsh插件
+"
+
+# 全部安装 请注意查看标记有 注意 二字的条目
+SET_APT_TO_INSTALL_INDEX_3="
+- aircrack-ng——aircrack-ng
+- apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
+- apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
+- apt-transport-https——apt-transport-https
+- arp-scan——arp-scan
+- axel——axel下载器
+- bash-completion——终端自动补全
+- bleachbit——系统清理软件
+- blender——3D开发
+- bridge-utils——网桥
+- build-essential——开发环境
+- bustle——D-Bus记录
+- calibre——Epub等多格式电子书阅读器。注意：Epub等多格式电子书阅读器，体积较大，87M
 - cewl——CeWL网站字典生成(关键词采集)
 - cifs-utils——访问Windows共享文件夹
 - clamav——Linux下的杀毒软件
@@ -85,7 +377,7 @@ LST="
 - gedit-plugin*——Gedit插件
 - gimp——gimp图片编辑
 - glance——一个可以代替htop的软件
-- gnome-recipes——GNOME西餐菜单
+- gnome-recipes——GNOME西餐菜单。注意：西餐为主的菜单
 - gnome-shell-extension-appindicator——GNOME扩展
 - gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
 - gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
@@ -98,6 +390,7 @@ LST="
 - gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
 - gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
 - gnome-shell-extension-gamemode——GNOME扩展+游戏模式
+- gnome-shell-extension-hamster——GNOME扩展+时间追踪器
 - gnome-shell-extension-hard-disk-led——GNOME扩展
 - gnome-shell-extension-hide-activities——GNOME扩展
 - gnome-shell-extension-hide-veth——GNOME扩展
@@ -105,7 +398,7 @@ LST="
 - gnome-shell-extension-kimpanel——GNOME扩展
 - gnome-shell-extension-move-clock——GNOME扩展+移动时钟
 - gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
-- gnome-shell-extension-no-annoyance——GNOME扩展
+- gnome-shell-extension-no-annoyance——GNOME扩展+关闭应用准备就绪对话框
 - gnome-shell-extension-panel-osd——GNOME扩展
 - gnome-shell-extension-pixelsaver——GNOME扩展
 - gnome-shell-extension-prefs——GNOME扩展
@@ -138,6 +431,7 @@ LST="
 - inotify-tools——inotify文件监视
 - isc-dhcp-server——DHCP服务器
 - kdenlive——kdenlive视频编辑
+- kompare——文件差异对比
 - konversation——IRC客户端
 - libblockdev*——文件系统相关的插件
 - libgtk-3-dev——GTK3
@@ -161,7 +455,7 @@ LST="
 - pavucontrol——PulseAudioVolumeControl
 - pinfo——友好的命令帮助手册
 - pkg-config——pkg-config
-- pulseeffects——pulse audio的调音器
+- pulseeffects——pulse audio的调音器。注意：可能影响到原音频系统
 - pwgen——随机密码生成
 - python-pip——pip
 - python3-pip——pip3
@@ -191,35 +485,12 @@ LST="
 - wireshark——wireshark
 - xdotool——X自动化工具
 - xprobe——网页防火墙测试
+- xsel——剪贴板操作
 - zenity——显示GTK+对话框
 - zhcon——tty中文虚拟
 - zsh——zsh
 - zsh-autosuggestions——zsh插件
 "
-
-# 『8』这个数组列表是指定额外情况的软件列表及指定原因。
-# 格式：软件名；原因
-# 注意：冒号是中文的冒号，每一项之间用空格或者回车隔开。而且包名和原因中不能出现中文冒号和空格。
-EX_LST=(
-apt-listbugs；阻碍自动安装，请过后手动安装
-apt-listchanges；阻碍自动安装，请过后手动安装
-bustle；D-Bus记录器，无需求免安装
-calibre；Epub等多格式电子书阅读器，体积较大，87M
-extremetuxracer；游戏
-freeplane；思维导图，无需求免安装
-fritzing；电路设计，无需求免安装
-glance；需手动配置，无需求免安装
-gnome-recipes；西餐为主的菜单
-gtranslator；GNOME本地应用翻译编辑，无需求免安装
-hugin；全景照片拼合工具，无需求免安装
-homebank；家庭账本，无需求免安装
-isc-dhcp-server；DHCP服务器，无需求免安装
-linux-headers-$(uname -r)；Linux头部，无需求免安装
-paperwork-gtk；办公文档扫描，无需求免安装
-pulseeffects；可能影响到原音频系统
-supertuxkart；游戏
-sweethome3d；室内设计，无需求免安装
-)
 
 
 ### 脚本变量
@@ -260,7 +531,7 @@ prompt () {
     "-s"|"--success")
       echo -e "${b_CGSC}${@/-s/}${CDEF}";;          # print success message
     "-x"|"--exec")
-      echo -e "日志：${b_CGSC}${@/-s/}${CDEF}";;          # print exec message
+      echo -e "日志：${b_CGSC}${@/-x/}${CDEF}";;          # print exec message
     "-e"|"--error")
       echo -e "${b_CRER}${@/-e/}${CDEF}";;          # print error message
     "-w"|"--warning")
@@ -268,7 +539,7 @@ prompt () {
     "-i"|"--info")
       echo -e "${b_CCIN}${@/-i/}${CDEF}";;          # print info message
     "-m"|"--msg")
-      echo -e "信息：${b_CCIN}${@/-i/}${CDEF}";;          # print iinfo message
+      echo -e "信息：${b_CCIN}${@/-m/}${CDEF}";;          # print iinfo message
     "-k"|"--kv")  # 三个参数
       echo -e "${b_CCIN} ${2} ${b_CWAR} ${3} ${CDEF}";;          # print success message
     *)
@@ -416,6 +687,18 @@ doApt () {
         fi
     else
         sudo apt $@
+    fi
+}
+
+# 新建文件夹
+addFolder () {
+    if [ $# -ne 1 ];then
+        prompt -e "addFolder () 只能有一个参数"
+        quitThis
+    fi
+    if ! [ -d $1 ];then
+        prompt -x "新建文件夹$1 "
+        mkdir $1
     fi
 }
 
@@ -614,12 +897,15 @@ fi
 alias ll='ls -l'
 alias la='ls -A'
 alias l='ls -CF'
-# git相关偷懒操作
+# Git相关偷懒操作
 # alias gitac='git add . -A && git commit -m \"update\"'
 # alias hcg='hexo clean && hexo g'
 # alias gitam='git add . -A && git commit -m '
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
-# apache2 & nginx
+# FFMPEG
+# 裁剪 开始、结尾、文件、输出文件
+alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss $1 -to $2 -i $3 -vcodec copy -acodec copy $4};ffmpegCutVideo'
+# HTTP服务器
 alias apastart='sudo systemctl start apache2.service'
 alias apastop='sudo systemctl stop apache2.service'
 # alias ngxstop='sudo systemctl stop nginx.service'
@@ -726,7 +1012,7 @@ if echo $DESKTOP_SESSION | grep $check_var > /dev/null ;then
 else
     IS_GNOME_DE="FALSE"
     prompt -e "警告：不是GNOME桌面环境，慎用。"
-    quitThis
+    exit 1
 fi
 
 prompt -i "__________________________________________________________"
@@ -755,8 +1041,8 @@ fi
 :<<检查点一
 询问是否将当前用户加入sudo组, 是否sudo免密码（如果已经是sudoer且免密码则跳过）。
 检查点一
-
-# 如果没有sudo免密码，临时加入。
+prompt -i "——————————  检查点一  ——————————"
+# 如果没有sudo免密码，临时加入。这里之后才能使用quitThis
 if [ "$IS_SUDO_NOPASSWD" -ne 1 ];then
     prompt -x "临时成为免密码sudoer……"
     # 临时成为sudo用户
@@ -817,11 +1103,21 @@ elif [ "$SET_APT_UPGRADE" -eq 2 ];then
     doApt upgrade
 fi
 
+# 检查APT状态
+if [ $? -ne 0 ];then
+    prompt -e "APT配置似乎失败了(比如需要手动解锁、网络连接失败，更新失败等)，请手动检查下APT运行状态。"
+    quitThis
+fi
+
+prompt -i "——————————  检查点二  ——————————"
 
 :<<检查点二
 卸载vim-tiny，安装vim-full
 替换Bash为Zsh
 替换root用户shell配置文件
+添加/usr/sbin到环境变量
+安装bash-completion
+安装zsh-autosuggestions
 检查点二
 # 卸载vim-tiny，安装vim-full
 if [ "$SET_VIM_TINY_TO_FULL" -eq 0 ];then
@@ -882,12 +1178,111 @@ elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
     prompt -x "替换root用户的SHELL配置文件"
     prompt -m "检查该变量是否已经添加…… "
     check_var="export PATH=\"\$PATH:/usr/sbin\""
-    if "cat '/home/$CURRENT_USER/$shell_conf' | grep $check_var > /dev/null" ;then
+    if cat /home/$CURRENT_USER/$shell_conf | grep "$check_var" > /dev/null
+    then
         prompt -w "环境变量  $check_var  已存在,不执行添加。"
     else
         prompt -x "添加/usr/sbin到用户变量"
         echo "export PATH=\"\$PATH:/usr/sbin\"" >> /home/$CURRENT_USER/$shell_conf
     fi
+fi
+# 安装bash-completion
+if [ "$SET_BASH_COMPLETION" -eq 1 ];then
+    prompt -x "安装bash-completion"
+    doApt install bash-completion
+fi
+
+# 安装zsh-autosuggestions
+if [ "$SET_BASH_COMPLETION" -eq 1 ];then
+    if [ "$shell_conf" == ".zshrc" ];then
+        prompt -x "安装zsh-autosuggestions"
+        doApt install zsh-autosuggestions
+    else
+        prompt -e "非ZSH，不安装zsh-autosuggestions"
+    fi
+fi
+
+:<<检查点三
+配置自定义的systemtl服务
+配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
+配置启用NetworkManager、安装net-tools
+配置GRUB网卡默认命名方式
+检查点三
+prompt -i "——————————  检查点三  ——————————"
+# 配置自定义的systemtl服务
+if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ];then
+    prompt -x "配置自定义的Systemctl服务"
+    addFolder /home/$CURRENT_USER/.$CURRENT_USER/
+    addFolder /home/$CURRENT_USER/.$CURRENT_USER/scripts/
+    prompt -x "生成/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh脚本"
+    echo "#!/bin/bash
+echo -e \"\e[1;33m Hello World \e[0m\"
+" > /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
+    sudo chmod +x /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
+    prompt -x "生成/lib/systemd/system/customize-autorun.service服务"
+    if ! [ -f /lib/systemd/system/customize-autorun.service ];then
+        sudo echo "[Unit]
+Description=自定义的服务，用于开启启动/home/用户/.用户名/script下的shell脚本，配置完成请手动启用。注意，此脚本将以root身份运行！
+After=network.target 
+
+[Service]
+ExecStart=/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
+Type=forking
+PrivateTmp=True
+
+[Install]
+WantedBy=multi-user.target
+" > /lib/systemd/system/customize-autorun.service
+    fi
+fi
+
+# 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
+if [ "$SET_NAUTILUS_MENU" -eq 1 ];then
+    prompt -x "配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹"
+    addFolder /home/$CURRENT_USER/Data
+    addFolder /home/$CURRENT_USER/Project
+    addFolder /home/$CURRENT_USER/Vbox-Tra
+    addFolder /home/$CURRENT_USER/Prog
+    addFolder /home/$CURRENT_USER/Mounted
+    addFolder /home/$CURRENT_USER/.$CURRENT_USER/
+    sudo echo "gnome-system-monitor & " > /home/$CURRENT_USER/.local/share/nautilus/scripts/打开任务管理器
+    sudo chmod +x /home/$CURRENT_USER/.local/share/nautilus/scripts/*
+    # sudo chown $CURRENT_USER -hR /home/$CURRENT_USER
+fi
+
+# 配置启用NetworkManager、安装net-tools
+if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
+    prompt -x "配置启用NetworkManager"
+    prompt -m "检查NetworkManager /etc/NetworkManager/NetworkManager.conf 是否有激活"
+    check_var="managed=true"
+    if sudo cat '/etc/NetworkManager/NetworkManager.conf' | grep "$check_var" > /dev/null
+    then
+        echo -e "\e[1;34m请检查文件内容：
+===============================================================\e[0m"
+        sudo cat /etc/NetworkManager/NetworkManager.conf
+        prompt -w "您的 NetworkManager 似乎已经启用（如上所列），不做处理。"
+    else
+        prompt -x "启用NetworkManager"
+        sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.conf
+    fi
+    prompt -x "修改等待时间——/etc/systemd/system/network-online.target.wants/networking.service"
+    sudo sed -i 's/TimeoutStartSec=5min/TimeoutStartSec=5sec/g' /etc/systemd/system/network-online.target.wants/networking.service
+    prompt -m "重启NetworkManager.service"
+    sudo systemctl enable NetworkManager.service 
+    sudo systemctl restart NetworkManager.service
+    prompt -x "安装Net-tools"
+    doApt install net-tools
+fi
+
+
+# 配置GRUB网卡默认命名方式
+if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
+    prompt -x "配置GRUB网卡默认命名方式"
+    backupFile /etc/default/grub
+    prompt -x "添加 GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" 到 /etc/default/grub文件中"
+    sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
+    prompt -x "更新GRUB"
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
 # TODO
