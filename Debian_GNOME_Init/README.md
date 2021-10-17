@@ -163,6 +163,12 @@
     - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
     ```
   
+  - 安装Python3
+  
+  - 配置Python3源为清华大学镜像
+  
+  - 安装配置Apache2(是否禁用Apache2开机自启)
+  
   - 安装VirtualBox
 
 ## 应用列表

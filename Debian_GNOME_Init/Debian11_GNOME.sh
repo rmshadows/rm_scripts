@@ -5,6 +5,9 @@
 Version：0.0.1
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
+if [ "$" -eq 1 ];then
+    
+fi
 !说明
 # root用户密码
 ROOT_PASSWD=""
@@ -52,7 +55,7 @@ SET_GRUB_NETCARD_NAMING=1
 # 是否从APT源安装常用软件 Preset=1
 SET_APT_INSTALL=1
 :<<注释
-要安装的的软件的列表
+要安装的的软件的列表,列表在下方！！往下一直拉
 有几个预选的安装列表供参考:
 0.自定义列表
 1.轻便安装
@@ -61,6 +64,21 @@ SET_APT_INSTALL=1
 Preset=1
 注释
 SET_APT_INSTALL_LIST_INDEX=1
+# 安装Python3 Preset=1
+SET_PYTHON3_INSTALL=1
+# 配置Python3源为清华大学镜像 Preset=1
+SET_PYTHON3_MIRROR=1
+# 安装配置Apache2 Preset=1
+SET_INSTALL_APACHE2=1
+# 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_APACHE2=0
+# 是否安装Virtual Box Preset=1
+SET_INSTALL_VIRTUALBOX=1
+# 是否安装
+
+
+
+
 :<<注释
 下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
 注意：列表中请不要使用中括号
@@ -674,6 +692,7 @@ backupFile () {
 
 # 执行apt命令
 doApt () {
+    prompt -x "doApt: $@"
     if [ "$FIRST_DO_APT" -eq 1 ];then
         prompt -w "WARN：如果APT运行出错，『通常建议是找到对应的APT占用程序，退出即可』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)。"
         prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg-reconfigure -a"
@@ -1318,6 +1337,10 @@ fi
 
 :<<检查点四
 从APT仓库安装常用软件包
+安装Python3
+配置Python3源为清华大学镜像
+安装配置Apache2
+安装Virtual Box
 检查点四
 # 从APT仓库安装常用软件包
 if [ "$SET_APT_INSTALL" -eq 1 ];then
@@ -1389,6 +1412,69 @@ if [ "$SET_APT_INSTALL" -eq 1 ];then
             num=$((num+1))
         done
     fi 
+fi
+
+# 安装Python3
+if [ "$SET_PYTHON3_INSTALL" -eq 1 ];then
+    prompt -x "安装Python3和pip3"
+    doApt install python3
+    doApt install python3-pip
+fi
+
+# 配置Python3源为清华大学镜像
+if [ "$SET_PYTHON3_MIRROR" -eq 1 ];then
+    prompt -x "更改pip源为清华大学镜像源"
+    doApt install software-properties-common
+    doApt install python3-software-properties
+    doApt install python3-pip
+    pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+    pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
+    pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+fi
+
+# 安装配置Apache2
+if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
+    prompt -x "安装Apache2"
+    doApt install apache2
+    prompt -m "配置Apache2 共享目录为 /home/HTML"
+    addFolder /home/HTML
+    prompt -x "设置/home/HTML读写权限为755"
+    sudo chmod 755 /home/HTML
+    if [ $? -eq 0 ];then
+        backupFile /etc/apache2/apache2.conf
+        prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
+        sudo sed -i 's/\/var\/www\//\/home\/HTML\//g' /etc/apache2/apache2.conf
+        sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/home\/HTML/g' /etc/apache2/sites-available/000-default.conf
+        if [ "$SET_ENABLE_APACHE2" -eq 0 ];then
+            prompt -x "禁用Apache2服务开机自启"
+            sudo systemctl disable apache2.service
+        elif [ "$SET_ENABLE_APACHE2" -eq 1 ];then
+            prompt -x "配置Apache2服务开机自启"
+            sudo systemctl enable apache2.service
+        fi
+    else
+        prompt -e "Apache2似乎安装失败了。"
+        quitThis
+    fi
+fi
+
+# 安装Virtual Box
+if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
+    prompt -x "安装Virtual Box"
+    prompt -m "检查是否为Sid源"
+    is_debian_sid=0
+    sid_var1="debian/ sid main"
+    sid_var2="debian sid main"
+    if sudo cat '/etc/apt/sources.list' | grep $sid_var1 > /dev/null
+    then
+        is_debian_sid=1
+    fi
+    if sudo cat '/etc/apt/sources.list' | grep $sid_var2 > /dev/null
+    then
+        is_debian_sid=1
+    fi
+    
 fi
 
 
