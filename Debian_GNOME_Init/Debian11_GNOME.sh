@@ -1474,7 +1474,10 @@ if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
     then
         is_debian_sid=1
     fi
-    
+    if [ "$is_debian_sid" -eq 1 ];then
+        prompt -m "检测到使用的是Debian sid源，直接从源安装"
+        doApt install virtualbox
+    fi
 fi
 
 
