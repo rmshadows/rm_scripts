@@ -28,16 +28,20 @@
 ## 脚本内容
 
 > 检查点中如无**必选**两个字，默认为可选、可配置项目。
+>
+> (滞后)表示放于脚本末尾执行。
 
 - 运行环境检查
   - 首先检查用户是否在`sudo`组中且免密码。如果没有，临时添加`$USER ALL=(ALL)NOPASSWD:ALL`进`/etc/sudoers`文件中(运行结束或者Ctrl+c中断会自动移除)。
   - 检查是否时GNOME桌面，不是则警告、退出。
+  
 - 检查点一
   - 临时成为免密`sudoer`(必选)。
   - 添加用户到`sudo`组。
   - 设置用户`sudo`免密码。
   - 默认源安装`apt-transport-https`、`ca-certificates`。
   - 更新源、更新系统。
+  
 - 检查点二
   - 替换vim-tiny为vim-full
   - 替换Bash为Zsh
@@ -46,12 +50,14 @@
   - 替换root用户的SHELL配置
   - 安装bash-completion
   - 安装zsh-autosuggestions
+  
 - 检查点三
   - 自定义自己的服务（运行一个shell脚本）
   - 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
   - 配置启用NetworkManager、安装net-tools
   - 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过
   - 配置GRUB网卡默认命名方式
+  
 - 检查点四
   
   - 从APT源安装常用软件
@@ -156,7 +162,7 @@
     - zhcon——tty中文虚拟
     ```
   
-  - 脚本最后再安装的应用
+  - 脚本最后再安装的应用(滞后)
   
     ```
     - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
@@ -169,23 +175,29 @@
   
   - 安装配置Apache2(是否禁用Apache2开机自启)
   
-  - 安装VirtualBox
+  - 安装VirtualBox(滞后)
   
-  - 安装Anydesk
+  - 安装Anydesk(滞后)
   
-  - 安装Typora
+  - 安装Typora(滞后)
   
-  - 安装sublime text
+  - 安装sublime text(滞后)
   
-  - 安装teamviewer
+  - 安装teamviewer(滞后)
   
-  - 安装wps-office
+  - 安装wps-office(滞后)
   
-  - 安装skype
+  - 安装skype(滞后)
   
-  - 安装docker-ce
+  - 安装docker-ce(滞后)
   
-  - 禁用第三方软件仓库更新(提升apt体验)
+  - 安装网易云音乐(滞后)
+  
+  - 禁用第三方软件仓库更新(提升apt体验)(滞后)
+  
+- 最后一步
+
+  - 设置用户目录权限
 
 ## 应用列表
 

@@ -105,6 +105,8 @@ SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
 SET_DISABLE_THIRD_PARTY_REPO=1
+# 最后一步 设置用户目录所属 Preset=1
+SET_USER_HOME=1
 
 :<<注释
 下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
@@ -1585,6 +1587,8 @@ if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
         fi
         doApt update
         doApt install virtualbox
+        prompt -x "添加用户到vboxusers组"
+        sudo usermod -aG vboxusers $CURRENT_USER
     fi
 fi
 
@@ -1712,16 +1716,24 @@ fi
 # 安装网易云音乐
 if [ "$SET_INSTALL_NETEASE_CLOUD_MUSIC" -eq 1 ];then
     prompt -x "安装网易云音乐"
-    wget 
-    doApt install ./skypeforlinux-64.deb
+    wget https://d1.music.126.net/dmusic/netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
+    doApt install ./netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
 fi
 
 
-# 禁用第三方仓库更新
+
+#### 禁用第三方仓库更新
 if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ];then
     prompt -x "禁用第三方软件仓库更新"
     addFolder /etc/apt/sources.list.d/backup
     mv /etc/apt/sources.list.d/* /etc/apt/sources.list.d/backup/
+fi
+
+# 设置用户目录权限
+if [ "$SET_USER_HOME" -eq 1 ];then
+    prompt -x "设置用户目录权限"
+    chown $CURRENT_USER -hR /home/$CURRENT_USER
+    chmod 700 /home/$CURRENT_USER
 fi
 
 # Y
