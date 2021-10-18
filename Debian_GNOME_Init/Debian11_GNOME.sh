@@ -72,12 +72,37 @@ SET_PYTHON3_MIRROR=1
 SET_INSTALL_APACHE2=1
 # 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_APACHE2=0
+
+#### 下列软件安装时间较长，故放在最后安装
 # 是否安装Virtual Box Preset=1
 SET_INSTALL_VIRTUALBOX=1
-# 是否安装
+# 设置vbox仓库，0:官网(bullseye) 1:清华大学镜像站(Buster) 注意：如果是sid源，则使用sid仓库 Preset=1
+SET_VIRTUALBOX_REPO=1
+# 是否安装anydesk  Preset=1
+SET_INSTALL_ANYDESK=1
+# 是否设置anydesk开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_ANYDESK=0
+# 是否安装typora  Preset=1
+SET_INSTALL_TYPORA=1
+# 是否安装sublime text  Preset=0
+SET_INSTALL_SUBLIME_TEXT=0
+# 是否安装teamviewer  Preset=0
+SET_INSTALL_TEAMVIEWER=0
+# 是否设置teamviewer开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_TEAMVIEWER=0
+# 是否安装WPS Preset=1
+SET_INSTALL_WPS_OFFICE=1
+# 是否安装Skype Preset=1
+SET_INSTALL_SKYPE=1
+# 是否安装Docker-ce Preset=0
+SET_INSTALL_DOCKER_CE=1
+# 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1
+SET_DOCKER_CE_REPO=1
+# 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_DOCKER_CE=0
 
-
-
+# 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
+SET_DISABLE_THIRD_PARTY_REPO=1
 
 :<<注释
 下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
@@ -605,7 +630,7 @@ onExit () {
 }
 
 
-# 中途异常退出脚本要执行的
+# 中途异常退出脚本要执行的 注意，检查点一后才能使用这个方法
 quitThis () {
     onExit
     exit
@@ -690,20 +715,43 @@ backupFile () {
     fi
 } 
 
-# 执行apt命令
+# 执行apt命令 注意，检查点一后才能使用这个方法
 doApt () {
     prompt -x "doApt: $@"
-    if [ "$FIRST_DO_APT" -eq 1 ];then
-        prompt -w "WARN：如果APT运行出错，『通常建议是找到对应的APT占用程序，退出即可』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)。"
-        prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg-reconfigure -a"
-        FIRST_DO_APT=0
-        sleep 5
-    fi
     if [ "$1" = "install" ] || [ "$1" = "remove" ];then
         if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
-            sudo apt-get $@
+            sudo apt $@
         elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ];then
-            sudo apt-get $@ -y
+            sudo apt $@ -y
+        fi
+        # 如果是第一次运行apt安装，则检查执行结果
+        if [ "$FIRST_DO_APT" -eq 1 ];then
+            prompt -w "WARN：如果APT运行出错，『通常建议是找到对应的APT占用程序，退出即可』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
+            prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+            FIRST_DO_APT=0
+            sleep 5
+            if [ $? -ne 0 ];then
+                comfirm "\e[1;33m APT似乎执行失败了? 是否尝试运行 “sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a” [y/N]\e[0m"
+                choice=$?
+                if [ $choice == 1 ];then
+                    sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a
+                    if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
+                        sudo apt $@
+                    elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ];then
+                        sudo apt $@ -y
+                    fi
+                    if [ $? -ne 0 ];then
+                        prompt -e "APT 似乎又一次失败了，请检查。"
+                        quitThis
+                    fi
+                elif [ $choice == 2 ];then
+                    quitThis
+                else
+                    prompt -e "ERROR:未知返回值!"
+                    quitThis
+                    exit 5
+                fi
+            fi 
         fi
     else
         sudo apt $@
@@ -1083,10 +1131,17 @@ if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOP
     TEMPORARILY_SUDOER=0
 fi
 
-# 更换源
-# 确保https源可用
+# 预安装
+prompt -x "安装部分先决软件包"
 doApt update
-doApt install apt-transport-https ca-certificates
+# 确保https源可用
+doApt install apt-transport-https
+doApt install ca-certificates
+# 保证后面Vbox密钥添加
+doApt install wget
+doApt install gnupg2
+doApt install gnupg
+doApt install lsb-release
 # 添加清华大学 Debian 11 镜像源
 if [ "$SET_APT_SOURCE" -eq 1 ];then
     backupFile "/etc/apt/sources.list"
@@ -1117,10 +1172,10 @@ if [ "$SET_APT_UPGRADE" -eq 0 ];then
     doApt update
 elif [ "$SET_APT_UPGRADE" -eq 1 ];then
     prompt -x "更新整个系统中"
-    doApt dist-upgrade
+    doApt update && doApt dist-upgrade
 elif [ "$SET_APT_UPGRADE" -eq 2 ];then
     prompt -x "仅更新软件"
-    doApt upgrade
+    doApt update && doApt upgrade
 fi
 
 # 检查APT状态
@@ -1340,7 +1395,6 @@ fi
 安装Python3
 配置Python3源为清华大学镜像
 安装配置Apache2
-安装Virtual Box
 检查点四
 # 从APT仓库安装常用软件包
 if [ "$SET_APT_INSTALL" -eq 1 ];then
@@ -1459,6 +1513,39 @@ if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
     fi
 fi
 
+
+
+
+# TODO
+
+
+:<<安装时间较长的软件包
+VirtualBox
+Anydesk
+typora
+sublime text
+teamviewer
+wps-office
+skype
+docker-ce
+禁用第三方软件仓库更新(提升apt体验)
+安装时间较长的软件包
+# 安装later_task中的软件
+if [ "$SET_APT_INSTALL" -eq 1 ];then
+    doApt install ${later_task[@]}
+    if [ $? != 0 ];then
+        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
+        sleep 2
+        num=1
+        for var in ${later_task[@]}
+        do
+            prompt -m "正在安装第 $num 个软件包: $var。"
+            doApt install $var
+            num=$((num+1))
+        done
+    fi 
+fi
+
 # 安装Virtual Box
 if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
     prompt -x "安装Virtual Box"
@@ -1477,29 +1564,157 @@ if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
     if [ "$is_debian_sid" -eq 1 ];then
         prompt -m "检测到使用的是Debian sid源，直接从源安装"
         doApt install virtualbox
+    else
+        if [ "$SET_VIRTUALBOX_REPO" -eq 0 ];then
+            prompt -m "不是sid源，添加官方仓库"
+            # https://suay.site/?p=526
+            sudo curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
+            sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
+            # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+            # wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+            echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian bullseye contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+        elif [ "$SET_VIRTUALBOX_REPO" -eq 1 ];then
+            prompt -m "不是sid源，添加清华大学镜像仓库"
+            curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
+            sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
+            # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+            echo "deb http://mirrors.tuna.tsinghua.edu.cn/virtualbox/apt/ bullseye contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+        fi
+        doApt update
+        doApt install virtualbox
+    fi
+fi
+
+# 安装Anydesk
+if [ "$SET_INSTALL_ANYDESK" -eq 1 ];then
+    prompt -x "安装Anydesk"
+    curl https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/anydesk.gpg --import
+    sudo chmod 644 /etc/apt/trusted.gpg.d/anydesk.gpg
+    # wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | apt-key add -
+    echo "deb http://deb.anydesk.com/ all main" > /etc/apt/sources.list.d/anydesk-stable.list
+    doApt update
+    doApt install anydesk
+    if [ "$SET_ENABLE_ANYDESK" -eq 0 ];then
+        prompt -x "禁用Anydesk服务开机自启"
+        sudo systemctl disable anydesk.service
+    elif [ "$SET_ENABLE_ANYDESK" -eq 1 ];then
+        prompt -x "配置Anydesk服务开机自启"
+        sudo systemctl enable anydesk.service
+    fi
+fi
+
+# 安装typora
+if [ "$SET_INSTALL_TYPORA" -eq 1 ];then
+    prompt -x "安装typora"
+    curl https://typora.io/linux/public-key.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/typora.gpg --import
+    sudo chmod 644 /etc/apt/trusted.gpg.d/typora.gpg
+    echo "deb https://typora.io/linux ./" > /etc/apt/sources.list.d/typora.list
+    doApt update
+    doApt install typora
+fi
+
+# 安装sublime-text
+if [ "$SET_INSTALL_SUBLIME_TEXT" -eq 1 ];then
+    prompt -x "安装sublime-text"
+    curl https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/sublimehq-pub.gpg --import
+    sudo chmod 644 /etc/apt/trusted.gpg.d/sublimehq-pub.gpg
+    echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+    doApt update
+    doApt install sublime-text
+fi
+
+# 安装Teamviewer
+if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
+    prompt -x "安装teamviewer"
+    curl https://download.teamviewer.com/download/linux/signature/TeamViewer2017.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg --import
+    sudo chmod 644 /etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg
+    echo "###   TeamViewer DEB repository list
+### NOTE: Manual changes to this file
+###        - prevent it from being updated by TeamViewer package updates
+###        - will be lost after using the 'teamviewer repo' command
+###       The original file can be restored with this command:
+###       cp /opt/teamviewer/tv_bin/script/teamviewer.list /etc/apt/sources.list.d/teamviewer.list
+###       which has the same effect as 'teamviewer repo default'
+### NOTE: It is preferred to use the following commands to edit this file:
+###       teamviewer repo                - show current repository configuration
+###       teamviewer repo default        - restore default configuration
+###       teamviewer repo disable        - disable the repository
+###       teamviewer repo stable         - make all regular TeamViewer packages available (default)
+###       teamviewer repo preview        - additionally, make feature preview packages available
+###       teamviewer repo development    - additionally, make the latest development packages available
+deb http://linux.teamviewer.com/deb stable main
+# deb http://linux.teamviewer.com/deb preview main
+# deb http://linux.teamviewer.com/deb development main" > /etc/apt/sources.list.d/teamviewer.list
+    doApt update
+    doApt install teamviewer
+    if [ "$SET_ENABLE_TEAMVIEWER" -eq 0 ];then
+        prompt -x "禁用Teamviewer服务开机自启"
+        sudo systemctl disable teamviewerd.service
+    elif [ "$SET_ENABLE_TEAMVIEWER" -eq 1 ];then
+        prompt -x "配置Teamviewer服务开机自启"
+        sudo systemctl enable teamviewerd.service
+    fi
+fi
+
+# 安装wps-office
+if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
+    prompt -x "安装wps-office"
+    # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/9615/wps-office_11.1.0.9615_amd64.deb
+    # 较稳定版本
+    # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10161/wps-office_11.1.0.10161_amd64.deb
+    wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10702/wps-office_11.1.0.10702_amd64.deb
+    doApt install ./wps-office*amd64.deb
+fi
+
+# 安装skype
+if [ "$SET_INSTALL_SKYPE" -eq 1 ];then
+    prompt -x "安装Skype国际版"
+    wget https://go.skype.com/skypeforlinux-64.deb
+    doApt install ./skypeforlinux-64.deb
+fi
+
+# 安装Docker-ce
+if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
+    prompt -x "安装Docker-ce"
+    prompt -x "卸载旧版本"
+    sudo doApt remove docker docker-engine docker.io
+    if [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
+        prompt -m "添加官方仓库"
+        # # /usr/share/keyrings/docker-archive-keyring.gpg
+        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+        sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+        echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    elif [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
+        prompt -m "添加清华大学镜像仓库"
+        curl https://download.docker.com/linux/debian/gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/docker-archive-keyring.gpg --import
+        sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+        echo \
+   "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
+   $(lsb_release -cs) \
+   stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    fi
+    doApt update
+    doApt install docker-ce # docker-ce-cli containerd.io
+    if [ "$SET_ENABLE_DOCKER_CE" -eq 0 ];then
+        prompt -x "禁用docker-ce服务开机自启"
+        sudo systemctl disable docker.service
+    elif [ "$SET_ENABLE_DOCKER_CE" -eq 1 ];then
+        prompt -x "配置docker-ce服务开机自启"
+        sudo systemctl enable docker.service
     fi
 fi
 
 
-# TODO
 
 
-# 安装later_task中的软件
-if [ "$SET_APT_INSTALL" -eq 1 ];then
-    doApt install ${later_task[@]}
-    if [ $? != 0 ];then
-        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
-        sleep 2
-        num=1
-        for var in ${later_task[@]}
-        do
-            prompt -m "正在安装第 $num 个软件包: $var。"
-            doApt install $var
-            num=$((num+1))
-        done
-    fi 
+# 禁用第三方仓库更新
+if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ];then
+    prompt -x "禁用第三方软件仓库更新"
+    addFolder /etc/apt/sources.list.d/backup
+    mv /etc/apt/sources.list.d/* /etc/apt/sources.list.d/backup/
 fi
-
 
 # Y
 echo -e "\e[1;32m

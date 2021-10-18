@@ -170,6 +170,22 @@
   - 安装配置Apache2(是否禁用Apache2开机自启)
   
   - 安装VirtualBox
+  
+  - 安装Anydesk
+  
+  - 安装Typora
+  
+  - 安装sublime text
+  
+  - 安装teamviewer
+  
+  - 安装wps-office
+  
+  - 安装skype
+  
+  - 安装docker-ce
+  
+  - 禁用第三方软件仓库更新(提升apt体验)
 
 ## 应用列表
 
