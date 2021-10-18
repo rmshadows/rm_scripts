@@ -100,6 +100,8 @@ SET_INSTALL_DOCKER_CE=1
 SET_DOCKER_CE_REPO=1
 # 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_DOCKER_CE=0
+# 安装网易云音乐 Preset=1
+SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
 SET_DISABLE_THIRD_PARTY_REPO=1
@@ -1528,6 +1530,7 @@ teamviewer
 wps-office
 skype
 docker-ce
+安装网易云音乐
 禁用第三方软件仓库更新(提升apt体验)
 安装时间较长的软件包
 # 安装later_task中的软件
@@ -1706,7 +1709,12 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
     fi
 fi
 
-
+# 安装网易云音乐
+if [ "$SET_INSTALL_NETEASE_CLOUD_MUSIC" -eq 1 ];then
+    prompt -x "安装网易云音乐"
+    wget 
+    doApt install ./skypeforlinux-64.deb
+fi
 
 
 # 禁用第三方仓库更新
