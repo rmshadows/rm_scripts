@@ -76,7 +76,7 @@ SET_ENABLE_APACHE2=0
 SET_INSTALL_GIT=1
 # Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
 SET_GIT_USER=$CURRENT_USER
-SET_GIT_EMAIL=$CURRENT_USER@$HOST
+SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
 # 安装配置ssh Preset=1
 SET_INSTALL_OPENSSH=1
 # SSH开机是否自启 Preset=0 默认禁用
@@ -120,6 +120,34 @@ SET_ENABLE_DOCKER_CE=0
 # 安装网易云音乐 Preset=1
 SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 
+## 检查点五
+# 配置Fcitx 中州韵输入法 Preset=1
+SET_INSTALL_FCITX_RIME=1
+# 是否从Github导入公共词库 注意网速！！ Preset=0
+SET_RIME_DICT_FROM_GITHUB=0
+# 从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
+SET_RIME_DICT_FORM_LOCAL=0
+# 词库文件夹位置 Preset=RIME_DICT
+SET_RIME_DICT_FOLDER=RIME_DICT
+
+## 检查点六
+# 配置SSH Key Preset=1
+SET_CONFIG_SSH_KEY=1
+# 是否生成新的SSH Key 0:新的密钥 1:从文件夹导入现有密钥 2:从文本导入现有密钥 Preset=0
+SET_SSH_KEY_SOURCE=0
+# 新生成的、或者导入文本生成的SSH密钥名称 Preset=id_rsa
+SET_SSH_KEY_NAME=id_rsa
+# 新生成的SSH密钥密码 Preset=""
+SET_NEW_SSH_KEY_PASSWD=""
+# 新密钥的备注
+SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script"
+# 存放已存在的SSH密钥文件夹名称 1:从文件夹导入
+SET_EXISTED_SSH_KEY_SRC=SSH_KEY
+# SSH 密钥文本 2:从文本导入
+# 私钥
+SET_SSH_KEY_PRIVATE_TEXT=""
+# 公钥
+SET_SSH_KEY_PUBLIC_TEXT=""
 
 ###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
@@ -741,6 +769,9 @@ backupFile () {
 # 执行apt命令 注意，检查点一后才能使用这个方法
 doApt () {
     prompt -x "doApt: $@"
+    if [ -f "/var/lib/dpkg/lock-frontend" ] | [ -f "/var/lib/dpkg/lock" ];then
+        prompt -e "APT或者DPKG似乎正在运行(可能被其他任务占用)，对此的通常建议是等待，而不是sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+    fi
     if [ "$1" = "install" ] || [ "$1" = "remove" ];then
         if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
             sudo apt $@
@@ -1183,14 +1214,14 @@ deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib
 # deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib non-free
 
 deb https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free" > /etc/apt/sources.list
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free" | sudo tee /etc/apt/sources.list
 # 添加清华大学Debian sid 镜像源
 elif [ "$SET_APT_SOURCE" -eq 2 ];then
     backupFile "/etc/apt/sources.list"
     prompt -x "添加清华大学 Debian sid 镜像源"
     sudo echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
 deb https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free" > /etc/apt/sources.list
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free" | sudo tee /etc/apt/sources.list
 fi
 
 # 更新系统
@@ -1596,6 +1627,67 @@ if [ "$SET_INSTALL_NODEJS" -eq 1 ];then
 fi
 
 
+:<<检查点五
+配置Fcitx 中州韵输入法
+检查点五
+# 配置Fcitx 中州韵输入法
+if [ "$SET_INSTALL_FCITX_RIME" -eq 1 ];then
+    prompt -m "通常建议是：在 运行于xorg的GNOME 模式下使用Fcitx输入法(而不是Wayland！)， 模式切换在用户登录页面的小齿轮可以配置。"
+    sleep 8
+    doApt update
+    doApt install fcitx
+    doApt install fcitx
+    doApt install fcitx-googlepinyin
+    if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
+        prompt -x "配置~/.pam_environment文件"
+        echo "export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=\"@im=fcitx\"
+" > "/home/$CURRENT_USER/.pam_environment"
+    else
+        prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
+    fi
+    prompt -m "检查中州韵输入法安装情况……"
+    if ! [ -d "/home/$CURRENT_USER/.config/fcitx" ];then
+        prompt -e "找不到fcitx的配置文件夹/home/$CURRENT_USER/.config/fcitx"
+        quitThis
+    fi
+    if ! [ -d "/home/$CURRENT_USER/.config/fcitx/rime" ];then
+        prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/fcitx/rime"
+        quitThis
+    fi
+    prompt -m "检查完成，开始配置词库"
+    if [ "$SET_RIME_DICT_FROM_GITHUB" -eq 1 ];then
+        if ! [ -x "$(command -v git)" ];then
+            doApt install git
+        fi
+        git clone https://github.com/rime-aca/dictionaries.git
+        
+    fi
+fi
+
+:<<检查点六
+配置SSH Key
+检查点六
+# 配置SSH Key
+if [ "$SET_CONFIG_SSH_KEY" -eq 1 ];then
+    if [ -f "/home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME" ] | [ -f "/home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME.pub" ];then
+        prompt -e "/home/$CURRENT_USER/.ssh/似乎已经存在 "$SET_SSH_KEY_NAME" 的SSH Key,跳过配置。"
+    else
+        if [ "$SET_SSH_KEY_SOURCE" -eq 0 ];then
+            prompt -x "生成新的SSH Key 密码:"
+            ssh-keygen -t rsa -N $SET_NEW_SSH_KEY_PASSWD -C "$SET_SSH_KEY_COMMENT" -f /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
+        elif [ "$SET_SSH_KEY_SOURCE" -eq 1 ];then
+            prompt -x "将存在的SSH Key从 $SET_EXISTED_SSH_KEY_SRC 移动到 /home/$CURRENT_USER/.ssh/"
+            mv $SET_EXISTED_SSH_KEY_SRC /home/$CURRENT_USER/.ssh/
+        elif [ "$SET_SSH_KEY_SOURCE" -eq 2 ];then
+            prompt -x "从文本导入SSH Key到 /home/$CURRENT_USER/.ssh/"
+            echo $SET_SSH_KEY_PRIVATE_TEXT > /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
+            echo $SET_SSH_KEY_PUBLIC_TEXT > /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME.pub
+        fi
+    fi
+fi
+
 
 # TODO
 
@@ -1680,7 +1772,7 @@ if [ "$SET_INSTALL_ANYDESK" -eq 1 ];then
         curl https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/anydesk.gpg --import
         sudo chmod 644 /etc/apt/trusted.gpg.d/anydesk.gpg
         # wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | apt-key add -
-        sudo echo "deb http://deb.anydesk.com/ all main" > /etc/apt/sources.list.d/anydesk-stable.list
+        sudo echo "deb http://deb.anydesk.com/ all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list
         doApt update
         doApt install anydesk
     else
@@ -1701,7 +1793,7 @@ if [ "$SET_INSTALL_TYPORA" -eq 1 ];then
         prompt -x "安装typora"
         curl https://typora.io/linux/public-key.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/typora.gpg --import
         sudo chmod 644 /etc/apt/trusted.gpg.d/typora.gpg
-        sudo echo "deb https://typora.io/linux ./" > /etc/apt/sources.list.d/typora.list
+        sudo echo "deb https://typora.io/linux ./" | sudo tee /etc/apt/sources.list.d/typora.list
         doApt update
         doApt install typora
     else
@@ -1745,7 +1837,7 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
 ###       teamviewer repo development    - additionally, make the latest development packages available
 deb http://linux.teamviewer.com/deb stable main
 # deb http://linux.teamviewer.com/deb preview main
-# deb http://linux.teamviewer.com/deb development main" > /etc/apt/sources.list.d/teamviewer.list
+# deb http://linux.teamviewer.com/deb development main" | sudo tee /etc/apt/sources.list.d/teamviewer.list
         doApt update
         doApt install teamviewer
     else

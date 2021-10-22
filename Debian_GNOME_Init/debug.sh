@@ -239,34 +239,10 @@ CURRENT_USER=$USER
 
 
 #######################################################################
-if ! [ -x "$(command -v virtualboxx)" ]; then
-        prompt -m "检查是否为Sid源"
-        is_debian_sid=0
-        #sid_var1="debian/ sid main"
-        #sid_var2="debian sid main"
-        sid_var1="kali kali-rolling main"
-        sid_var2="kali/ kali-rolling main"
-        if sudo cat '/etc/apt/sources.list' | grep "$sid_var1"
-        then
-            is_debian_sid=1
-        fi
-        if sudo cat '/etc/apt/sources.list' | grep "$sid_var2"
-        then
-            is_debian_sid=1
-        fi
-        if [ "$is_debian_sid" -eq 1 ];then
-            prompt -m "检测到使用的是Debian sid源，直接从源安装"
-        else
-            if [ 0 -eq 0 ];then
-                prompt -m "不是sid源，添加官方仓库"
-            elif [ 1 -eq 1 ];then
-                prompt -m "不是sid源，添加清华大学镜像仓库"
-            fi
-        fi
-    else
-        prompt -m "您可能已经安装了VirtualBox"
-    fi
-
+# HOST_NA=$HOST
+SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script"
+echo "$SET_SSH_KEY_COMMENT"
+echo $HOSTNAME
 
 
 
