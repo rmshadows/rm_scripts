@@ -72,6 +72,23 @@ SET_PYTHON3_MIRROR=1
 SET_INSTALL_APACHE2=1
 # 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_APACHE2=0
+# 安装配置git Preset=1
+SET_INSTALL_GIT=1
+# Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
+SET_GIT_USER=$CURRENT_USER
+SET_GIT_EMAIL=$CURRENT_USER@$HOST
+# 安装配置ssh Preset=1
+SET_INSTALL_OPENSSH=1
+# SSH开机是否自启 Preset=0 默认禁用
+SET_ENABLE_SSH=0
+# 安装配置npm Preset=0
+SET_INSTALL_NPM=0
+# 是否安装Nodejs Preset=0
+SET_INSTALL_NODEJS=0
+# 是否安装CNPM Preset=0
+SET_INSTALL_CNPM=0
+# 是否安装Hexo Preset=0
+SET_INSTALL_HEXO=0
 
 #### 下列软件安装时间较长，故放在最后安装
 # 是否安装Virtual Box Preset=1
@@ -103,6 +120,8 @@ SET_ENABLE_DOCKER_CE=0
 # 安装网易云音乐 Preset=1
 SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 
+
+###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
 SET_DISABLE_THIRD_PARTY_REPO=1
 # 最后一步 设置用户目录所属 Preset=1
@@ -772,6 +791,10 @@ addFolder () {
         prompt -x "新建文件夹$1 "
         mkdir $1
     fi
+    if ! [ $? -ne 0 ];then
+        prompt -x "(sudo)新建文件夹$1 "
+        sudo mkdir $1
+    fi
 }
 
 :<<配置文件
@@ -1139,7 +1162,7 @@ fi
 prompt -x "安装部分先决软件包"
 doApt update
 # 确保https源可用
-doApt install apt-transport-https
+doApt install apt-transport-https	
 doApt install ca-certificates
 # 保证后面Vbox密钥添加
 doApt install wget
@@ -1399,6 +1422,9 @@ fi
 安装Python3
 配置Python3源为清华大学镜像
 安装配置Apache2
+安装配置Git(配置User Email)
+安装配置SSH
+安装配置npm(是否安装hexo)
 检查点四
 # 从APT仓库安装常用软件包
 if [ "$SET_APT_INSTALL" -eq 1 ];then
@@ -1436,7 +1462,7 @@ if [ "$SET_APT_INSTALL" -eq 1 ];then
         prompt -i "$each"
     done
     sleep 8
-    echo "\n\n\n"
+    echo -e "\n\n\n"
     # 处理app_list列表
     # 把“- ”转为换行符 然后删除所有空格 最后删除第一行。echo $LST | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d'
     app_list=$(echo $app_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
@@ -1517,6 +1543,57 @@ if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
     fi
 fi
 
+# 安装配置Git(配置User Email)
+if [ "$SET_INSTALL_GIT" -eq 1 ];then
+    prompt -x "安装Git"
+    doApt install git
+    if [ $? -eq 0 ];then
+        git config --global user.name $SET_GIT_USER
+        git config --global user.email $SET_GIT_EMAIL
+    else
+        prompt -e "Git似乎安装失败了。"
+        quitThis
+    fi
+fi
+
+# 安装配置SSH
+if [ "$SET_INSTALL_OPENSSH" -eq 1 ];then
+    doApt install openssh-server
+    if [ "$SET_ENABLE_SSH" -eq 1 ];then
+        prompt -x "配置Apache2服务开机自启"
+        sudo systemctl enable ssh.service
+    elif [ "$SET_ENABLE_SSH" -eq 0 ];then
+        prompt -x "禁用Apache2服务开机自启"
+        sudo systemctl disable ssh.service
+    fi
+fi
+
+# 安装配置npm(是否安装hexo)
+if [ "$SET_INSTALL_NPM" -eq 1 ];then
+    doApt install npm
+    if [ "$SET_INSTALL_CNPM" -eq 1 ];then
+        if ! [ -x "$(command -v cnpm)" ]; then
+            prompt -x "安装CNPM"
+            npm install cnpm -g --registry=https://r.npm.taobao.org
+        fi
+        if [ "$SET_INSTALL_HEXO" -eq 1 ];then
+            if ! [ -x "$(command -v hexo)" ]; then
+                prompt -x "安装HEXO"
+                cnpm install -g hexo-cli
+            fi
+        fi
+    fi
+    if [ "$SET_INSTALL_HEXO" -eq 1 ];then
+        if ! [ -x "$(command -v hexo)" ]; then
+            prompt -x "安装HEXO"
+            npm install -g hexo-cli
+        fi
+    fi
+fi
+
+if [ "$SET_INSTALL_NODEJS" -eq 1 ];then
+    doApt install nodejs
+fi
 
 
 
@@ -1554,53 +1631,61 @@ fi
 # 安装Virtual Box
 if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
     prompt -x "安装Virtual Box"
-    prompt -m "检查是否为Sid源"
-    is_debian_sid=0
-    sid_var1="debian/ sid main"
-    sid_var2="debian sid main"
-    if sudo cat '/etc/apt/sources.list' | grep $sid_var1 > /dev/null
-    then
-        is_debian_sid=1
-    fi
-    if sudo cat '/etc/apt/sources.list' | grep $sid_var2 > /dev/null
-    then
-        is_debian_sid=1
-    fi
-    if [ "$is_debian_sid" -eq 1 ];then
-        prompt -m "检测到使用的是Debian sid源，直接从源安装"
-        doApt install virtualbox
-    else
-        if [ "$SET_VIRTUALBOX_REPO" -eq 0 ];then
-            prompt -m "不是sid源，添加官方仓库"
-            # https://suay.site/?p=526
-            sudo curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
-            sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
-            # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-            # wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
-            echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian bullseye contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
-        elif [ "$SET_VIRTUALBOX_REPO" -eq 1 ];then
-            prompt -m "不是sid源，添加清华大学镜像仓库"
-            curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
-            sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
-            # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-            echo "deb http://mirrors.tuna.tsinghua.edu.cn/virtualbox/apt/ bullseye contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+    if ! [ -x "$(command -v virtualbox)" ]; then
+        prompt -m "检查是否为Sid源"
+        is_debian_sid=0
+        sid_var1="debian/ sid main"
+        sid_var2="debian sid main"
+        if sudo cat '/etc/apt/sources.list' | grep "$sid_var1" > /dev/null
+        then
+            is_debian_sid=1
         fi
-        doApt update
-        doApt install virtualbox
-        prompt -x "添加用户到vboxusers组"
-        sudo usermod -aG vboxusers $CURRENT_USER
+        if sudo cat '/etc/apt/sources.list' | grep "$sid_var2" > /dev/null
+        then
+            is_debian_sid=1
+        fi
+        if [ "$is_debian_sid" -eq 1 ];then
+            prompt -m "检测到使用的是Debian sid源，直接从源安装"
+            doApt install virtualbox
+        else
+            if [ "$SET_VIRTUALBOX_REPO" -eq 0 ];then
+                prompt -m "不是sid源，添加官方仓库"
+                # https://suay.site/?p=526
+                sudo curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
+                sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
+                # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+                # wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+                sudo echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian bullseye contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+            elif [ "$SET_VIRTUALBOX_REPO" -eq 1 ];then
+                prompt -m "不是sid源，添加清华大学镜像仓库"
+                curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
+                sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
+                # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+                sudo echo "deb http://mirrors.tuna.tsinghua.edu.cn/virtualbox/apt/ bullseye contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+            fi
+            doApt update
+            doApt install virtualbox
+        fi
+    else
+        prompt -m "您可能已经安装了VirtualBox"
     fi
+    prompt -x "添加用户到vboxusers组"
+    sudo usermod -aG vboxusers $CURRENT_USER
 fi
 
 # 安装Anydesk
 if [ "$SET_INSTALL_ANYDESK" -eq 1 ];then
-    prompt -x "安装Anydesk"
-    curl https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/anydesk.gpg --import
-    sudo chmod 644 /etc/apt/trusted.gpg.d/anydesk.gpg
-    # wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | apt-key add -
-    echo "deb http://deb.anydesk.com/ all main" > /etc/apt/sources.list.d/anydesk-stable.list
-    doApt update
-    doApt install anydesk
+    if ! [ -x "$(command -v anydesk)" ]; then
+        prompt -x "安装Anydesk"
+        curl https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/anydesk.gpg --import
+        sudo chmod 644 /etc/apt/trusted.gpg.d/anydesk.gpg
+        # wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | apt-key add -
+        sudo echo "deb http://deb.anydesk.com/ all main" > /etc/apt/sources.list.d/anydesk-stable.list
+        doApt update
+        doApt install anydesk
+    else
+        prompt -m "您可能已经安装了Anydesk"
+    fi
     if [ "$SET_ENABLE_ANYDESK" -eq 0 ];then
         prompt -x "禁用Anydesk服务开机自启"
         sudo systemctl disable anydesk.service
@@ -1612,30 +1697,39 @@ fi
 
 # 安装typora
 if [ "$SET_INSTALL_TYPORA" -eq 1 ];then
-    prompt -x "安装typora"
-    curl https://typora.io/linux/public-key.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/typora.gpg --import
-    sudo chmod 644 /etc/apt/trusted.gpg.d/typora.gpg
-    echo "deb https://typora.io/linux ./" > /etc/apt/sources.list.d/typora.list
-    doApt update
-    doApt install typora
+    if ! [ -x "$(command -v typora)" ]; then
+        prompt -x "安装typora"
+        curl https://typora.io/linux/public-key.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/typora.gpg --import
+        sudo chmod 644 /etc/apt/trusted.gpg.d/typora.gpg
+        sudo echo "deb https://typora.io/linux ./" > /etc/apt/sources.list.d/typora.list
+        doApt update
+        doApt install typora
+    else
+        prompt -m "您可能已经安装了Typora"
+    fi
 fi
 
 # 安装sublime-text
 if [ "$SET_INSTALL_SUBLIME_TEXT" -eq 1 ];then
-    prompt -x "安装sublime-text"
-    curl https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/sublimehq-pub.gpg --import
-    sudo chmod 644 /etc/apt/trusted.gpg.d/sublimehq-pub.gpg
-    echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-    doApt update
-    doApt install sublime-text
+    if ! [ -x "$(command -v sublime-text)" ]; then
+        prompt -x "安装sublime-text"
+        curl https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/sublimehq-pub.gpg --import
+        sudo chmod 644 /etc/apt/trusted.gpg.d/sublimehq-pub.gpg
+        sudo echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+        doApt update
+        doApt install sublime-text
+    else
+        prompt -m "您可能已经安装了Sublime"
+    fi
 fi
 
 # 安装Teamviewer
 if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
-    prompt -x "安装teamviewer"
-    curl https://download.teamviewer.com/download/linux/signature/TeamViewer2017.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg --import
-    sudo chmod 644 /etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg
-    echo "###   TeamViewer DEB repository list
+    if ! [ -x "$(command -v teamviewer)" ]; then
+        prompt -x "安装teamviewer"
+        curl https://download.teamviewer.com/download/linux/signature/TeamViewer2017.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg --import
+        sudo chmod 644 /etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg
+        sudo echo "###   TeamViewer DEB repository list
 ### NOTE: Manual changes to this file
 ###        - prevent it from being updated by TeamViewer package updates
 ###        - will be lost after using the 'teamviewer repo' command
@@ -1652,8 +1746,11 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
 deb http://linux.teamviewer.com/deb stable main
 # deb http://linux.teamviewer.com/deb preview main
 # deb http://linux.teamviewer.com/deb development main" > /etc/apt/sources.list.d/teamviewer.list
-    doApt update
-    doApt install teamviewer
+        doApt update
+        doApt install teamviewer
+    else
+        prompt -m "您可能已经安装了Teamviewer"
+    fi
     if [ "$SET_ENABLE_TEAMVIEWER" -eq 0 ];then
         prompt -x "禁用Teamviewer服务开机自启"
         sudo systemctl disable teamviewerd.service
@@ -1665,45 +1762,57 @@ fi
 
 # 安装wps-office
 if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
-    prompt -x "安装wps-office"
-    # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/9615/wps-office_11.1.0.9615_amd64.deb
-    # 较稳定版本
-    # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10161/wps-office_11.1.0.10161_amd64.deb
-    wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10702/wps-office_11.1.0.10702_amd64.deb
-    doApt install ./wps-office*amd64.deb
+    if ! [ -x "$(command -v wps)" ]; then
+        prompt -x "安装wps-office"
+        # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/9615/wps-office_11.1.0.9615_amd64.deb
+        # 较稳定版本
+        # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10161/wps-office_11.1.0.10161_amd64.deb
+        wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10702/wps-office_11.1.0.10702_amd64.deb
+        doApt install ./wps-office*amd64.deb
+    else
+        prompt -m "您可能已经安装了WPS"
+    fi
 fi
 
 # 安装skype
 if [ "$SET_INSTALL_SKYPE" -eq 1 ];then
-    prompt -x "安装Skype国际版"
-    wget https://go.skype.com/skypeforlinux-64.deb
-    doApt install ./skypeforlinux-64.deb
+    if ! [ -x "$(command -v skypeforlinux)" ]; then
+        prompt -x "安装Skype国际版"
+        wget https://go.skype.com/skypeforlinux-64.deb
+        doApt install ./skypeforlinux-64.deb
+    else
+        prompt -m "您可能已经安装了Skype"
+    fi
 fi
 
 # 安装Docker-ce
 if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
-    prompt -x "安装Docker-ce"
-    prompt -x "卸载旧版本"
-    sudo doApt remove docker docker-engine docker.io
-    if [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
-        prompt -m "添加官方仓库"
-        # # /usr/share/keyrings/docker-archive-keyring.gpg
-        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
-        sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
-        echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    elif [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
-        prompt -m "添加清华大学镜像仓库"
-        curl https://download.docker.com/linux/debian/gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/docker-archive-keyring.gpg --import
-        sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
-        echo \
-   "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
-   $(lsb_release -cs) \
-   stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    if ! [ -x "$(command -v docker)" ]; then
+        prompt -x "安装Docker-ce"
+        prompt -x "卸载旧版本"
+        sudo doApt remove docker docker-engine docker.io
+        if [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
+            prompt -m "添加官方仓库"
+            # # /usr/share/keyrings/docker-archive-keyring.gpg
+            curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+            sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+            sudo echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        elif [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
+            prompt -m "添加清华大学镜像仓库"
+            curl https://download.docker.com/linux/debian/gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/docker-archive-keyring.gpg --import
+            sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
+            sudo echo \
+       "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
+       $(lsb_release -cs) \
+       stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        fi
+        doApt update
+        doApt install docker-ce # docker-ce-cli containerd.io
+    else
+        prompt -m "您可能已经安装了Docker"
     fi
-    doApt update
-    doApt install docker-ce # docker-ce-cli containerd.io
     if [ "$SET_ENABLE_DOCKER_CE" -eq 0 ];then
         prompt -x "禁用docker-ce服务开机自启"
         sudo systemctl disable docker.service
@@ -1715,25 +1824,28 @@ fi
 
 # 安装网易云音乐
 if [ "$SET_INSTALL_NETEASE_CLOUD_MUSIC" -eq 1 ];then
-    prompt -x "安装网易云音乐"
-    wget https://d1.music.126.net/dmusic/netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
-    doApt install ./netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
+    if ! [ -x "$(command -v skypeforlinux)" ]; then
+        prompt -x "安装网易云音乐"
+        wget https://d1.music.126.net/dmusic/netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
+        doApt install ./netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
+    else
+        prompt -m "您可能已经安装了netease-cloud-music"
+    fi
 fi
-
 
 
 #### 禁用第三方仓库更新
 if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ];then
     prompt -x "禁用第三方软件仓库更新"
     addFolder /etc/apt/sources.list.d/backup
-    mv /etc/apt/sources.list.d/* /etc/apt/sources.list.d/backup/
+    sudo mv /etc/apt/sources.list.d/* /etc/apt/sources.list.d/backup/
 fi
 
 # 设置用户目录权限
 if [ "$SET_USER_HOME" -eq 1 ];then
     prompt -x "设置用户目录权限"
-    chown $CURRENT_USER -hR /home/$CURRENT_USER
-    chmod 700 /home/$CURRENT_USER
+    sudo chown $CURRENT_USER -hR /home/$CURRENT_USER
+    sudo chmod 700 /home/$CURRENT_USER
 fi
 
 # Y

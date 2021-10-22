@@ -239,72 +239,33 @@ CURRENT_USER=$USER
 
 
 #######################################################################
-SET_APT_INSTALL=1
-SET_APT_INSTALL_LIST_INDEX=1
-
-APT_TO_INSTALL_INDEX_1="
-- aircrack-ng——aircrack-ng
-- apt-transport-https——apt-transport-https
-"
-
-APT_TO_INSTALL_INDEX_2="
-- clamav——Linux下的杀毒软件
-- cmake——cmake
-"
-
-SET_APT_TO_INSTALL_LATER="
-- apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
-- apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
-"
-
-:<<检查点四
-从APT仓库安装常用软件包
-检查点四
-# 从APT仓库安装常用软件包
-if [ "$SET_APT_INSTALL" -eq 1 ];then
-    if [ "$SET_APT_INSTALL_LIST_INDEX" -eq 1 ];then
-        app_list=$APT_TO_INSTALL_INDEX_1
-    elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 2 ];then
-        app_list=$APT_TO_INSTALL_INDEX_2
+if ! [ -x "$(command -v virtualboxx)" ]; then
+        prompt -m "检查是否为Sid源"
+        is_debian_sid=0
+        #sid_var1="debian/ sid main"
+        #sid_var2="debian sid main"
+        sid_var1="kali kali-rolling main"
+        sid_var2="kali/ kali-rolling main"
+        if sudo cat '/etc/apt/sources.list' | grep "$sid_var1"
+        then
+            is_debian_sid=1
+        fi
+        if sudo cat '/etc/apt/sources.list' | grep "$sid_var2"
+        then
+            is_debian_sid=1
+        fi
+        if [ "$is_debian_sid" -eq 1 ];then
+            prompt -m "检测到使用的是Debian sid源，直接从源安装"
+        else
+            if [ 0 -eq 0 ];then
+                prompt -m "不是sid源，添加官方仓库"
+            elif [ 1 -eq 1 ];then
+                prompt -m "不是sid源，添加清华大学镜像仓库"
+            fi
+        fi
+    else
+        prompt -m "您可能已经安装了VirtualBox"
     fi
-    task_to=()
-    # 把“- ”转为换行符 然后删除所有空格 最后删除第一行。
-    # echo $LST | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d'
-    app_list=$(echo $app_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
-    app_list=($app_list)
-    # 显示的序号
-    num=0
-    # echo $app_list
-    app_len=${#app_list[@]}
-  for ((i=0;i<$app_len;i++));do
-    # 显示序号
-    echo -en "\e[1;35m$num)\e[0m"
-    each=${app_list[$i]}
-    index=`expr index "$each" —`
-    # 软件包名
-    name=${app_list[$i]/$each/${each:0:($index-1)}}
-    task_to[$num]=${name}
-    prompt -i "$each"
-    num=$((num+1))
-  done
-  echo ${task_to[@]}
-  apt install ${task_to[@]}
-  if [ $? != 0 ];then
-      prompt -i "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
-      read temp
-      for var in ${task_to[@]}
-      do
-        sudo apt install $var
-      done
-    fi 
-fi
-
-
-
-
-
-
-
 
 
 
