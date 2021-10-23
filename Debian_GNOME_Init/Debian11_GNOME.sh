@@ -127,12 +127,10 @@ SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 ## 检查点五
 # 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime Preset=1
 SET_INSTALL_RIME=1
-# 是否从Github导入公共词库 注意网速！！ Preset=0
-SET_RIME_DICT_FROM_GITHUB=0
-# 从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
-SET_RIME_DICT_FORM_LOCAL=0
-# 词库文件夹位置 Preset=RIME_DICT
-SET_RIME_DICT_FOLDER=RIME_DICT
+# 是否导入词库 0: 否 1:从Github导入公共词库 (注意网速！)  2:从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
+SET_IMPORT_RIME_DICT=0
+# 本地词库文件夹位置 Preset=RIME_DICT
+SET_RIME_DICT_DIR=RIME_DICT
 
 ## 检查点六
 # 配置SSH Key Preset=1
@@ -1672,13 +1670,19 @@ fi
 # 开始配置词库
 if [ "$SET_INSTALL_RIME" -ne 0 ];then
     prompt -m "检查完成，开始配置词库"
-    if [ "$SET_RIME_DICT_FROM_GITHUB" -eq 1 ];then
+    if [ "$SET_IMPORT_RIME_DICT" -eq 0 ];then
+        prompt -m "不导入词库,但保留词库添加功能。"
+        
+    elif [ "$SET_IMPORT_RIME_DICT" -eq 1 ];then
+        prompt -x "从Github导入词库。"
         if ! [ -x "$(command -v git)" ];then
             doApt install git
         fi
         git clone https://github.com/rime-aca/dictionaries.git
-        
-        
+        cp dictionaries/luna_pinyin.dict/* $rime_config_dir
+    elif [ "$SET_IMPORT_RIME_DICT" -eq 2 ];then
+        prompt -x "导入本地词库。"
+        cp $SET_RIME_DICT_DIR/* $rime_config_dir
     fi
 fi
 
@@ -1705,9 +1709,7 @@ if [ "$SET_CONFIG_SSH_KEY" -eq 1 ];then
 fi
 
 
-# TODO
-
-
+## 下面是滞后的步骤
 :<<安装时间较长的软件包
 VirtualBox
 Anydesk
