@@ -239,11 +239,34 @@ CURRENT_USER=$USER
 
 
 #######################################################################
-# HOST_NA=$HOST
-SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script"
-echo "$SET_SSH_KEY_COMMENT"
-echo $HOSTNAME
+# 是否安装teamviewer (受国外仓库限制，安装慢) Preset=0
+SET_INSTALL_TEAMVIEWER=1
+# 是否设置teamviewer开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_TEAMVIEWER=0
+# 是否安装Docker-ce Preset=0
+SET_INSTALL_DOCKER_CE=1
+# 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1
+SET_DOCKER_CE_REPO=1
+# 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_DOCKER_CE=0
 
+# 安装Teamviewer
+if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
+    if ! [ -x "$(command -v teamviewer)" ]; then
+        prompt -x "安装teamviewer"
+        wget https://download.teamviewer.com/download/linux/teamviewer_amd64.deb
+        doApt install ./teamviewer_amd64.deb
+    else
+        prompt -m "您可能已经安装了Teamviewer"
+    fi
+    if [ "$SET_ENABLE_TEAMVIEWER" -eq 0 ];then
+        prompt -x "禁用Teamviewer服务开机自启"
+        sudo systemctl disable teamviewerd.service
+    elif [ "$SET_ENABLE_TEAMVIEWER" -eq 1 ];then
+        prompt -x "配置Teamviewer服务开机自启"
+        sudo systemctl enable teamviewerd.service
+    fi
+fi
 
 
 

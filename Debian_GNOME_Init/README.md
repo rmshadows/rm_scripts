@@ -41,6 +41,7 @@
   - 设置用户`sudo`免密码。
   - 默认源安装`apt-transport-https`、`ca-certificates`。
   - 更新源、更新系统。
+  - 配置unattended-upgrades
   
 - 检查点二
   - 替换vim-tiny为vim-full

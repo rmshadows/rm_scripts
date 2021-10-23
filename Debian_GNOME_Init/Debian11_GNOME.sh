@@ -16,6 +16,8 @@ ROOT_PASSWD=""
 SET_APT_SOURCE=1
 # 更新与安装是否不过问 Preset:1
 SET_APT_RUN_WITHOUT_ASKING=1
+# 是否禁用unattended-upgrades.service 0:不做处理 1:启用 2:禁用  Preset=0
+SET_ENABLE_UNATTENDED_UPGRADE=0
 # 是否在安装软件前更新整个系统 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
 SET_APT_UPGRADE=0
 # 是否加入sudo组 Preset:1
@@ -95,20 +97,22 @@ SET_INSTALL_HEXO=0
 SET_INSTALL_VIRTUALBOX=1
 # 设置vbox仓库，0:官网(bullseye) 1:清华大学镜像站(Buster) 注意：如果是sid源，则使用sid仓库 Preset=1
 SET_VIRTUALBOX_REPO=1
-# 是否安装anydesk  Preset=1
+# 是否安装anydesk (受国外仓库限制，安装慢) Preset=1
 SET_INSTALL_ANYDESK=1
 # 是否设置anydesk开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_ANYDESK=0
 # 是否安装typora  Preset=1
 SET_INSTALL_TYPORA=1
-# 是否安装sublime text  Preset=0
+# 是否安装sublime text  (受国外仓库限制，安装慢) Preset=0
 SET_INSTALL_SUBLIME_TEXT=0
-# 是否安装teamviewer  Preset=0
+# 是否安装teamviewer (受国外仓库限制，安装慢) Preset=0
 SET_INSTALL_TEAMVIEWER=0
 # 是否设置teamviewer开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_TEAMVIEWER=0
-# 是否安装WPS Preset=1
+# 是否安装WPS (APT安装慢) Preset=1
 SET_INSTALL_WPS_OFFICE=1
+# 拷贝字体到wps文件夹下，如果需要，请将该变量设置为存放字体的文件夹路径(e.g.: WPS_FONTS). Preset=0
+SET_WPS_FONTS_SRC=0
 # 是否安装Skype Preset=1
 SET_INSTALL_SKYPE=1
 # 是否安装Docker-ce Preset=0
@@ -121,8 +125,8 @@ SET_ENABLE_DOCKER_CE=0
 SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 
 ## 检查点五
-# 配置Fcitx 中州韵输入法 Preset=1
-SET_INSTALL_FCITX_RIME=1
+# 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime Preset=1
+SET_INSTALL_RIME=1
 # 是否从Github导入公共词库 注意网速！！ Preset=0
 SET_RIME_DICT_FROM_GITHUB=0
 # 从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
@@ -769,43 +773,18 @@ backupFile () {
 # 执行apt命令 注意，检查点一后才能使用这个方法
 doApt () {
     prompt -x "doApt: $@"
-    if [ -f "/var/lib/dpkg/lock-frontend" ] | [ -f "/var/lib/dpkg/lock" ];then
-        prompt -e "APT或者DPKG似乎正在运行(可能被其他任务占用)，对此的通常建议是等待，而不是sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+    # 如果是第一次运行apt
+    if [ "$FIRST_DO_APT" -eq 1 ];then
+        prompt -w "如果APT显示被占用，『对此的通常建议是等待』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
+        prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+        FIRST_DO_APT=0
+        sleep 5
     fi
     if [ "$1" = "install" ] || [ "$1" = "remove" ];then
         if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
             sudo apt $@
         elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ];then
             sudo apt $@ -y
-        fi
-        # 如果是第一次运行apt安装，则检查执行结果
-        if [ "$FIRST_DO_APT" -eq 1 ];then
-            prompt -w "WARN：如果APT运行出错，『通常建议是找到对应的APT占用程序，退出即可』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
-            prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
-            FIRST_DO_APT=0
-            sleep 5
-            if [ $? -ne 0 ];then
-                comfirm "\e[1;33m APT似乎执行失败了? 是否尝试运行 “sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a” [y/N]\e[0m"
-                choice=$?
-                if [ $choice == 1 ];then
-                    sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a
-                    if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
-                        sudo apt $@
-                    elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ];then
-                        sudo apt $@ -y
-                    fi
-                    if [ $? -ne 0 ];then
-                        prompt -e "APT 似乎又一次失败了，请检查。"
-                        quitThis
-                    fi
-                elif [ $choice == 2 ];then
-                    quitThis
-                else
-                    prompt -e "ERROR:未知返回值!"
-                    quitThis
-                    exit 5
-                fi
-            fi 
         fi
     else
         sudo apt $@
@@ -1166,6 +1145,12 @@ fi
 
 :<<检查点一
 询问是否将当前用户加入sudo组, 是否sudo免密码（如果已经是sudoer且免密码则跳过）。
+临时成为免密sudoer(必选)。
+添加用户到sudo组。
+设置用户sudo免密码。
+默认源安装apt-transport-https、ca-certificates。
+更新源、更新系统。
+配置unattended-upgrades
 检查点一
 prompt -i "——————————  检查点一  ——————————"
 # 如果没有sudo免密码，临时加入。这里之后才能使用quitThis
@@ -1223,6 +1208,18 @@ elif [ "$SET_APT_SOURCE" -eq 2 ];then
 deb https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free
 # deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free" | sudo tee /etc/apt/sources.list
 fi
+
+# 配置unattended-upgrades
+if [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 0 ];then
+    prompt -m "保持原有unattended-upgrades.service状态"
+elif [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 1 ];then
+    prompt -x "启用unattended-upgrades.service"
+    sudo systemctl enable unattended-upgrades.service
+elif [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 2 ];then
+    prompt -x "禁用unattended-upgrades.service"
+    sudo systemctl disable unattended-upgrades.service
+fi
+
 
 # 更新系统
 if [ "$SET_APT_UPGRADE" -eq 0 ];then
@@ -1631,12 +1628,12 @@ fi
 配置Fcitx 中州韵输入法
 检查点五
 # 配置Fcitx 中州韵输入法
-if [ "$SET_INSTALL_FCITX_RIME" -eq 1 ];then
+if [ "$SET_INSTALL_RIME" -eq 1 ];then
     prompt -m "通常建议是：在 运行于xorg的GNOME 模式下使用Fcitx输入法(而不是Wayland！)， 模式切换在用户登录页面的小齿轮可以配置。"
     sleep 8
     doApt update
     doApt install fcitx
-    doApt install fcitx
+    doApt install fcitx-rime
     doApt install fcitx-googlepinyin
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
         prompt -x "配置~/.pam_environment文件"
@@ -1656,12 +1653,31 @@ export XMODIFIERS=\"@im=fcitx\"
         prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/fcitx/rime"
         quitThis
     fi
+    rime_config_dir="/home/$CURRENT_USER/.config/fcitx/rime/"
+elif [ "$SET_INSTALL_RIME" -eq 2 ];then
+    doApt update
+    doApt install ibus
+    doApt install ibus-rime
+    prompt -m "检查中州韵输入法安装情况……"
+    if ! [ -d "/home/$CURRENT_USER/.config/ibus" ];then
+        prompt -e "找不到fcitx的配置文件夹/home/$CURRENT_USER/.config/ibus"
+        quitThis
+    fi
+    if ! [ -d "/home/$CURRENT_USER/.config/ibus/rime" ];then
+        prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/ibus/rime"
+        quitThis
+    fi
+    rime_config_dir="/home/$CURRENT_USER/.config/ibus/rime/"
+fi
+# 开始配置词库
+if [ "$SET_INSTALL_RIME" -ne 0 ];then
     prompt -m "检查完成，开始配置词库"
     if [ "$SET_RIME_DICT_FROM_GITHUB" -eq 1 ];then
         if ! [ -x "$(command -v git)" ];then
             doApt install git
         fi
         git clone https://github.com/rime-aca/dictionaries.git
+        
         
     fi
 fi
@@ -1676,7 +1692,7 @@ if [ "$SET_CONFIG_SSH_KEY" -eq 1 ];then
     else
         if [ "$SET_SSH_KEY_SOURCE" -eq 0 ];then
             prompt -x "生成新的SSH Key 密码:"
-            ssh-keygen -t rsa -N $SET_NEW_SSH_KEY_PASSWD -C "$SET_SSH_KEY_COMMENT" -f /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
+            ssh-keygen -t rsa -N "$SET_NEW_SSH_KEY_PASSWD" -C "$SET_SSH_KEY_COMMENT" -f /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
         elif [ "$SET_SSH_KEY_SOURCE" -eq 1 ];then
             prompt -x "将存在的SSH Key从 $SET_EXISTED_SSH_KEY_SRC 移动到 /home/$CURRENT_USER/.ssh/"
             mv $SET_EXISTED_SSH_KEY_SRC /home/$CURRENT_USER/.ssh/
@@ -1819,27 +1835,8 @@ fi
 if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
     if ! [ -x "$(command -v teamviewer)" ]; then
         prompt -x "安装teamviewer"
-        curl https://download.teamviewer.com/download/linux/signature/TeamViewer2017.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg --import
-        sudo chmod 644 /etc/apt/trusted.gpg.d/TeamViewer2017.asc.gpg
-        sudo echo "###   TeamViewer DEB repository list
-### NOTE: Manual changes to this file
-###        - prevent it from being updated by TeamViewer package updates
-###        - will be lost after using the 'teamviewer repo' command
-###       The original file can be restored with this command:
-###       cp /opt/teamviewer/tv_bin/script/teamviewer.list /etc/apt/sources.list.d/teamviewer.list
-###       which has the same effect as 'teamviewer repo default'
-### NOTE: It is preferred to use the following commands to edit this file:
-###       teamviewer repo                - show current repository configuration
-###       teamviewer repo default        - restore default configuration
-###       teamviewer repo disable        - disable the repository
-###       teamviewer repo stable         - make all regular TeamViewer packages available (default)
-###       teamviewer repo preview        - additionally, make feature preview packages available
-###       teamviewer repo development    - additionally, make the latest development packages available
-deb http://linux.teamviewer.com/deb stable main
-# deb http://linux.teamviewer.com/deb preview main
-# deb http://linux.teamviewer.com/deb development main" | sudo tee /etc/apt/sources.list.d/teamviewer.list
-        doApt update
-        doApt install teamviewer
+        wget https://download.teamviewer.com/download/linux/teamviewer_amd64.deb
+        doApt install ./teamviewer_amd64.deb
     else
         prompt -m "您可能已经安装了Teamviewer"
     fi
@@ -1883,13 +1880,13 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
         prompt -x "安装Docker-ce"
         prompt -x "卸载旧版本"
         sudo doApt remove docker docker-engine docker.io
-        if [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
+        if [ "$SET_DOCKER_CE_REPO" -eq 0 ];then
             prompt -m "添加官方仓库"
             # # /usr/share/keyrings/docker-archive-keyring.gpg
             curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
             sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
             sudo echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/trusted.gpg.d/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
       $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         elif [ "$SET_DOCKER_CE_REPO" -eq 1 ];then
             prompt -m "添加清华大学镜像仓库"
@@ -1916,7 +1913,7 @@ fi
 
 # 安装网易云音乐
 if [ "$SET_INSTALL_NETEASE_CLOUD_MUSIC" -eq 1 ];then
-    if ! [ -x "$(command -v skypeforlinux)" ]; then
+    if ! [ -x "$(command -v netease-cloud-music)" ]; then
         prompt -x "安装网易云音乐"
         wget https://d1.music.126.net/dmusic/netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
         doApt install ./netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
