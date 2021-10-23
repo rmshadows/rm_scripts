@@ -1032,6 +1032,61 @@ if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
 fi
 "
 
+# 中州韵输入法词库配置头文件 luna_pinyin_simp.custom.yaml
+RIME_DICT_HEADER="# luna_pinyin.custom.yaml
+#
+# 補靪功能：將朙月拼音的詞庫修改爲朙月拼音擴充詞庫
+#
+# 作者：瑾昀 <cokunhui@gmail.com>
+#
+# 部署位置：
+# ~/.config/ibus/rime  (Linux)
+# ~/Library/Rime  (Mac OS)
+# %APPDATA%\Rime  (Windows)
+#
+# 於重新部署後生效
+#
+#
+# 注意：本補靪適用於所有朙月拼音系列方案（「朙月拼音」、「朙月拼音·简化字」、「朙月拼音·臺灣正體」、「朙月拼音·語句流」）。
+# 只須將本 custom.yaml 的前面名字改爲對應的輸入方案名字然後放入用戶文件夾重新部署即可。如 luna_pinyin_simp.custom.yaml。
+# 雙拼用戶請使用 double_pinyin.custom.yaml。
+#
+#
+# 附朙月拼音系列方案與其對應的 id 一覽表：
+# 輸入方案	id
+# 朙月拼音	luna_pinyin
+# 朙月拼音·简化字	luna_pinyin_simp
+# 朙月拼音·臺灣正體	luna_pinyin_tw
+# 朙月拼音·語句流	luna_pinyin_fluency
+#
+
+patch:
+  # 載入朙月拼音擴充詞庫
+  \"translator/dictionary\": luna_pinyin.udict
+  # 改寫拼寫運算，使得含西文的詞彙（位於 luna_pinyin.cn_en.dict.yaml 中）不影響簡拼功能（注意，此功能只適用於朙月拼音系列方案，不適用於各類雙拼方案）
+  # 本條補靪只在「小狼毫 0.9.30」、「鼠鬚管 0.9.25 」、「Rime-1.2」及更高的版本中起作用。
+  \"speller/algebra/@before 0\": xform/^([b-df-hj-np-tv-z])$/\$1_/
+"
+
+# 中州韵输入法，个人词库 luna_pinyin.udict.dict.yaml
+RIME_DICT_UDICT="# Rime dictionary
+# encoding: utf-8
+
+---
+name: luna_pinyin.extended
+version: "2021.10.01"
+sort: by_weight
+use_preset_vocabulary: true
+import_tables:
+  - luna_pinyin
+...
+
+# 在下面添加用户词库
+举个例子	jugelizi	1
+测试词组	cscz
+
+"
+
 
 #### 正文
 echo -e "\e[1;31m
@@ -1651,6 +1706,9 @@ export XMODIFIERS=\"@im=fcitx\"
         prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/fcitx/rime"
         quitThis
     fi
+    prompt -x "im-config 切换 fcitx"
+    # TODO
+    # im-config -s fcitx
     rime_config_dir="/home/$CURRENT_USER/.config/fcitx/rime/"
 elif [ "$SET_INSTALL_RIME" -eq 2 ];then
     doApt update
@@ -1658,21 +1716,22 @@ elif [ "$SET_INSTALL_RIME" -eq 2 ];then
     doApt install ibus-rime
     prompt -m "检查中州韵输入法安装情况……"
     if ! [ -d "/home/$CURRENT_USER/.config/ibus" ];then
-        prompt -e "找不到fcitx的配置文件夹/home/$CURRENT_USER/.config/ibus"
+        prompt -e "找不到ibus的配置文件夹/home/$CURRENT_USER/.config/ibus"
         quitThis
     fi
     if ! [ -d "/home/$CURRENT_USER/.config/ibus/rime" ];then
-        prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/ibus/rime"
+        prompt -e "找不到ibus-rime的配置文件夹/home/$CURRENT_USER/.config/ibus/rime"
         quitThis
     fi
-    rime_config_dir="/home/$CURRENT_USER/.config/ibus/rime/"
+    rime_config_dir="/home/$CURRENT_USER/.config/ibus/rime"
 fi
 # 开始配置词库
 if [ "$SET_INSTALL_RIME" -ne 0 ];then
     prompt -m "检查完成，开始配置词库"
     if [ "$SET_IMPORT_RIME_DICT" -eq 0 ];then
         prompt -m "不导入词库,但保留词库添加功能。"
-        
+        echo "$RIME_DICT_HEADER" > $rime_config_dir/luna_pinyin_simp.custom.yaml
+        echo "$RIME_DICT_UDICT" > $rime_config_dir/luna_pinyin.udict.dict.yaml
     elif [ "$SET_IMPORT_RIME_DICT" -eq 1 ];then
         prompt -x "从Github导入词库。"
         if ! [ -x "$(command -v git)" ];then
