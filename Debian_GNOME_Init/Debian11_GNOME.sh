@@ -125,7 +125,8 @@ SET_ENABLE_DOCKER_CE=0
 SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 
 ## 检查点五
-# 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime Preset=1
+# 注意：xdotool不支持在wayland运行，fcitx也建议在x11下运行。注销、登录界面选择运行于xorg的GNOME
+# 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime 3.fcitx5-rime Preset=1
 SET_INSTALL_RIME=1
 # 是否导入词库 0: 否 1:从Github导入公共词库 (注意网速！)  2:从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
 SET_IMPORT_RIME_DICT=0
@@ -150,6 +151,14 @@ SET_EXISTED_SSH_KEY_SRC=SSH_KEY
 SET_SSH_KEY_PRIVATE_TEXT=""
 # 公钥
 SET_SSH_KEY_PUBLIC_TEXT=""
+
+## 检查点七(谨慎！可能弄坏您的应用软件)
+# 导入GNOME Terminal的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/terminal/ > dconf-gonme-terminal) Preset=0
+SET_IMPORT_GNOME_TERMINAL_DCONF=0
+# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/desktop/wm/keybindings/ > dconf-custom-wm-keybindings) Preset=0
+SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=0
+# 导入GNOME 自定义快捷键的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > dconf-custom-keybindings) Preset=0
+SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
 
 ###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
@@ -1688,14 +1697,20 @@ if [ "$SET_INSTALL_RIME" -eq 1 ];then
     doApt install fcitx
     doApt install fcitx-rime
     doApt install fcitx-googlepinyin
+    doApt install fcitx-module-cloudpinyin
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
         prompt -x "配置~/.pam_environment文件"
         echo "export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
-export XMODIFIERS=\"@im=fcitx\"
+export XMODIFIERS=@im=fcitx
 " > "/home/$CURRENT_USER/.pam_environment"
     else
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
+    fi
+    if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
+        prompt -x "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+    else
+        prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
     fi
     prompt -m "检查中州韵输入法安装情况……"
     if ! [ -d "/home/$CURRENT_USER/.config/fcitx" ];then
@@ -1706,14 +1721,23 @@ export XMODIFIERS=\"@im=fcitx\"
         prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/fcitx/rime"
         quitThis
     fi
-    prompt -x "im-config 切换 fcitx"
-    # TODO
-    # im-config -s fcitx
+    prompt -x "im-config 切换 fcitx, 注销生效"
+    im-config -n fcitx
     rime_config_dir="/home/$CURRENT_USER/.config/fcitx/rime/"
 elif [ "$SET_INSTALL_RIME" -eq 2 ];then
     doApt update
     doApt install ibus
     doApt install ibus-rime
+    if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
+        prompt -x "export GTK_IM_MODULE=ibus
+export XMODIFIERS=@im=ibus
+export QT_IM_MODULE=ibus
+ibus-daemon -d -x
+" > "/home/$CURRENT_USER/.xprofile"
+    else
+        prompt -w "如果你在输入中文时遇到问题，检查你的 locale 设置。并自行设置~/.xprofile"
+    fi
+    prompt -w "如果 IBus 确实已经启动，但是在 LibreOffice 里没有出现输入窗口，你需要在 ~/.bashrc (或者.zshrc) 里加入这行：export XMODIFIERS=@im=ibus"
     prompt -m "检查中州韵输入法安装情况……"
     if ! [ -d "/home/$CURRENT_USER/.config/ibus" ];then
         prompt -e "找不到ibus的配置文件夹/home/$CURRENT_USER/.config/ibus"
@@ -1724,6 +1748,37 @@ elif [ "$SET_INSTALL_RIME" -eq 2 ];then
         quitThis
     fi
     rime_config_dir="/home/$CURRENT_USER/.config/ibus/rime"
+    im-config -n ibus
+elif [ "$SET_INSTALL_RIME" -eq 3 ];then
+    doApt update
+    doApt install fcitx5
+    doApt install fcitx5-rime
+    doApt install fcitx5-module-cloudpinyin
+    if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
+        prompt -x "GTK_IM_MODULE DEFAULT=fcitx
+QT_IM_MODULE  DEFAULT=fcitx
+XMODIFIERS    DEFAULT=\@im=fcitx
+SDL_IM_MODULE DEFAULT=fcitx
+" > "/home/$CURRENT_USER/.pam_environment"
+    else
+        prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
+    fi
+    if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
+        prompt -x "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+    else
+        prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
+    fi
+    prompt -m "检查中州韵输入法安装情况……"
+    if ! [ -d "/home/$CURRENT_USER/.local/share/fcitx5" ];then
+        prompt -e "找不到ibus的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5"
+        quitThis
+    fi
+    if ! [ -d "/home/$CURRENT_USER/.local/share/fcitx5/rime" ];then
+        prompt -e "找不到ibus-rime的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5/rime"
+        quitThis
+    fi
+    rime_config_dir="/home/$CURRENT_USER/.local/share/fcitx5/rime"
+    im-config -n fcitx5
 fi
 # 开始配置词库
 if [ "$SET_INSTALL_RIME" -ne 0 ];then
@@ -1766,6 +1821,30 @@ if [ "$SET_CONFIG_SSH_KEY" -eq 1 ];then
         fi
     fi
 fi
+
+
+:<<检查点七
+导入GNOME Terminal的dconf配置
+导入GNOME 您自定义修改的系统内置快捷键的dconf配置
+导入GNOME 自定义快捷键的dconf配置
+检查点七
+# 导入GNOME Terminal的dconf配置
+if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" -ne 0 ];then
+    # dconf reset -f /
+    # dconf load / < ostechnix-desktop
+fi
+# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
+if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" -ne 0 ];then
+    
+fi
+# 导入GNOME 自定义快捷键的dconf配置
+if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" -ne 0 ];then
+    
+fi
+# dconf dump /org/gnome/terminal/ > dconf-gonme-terminal
+# dconf dump /org/gnome/desktop/wm/keybindings/ > dconf-custom-wm-keybindings
+# dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > dconf-custom-keybindings
+
 
 
 ## 下面是滞后的步骤

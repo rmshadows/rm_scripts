@@ -60,9 +60,9 @@
   - 配置GRUB网卡默认命名方式
   
 - 检查点四
-  
+
   - 从APT源安装常用软件
-  
+
     ```
     - aircrack-ng——aircrack-ng
     - apt-transport-https——apt-transport-https
@@ -162,51 +162,60 @@
     - xsel——剪贴板操作
     - zhcon——tty中文虚拟
     ```
-  
+
   - 脚本最后再安装的应用(滞后)
-  
+
     ```
     - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
     - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
     ```
-  
+
   - 安装Python3
-  
+
   - 配置Python3源为清华大学镜像
-  
+
   - 安装配置Apache2(是否禁用Apache2开机自启)
-  
+
   - 安装配置Git(配置User Email)
-  
+
   - 安装配置SSH
-  
+
   - 安装配置npm(是否安装hexo)
-  
+
   - 安装VirtualBox(滞后)
-  
+
   - 安装Anydesk(滞后)
-  
+
   - 安装Typora(滞后)
-  
+
   - 安装sublime text(滞后)
-  
+
   - 安装teamviewer(滞后)
-  
+
   - 安装wps-office(滞后)
-  
+
   - 安装skype(滞后)
-  
+
   - 安装docker-ce(滞后)
-  
+
   - 安装网易云音乐(滞后)
-  
+
   - 禁用第三方软件仓库更新(提升apt体验)(滞后)
-  
+
 - 检查点五
 
-  - 配置Fcitx-中州韵输入法
+  - 配置Fcitx-中州韵输入法(fcitx、ibus、fcitx5)
+  - 配置词库
 
-- 配置SSH Key
+- 检查点六
+
+  - 配置SSH Key(新密钥，导入)
+
+- 检查点七(谨慎使用！可能弄坏您的应用程序！)
+
+  - 导入GNOME Terminal的dconf配置
+  - 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
+  - 导入GNOME 自定义快捷键的dconf配置
 
 - 最后一步
 
