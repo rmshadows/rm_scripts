@@ -647,21 +647,6 @@ prompt () {
   esac
 }
 
-## 询问函数 Yes:1 No:2 ???:5
-:<<!询问函数
-函数调用请使用：
-comfirm "\e[1;33m? [y/N]\e[0m"
-choice=$?
-if [ $choice == 1 ];then
-  yes
-elif [ $choice == 2 ];then
-  prompt -i "——————————  下一项  ——————————"
-else
-  prompt -e "ERROR:未知返回值!"
-  exit 5
-fi
-!询问函数
-
 # 如果用户按下Ctrl+c
 trap "onSigint" SIGINT
 
@@ -712,6 +697,7 @@ if [ "$FIRST_DO_AS_ROOT" -eq 1 ];then
     checkRootPasswd
     FIRST_DO_AS_ROOT=0
 fi
+# 下面不能有缩进！
 su - root <<!>/dev/null 2>&1
 $ROOT_PASSWD
 echo " Exec $1 as root"
@@ -721,6 +707,7 @@ $1
 
 # 检查root密码是否正确
 checkRootPasswd () {
+# 下面不能有缩进！
 su - root <<! >/dev/null 2>/dev/null
 $ROOT_PASSWD
 pwd
@@ -732,6 +719,21 @@ if [ "$?" -ne 0 ] ;then
 fi
 }
 
+
+## 询问函数 Yes:1 No:2 ???:5
+:<<!询问函数
+函数调用请使用：
+comfirm "\e[1;33m? [y/N]\e[0m"
+choice=$?
+if [ $choice == 1 ];then
+  yes
+elif [ $choice == 2 ];then
+  prompt -i "——————————  下一项  ——————————"
+else
+  prompt -e "ERROR:未知返回值!"
+  exit 5
+fi
+!询问函数
 comfirm () {
   flag=true
   ask=$1
@@ -798,7 +800,7 @@ doApt () {
     fi
 }
 
-# 新建文件夹
+# 新建文件夹 $1
 addFolder () {
     if [ $# -ne 1 ];then
         prompt -e "addFolder () 只能有一个参数"
@@ -1115,7 +1117,7 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 \e[0m"
 # R
 echo -e "\e[1;31m接下来请根据提示进行操作，正在准备(1s)...\n\e[0m"
-# sleep 1 TODO
+sleep 1
 
 ### 预先检查
 # 检查是否有root权限，有则退出，提示用户使用普通用户权限。
@@ -1193,8 +1195,7 @@ prompt -i "__________________________________________________________"
 prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止运行。"
 
 
-### 这里是确认运行的模块 TODO
-:<<!
+### 这里是确认运行的模块
 comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车谢谢」[y/N]\e[0m"
 choice=$?
 if [ $choice == 1 ];then
@@ -1203,14 +1204,13 @@ elif [ $choice == 2 ];then
     prompt -w "感谢您的关注！——  https://rmshadows.gitee.io"
     exit 0
 fi
-!
 
 :<<检查点一
 询问是否将当前用户加入sudo组, 是否sudo免密码（如果已经是sudoer且免密码则跳过）。
 临时成为免密sudoer(必选)。
 添加用户到sudo组。
 设置用户sudo免密码。
-默认源安装apt-transport-https、ca-certificates。
+默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release
 更新源、更新系统。
 配置unattended-upgrades
 检查点一
@@ -1240,7 +1240,7 @@ fi
 prompt -x "安装部分先决软件包"
 doApt update
 # 确保https源可用
-doApt install apt-transport-https	
+doApt install apt-transport-https
 doApt install ca-certificates
 # 保证后面Vbox密钥添加
 doApt install wget
@@ -1650,10 +1650,10 @@ fi
 if [ "$SET_INSTALL_OPENSSH" -eq 1 ];then
     doApt install openssh-server
     if [ "$SET_ENABLE_SSH" -eq 1 ];then
-        prompt -x "配置Apache2服务开机自启"
+        prompt -x "配置SSH服务开机自启"
         sudo systemctl enable ssh.service
     elif [ "$SET_ENABLE_SSH" -eq 0 ];then
-        prompt -x "禁用Apache2服务开机自启"
+        prompt -x "禁用SSH服务开机自启"
         sudo systemctl disable ssh.service
     fi
 fi
@@ -1687,7 +1687,7 @@ fi
 
 
 :<<检查点五
-配置Fcitx 中州韵输入法
+配置中州韵输入法
 检查点五
 # 配置Fcitx 中州韵输入法
 if [ "$SET_INSTALL_RIME" -eq 1 ];then

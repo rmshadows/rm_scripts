@@ -39,7 +39,7 @@
   - 临时成为免密`sudoer`(必选)。
   - 添加用户到`sudo`组。
   - 设置用户`sudo`免密码。
-  - 默认源安装`apt-transport-https`、`ca-certificates`。
+  - 默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release
   - 更新源、更新系统。
   - 配置unattended-upgrades
   
@@ -172,15 +172,24 @@
 
   - 安装Python3
 
-  - 配置Python3源为清华大学镜像
+    - 配置Python3源为清华大学镜像
 
-  - 安装配置Apache2(是否禁用Apache2开机自启)
+  - 安装配置Apache2
 
-  - 安装配置Git(配置User Email)
+    - 配置Apache2 共享目录为 /home/HTML(必选)
+    - 是否禁用Apache2开机自启
+
+  - 安装配置Git
+
+    - 配置User Email
 
   - 安装配置SSH
 
-  - 安装配置npm(是否安装hexo)
+  - 安装配置npm
+
+    - 安装cnpm
+    - 安装hexo
+    - 安装nodejs(必选)
 
   - 安装VirtualBox(滞后)
 
@@ -204,8 +213,8 @@
 
 - 检查点五
 
-  - 配置Fcitx-中州韵输入法(fcitx、ibus、fcitx5)
-  - 配置词库
+  - 配置中州韵输入法(fcitx、ibus、fcitx5)
+  - 配置词库(github导入公共词库、导入本地词库)
 
 - 检查点六
 
@@ -220,6 +229,52 @@
 - 最后一步
 
   - 设置用户目录权限
+
+## 脚本内置函数
+
+- `prompt ()`——控制台颜色输出
+
+  ```
+  -s:绿色——成功信息
+  -x:绿色——日志：{}
+  -e:红色——错误
+  -w:黄色——警告
+  -i:蓝色——一般信息
+  -m:蓝色——信息：{}
+  -k:蓝色&红色——格式化输出
+  ```
+
+- `onSigint`——程序中断处理方法,包含正常退出该执行的代码
+
+- `onExit ()`——正常退出需要执行的
+
+- `quitThis ()`——中途异常退出脚本要执行的 注意，检查点一后才能使用这个方法
+
+- `doAsRoot ()`——以root身份运行
+
+- `checkRootPasswd ()`——检查root密码是否正确
+
+- `comfirm ()`——询问函数 Yes:1 No:2 其他:5。
+
+  ```
+  函数调用请使用：
+  comfirm "\e[1;33m? [y/N]\e[0m"
+  choice=$?
+  if [ $choice == 1 ];then
+    yes
+  elif [ $choice == 2 ];then
+    prompt -i "——————————  下一项  ——————————"
+  else
+    prompt -e "ERROR:未知返回值!"
+    exit 5
+  fi
+  ```
+
+- `backupFile ()`——备份配置文件。先检查是否有bak结尾的备份文件，没有则创建，有则另外覆盖一个newbak文件。$1 :文件名
+
+- `doApt ()`——执行apt命令 注意，检查点一后才能使用这个方法
+
+- `addFolder ()`——新建文件夹。只能有一个参数$1
 
 ## 应用列表
 
