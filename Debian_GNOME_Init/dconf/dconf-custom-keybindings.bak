@@ -23,3 +23,7 @@ binding='<Alt>r'
 command='firefox-esr'
 name='firefox-esr'
 
+[custom5]
+binding='<Alt><Shift>p'
+command='gnome-terminal -- "/home/jessie/.local/share/nautilus/scripts/CancelPrint.sh"'
+name='取消所有打印任务'

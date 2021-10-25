@@ -405,6 +405,7 @@
 - python3-pip——pip3
 - python3-tk——python3 TK界面
 - qmmp——qmmp音乐播放器
+- qt5ct——QT界面显示配置
 - reaver——无线WPS测试
 - screenfetch——显示系统信息
 - sed——文本编辑工具
