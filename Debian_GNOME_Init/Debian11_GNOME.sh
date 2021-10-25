@@ -800,7 +800,7 @@ doApt () {
         FIRST_DO_APT=0
         sleep 5
     fi
-    if [ "$1" = "install" ] || [ "$1" = "remove" ];then
+    if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ];then
         if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ];then
             sudo apt $@
         elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ];then
@@ -821,7 +821,7 @@ addFolder () {
         prompt -x "新建文件夹$1 "
         mkdir $1
     fi
-    if ! [ $? -ne 0 ];then
+    if ! [ -d $1 ];then
         prompt -x "(sudo)新建文件夹$1 "
         sudo mkdir $1
     fi
@@ -1095,7 +1095,7 @@ RIME_DICT_UDICT="# Rime dictionary
 # encoding: utf-8
 
 ---
-name: luna_pinyin.extended
+name: luna_pinyin.udict
 version: "2021.10.01"
 sort: by_weight
 use_preset_vocabulary: true
@@ -1730,7 +1730,7 @@ export XMODIFIERS=@im=fcitx
     fi
     if ! [ -d "/home/$CURRENT_USER/.config/fcitx/rime" ];then
         prompt -e "找不到fcitx-rime的配置文件夹/home/$CURRENT_USER/.config/fcitx/rime"
-        quitThis
+        addFolder /home/$CURRENT_USER/.config/fcitx/rime
     fi
     prompt -x "im-config 切换 fcitx, 注销生效"
     im-config -n fcitx
@@ -1756,7 +1756,7 @@ ibus-daemon -d -x
     fi
     if ! [ -d "/home/$CURRENT_USER/.config/ibus/rime" ];then
         prompt -e "找不到ibus-rime的配置文件夹/home/$CURRENT_USER/.config/ibus/rime"
-        quitThis
+        addFolder /home/$CURRENT_USER/.config/ibus/rime
     fi
     rime_config_dir="/home/$CURRENT_USER/.config/ibus/rime"
     im-config -n ibus
@@ -1786,7 +1786,7 @@ SDL_IM_MODULE DEFAULT=fcitx
     fi
     if ! [ -d "/home/$CURRENT_USER/.local/share/fcitx5/rime" ];then
         prompt -e "找不到ibus-rime的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5/rime"
-        quitThis
+        addFolder/home/$CURRENT_USER/.config/fcitx5/rime
     fi
     rime_config_dir="/home/$CURRENT_USER/.local/share/fcitx5/rime"
     im-config -n fcitx5
@@ -1853,25 +1853,25 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         quitThis
     fi
     # 导入GNOME Terminal的dconf配置
-    if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" -ne 0 ];then
+    if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" != 0 ];then
         dconf dump /org/gnome/terminal/ > old-dconf-gonme-terminal.backup
         prompt -x "导入GNOME Terminal的dconf配置"
         dconf load /org/gnome/terminal/ < $SET_IMPORT_GNOME_TERMINAL_DCONF
     fi
     # 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
-    if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" -ne 0 ];then
+    if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" != 0 ];then
         dconf dump /org/gnome/desktop/wm/keybindings/ > old-dconf-custom-wm-keybindings.backup
         prompt -x "导入GNOME 您自定义修改的系统内置快捷键的dconf配置"
         dconf load /org/gnome/desktop/wm/keybindings/ < $SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF
     fi
     # 导入GNOME 自定义快捷键的dconf配置
-    if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" -ne 0 ];then
+    if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > old-dconf-custom-keybindings.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
         dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ < $SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF
     fi
     # 导入GNOME 区域截屏快捷键的dconf配置
-    if [ "$SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS" -ne 0 ];then
+    if [ "$SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/area-screenshot > old-dconf-settings-daemon-area-screenshot.backup
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip/ > old-dconf-settings-daemon-area-screenshot-clip.backup
         prompt -x "导入GNOME 区域截屏快捷键的dconf配置"
@@ -1879,7 +1879,7 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         dconf load /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip/ < $SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS
     fi
     # 导入GNOME 放大镜快捷键的dconf配置
-    if [ "$SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS" -ne 0 ];then
+    if [ "$SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier/ > old-dconf-settings-daemon-magnifier.backup
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in/ > old-dconf-settings-daemon-magnifier-zoom-in.backup
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out/ > old-dconf-settings-daemon-magnifier-zoom-out.backup
@@ -1889,7 +1889,7 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
     fi
     # 导入GNOME 电源的dconf配置
-    if [ "$SET_IMPORT_GNOME_POWER_DCONF" -ne 0 ];then
+    if [ "$SET_IMPORT_GNOME_POWER_DCONF" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/power/ > old-dconf-settings-daemon-power.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
         dconf load /org/gnome/settings-daemon/plugins/power/ < $SET_IMPORT_GNOME_POWER_DCONF
