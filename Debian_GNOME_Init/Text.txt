@@ -53,8 +53,11 @@
 - 检查点六
   - 配置SSH Key(新密钥，导入)
 - 检查点七(谨慎使用！可能弄坏您的应用程序！)
-  - 导入GNOME Terminal的dconf配置
-  - 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
-  - 导入GNOME 自定义快捷键的dconf配置
+- 备份原有的dconf配置
+- 导入GNOME Terminal的dconf配置
+- 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
+- 导入GNOME 自定义快捷键的dconf配置
+- 导入GNOME 选区截屏配置
+- 导入GNOME 屏幕放大镜配置
 - 最后一步
   - 设置用户目录权限

@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.1
+Version：0.0.2
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -19,7 +19,7 @@ SET_APT_RUN_WITHOUT_ASKING=1
 # 是否禁用unattended-upgrades.service 0:不做处理 1:启用 2:禁用  Preset=0
 SET_ENABLE_UNATTENDED_UPGRADE=0
 # 是否在安装软件前更新整个系统 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
-SET_APT_UPGRADE=0
+SET_APT_UPGRADE=1
 # 是否加入sudo组 Preset:1
 SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
@@ -48,7 +48,7 @@ SET_NAUTILUS_MENU=1
 # 配置启用NetworkManager、安装net-tools Preset=1
 SET_NETWORK_MANAGER=1
 # 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
-SET_ETH0_ALLOW_HOTPLUG=1
+SET_ETH0_ALLOW_HOTPLUG=0
 # 配置GRUB网卡默认命名方式 Preset=1
 SET_GRUB_NETCARD_NAMING=1
 
@@ -153,12 +153,20 @@ SET_SSH_KEY_PRIVATE_TEXT=""
 SET_SSH_KEY_PUBLIC_TEXT=""
 
 ## 检查点七(谨慎！可能弄坏您的应用软件)
+# 是否接受dconf配置带来的风险 Preset=1
+SET_DCONF_SETTING=1
 # 导入GNOME Terminal的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/terminal/ > dconf-gonme-terminal) Preset=0
 SET_IMPORT_GNOME_TERMINAL_DCONF=0
 # 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/desktop/wm/keybindings/ > dconf-custom-wm-keybindings) Preset=0
 SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=0
 # 导入GNOME 自定义快捷键的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > dconf-custom-keybindings) Preset=0
 SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
+# 导入GNOME 选区截屏配置 Preset=0
+SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
+# 导入GNOME 屏幕放大镜配置 Preset=0
+SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
+# 导入GNOME 电源配置 Preset=0
+SET_IMPORT_GNOME_POWER_DCONF=0
 
 ###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
@@ -1824,26 +1832,67 @@ fi
 
 
 :<<检查点七
+备份原有的dconf配置
 导入GNOME Terminal的dconf配置
 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
 导入GNOME 自定义快捷键的dconf配置
+导入GNOME 选区截屏配置
+导入GNOME 屏幕放大镜配置
+导入GNOME 电源配置
 检查点七
 # 导入GNOME Terminal的dconf配置
-if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" -ne 0 ];then
-    # dconf reset -f /
-    # dconf load / < ostechnix-desktop
+if [ "$SET_DCONF_SETTING" -eq 1 ];then
+    prompt -x "备份原有的dconf配置中。"
+    prompt -e "如果配置了dconf后，应用软件出现问题，请恢复备份(dconf load / < gnome-desktop-dconf-backup)或者恢复出厂(dconf reset -f /)。"
+    dconf dump / > gnome-desktop-dconf-backup
+    if  ! [ -f "gnome-desktop-dconf-backup" ];then
+        prompt -e "dconf似乎备份失败了，请检查！"
+        quitThis
+    fi
+    # 导入GNOME Terminal的dconf配置
+    if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" -ne 0 ];then
+        dconf dump /org/gnome/terminal/ > old-dconf-gonme-terminal.backup
+        prompt -x "导入GNOME Terminal的dconf配置"
+        dconf load /org/gnome/terminal/ < $SET_IMPORT_GNOME_TERMINAL_DCONF
+    fi
+    # 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
+    if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" -ne 0 ];then
+        dconf dump /org/gnome/desktop/wm/keybindings/ > old-dconf-custom-wm-keybindings.backup
+        prompt -x "导入GNOME 您自定义修改的系统内置快捷键的dconf配置"
+        dconf load /org/gnome/desktop/wm/keybindings/ < $SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF
+    fi
+    # 导入GNOME 自定义快捷键的dconf配置
+    if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" -ne 0 ];then
+        dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > old-dconf-custom-keybindings.backup
+        prompt -x "导入GNOME 自定义快捷键的dconf配置"
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ < $SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF
+    fi
+    # 导入GNOME 区域截屏快捷键的dconf配置
+    if [ "$SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS" -ne 0 ];then
+        dconf dump /org/gnome/settings-daemon/plugins/media-keys/area-screenshot > old-dconf-settings-daemon-area-screenshot.backup
+        dconf dump /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip/ > old-dconf-settings-daemon-area-screenshot-clip.backup
+        prompt -x "导入GNOME 区域截屏快捷键的dconf配置"
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/area-screenshot < $SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip/ < $SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS
+    fi
+    # 导入GNOME 放大镜快捷键的dconf配置
+    if [ "$SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS" -ne 0 ];then
+        dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier/ > old-dconf-settings-daemon-magnifier.backup
+        dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in/ > old-dconf-settings-daemon-magnifier-zoom-in.backup
+        dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out/ > old-dconf-settings-daemon-magnifier-zoom-out.backup
+        prompt -x "导入GNOME 放大镜快捷键的dconf配置"
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
+    fi
+    # 导入GNOME 电源的dconf配置
+    if [ "$SET_IMPORT_GNOME_POWER_DCONF" -ne 0 ];then
+        dconf dump /org/gnome/settings-daemon/plugins/power/ > old-dconf-settings-daemon-power.backup
+        prompt -x "导入GNOME 自定义快捷键的dconf配置"
+        dconf load /org/gnome/settings-daemon/plugins/power/ < $SET_IMPORT_GNOME_POWER_DCONF
+    fi
 fi
-# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
-if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" -ne 0 ];then
-    
-fi
-# 导入GNOME 自定义快捷键的dconf配置
-if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" -ne 0 ];then
-    
-fi
-# dconf dump /org/gnome/terminal/ > dconf-gonme-terminal
-# dconf dump /org/gnome/desktop/wm/keybindings/ > dconf-custom-wm-keybindings
-# dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > dconf-custom-keybindings
+
 
 
 
