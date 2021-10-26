@@ -1515,10 +1515,10 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
     else
         prompt -x "启用NetworkManager"
         sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.conf
+        prompt -m "重启NetworkManager.service"
+        sudo systemctl enable NetworkManager.service 
+        sudo systemctl restart NetworkManager.service
     fi
-    prompt -m "重启NetworkManager.service"
-    sudo systemctl enable NetworkManager.service 
-    sudo systemctl restart NetworkManager.service
     prompt -x "安装Net-tools"
     doApt install net-tools
 fi
@@ -1756,6 +1756,8 @@ if [ "$SET_INSTALL_RIME" -eq 1 ];then
     doApt install fcitx-rime
     doApt install fcitx-googlepinyin
     doApt install fcitx-module-cloudpinyin
+    fcitx&
+    sleep 3
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
         prompt -x "配置~/.pam_environment文件"
         echo "export GTK_IM_MODULE=fcitx
@@ -1812,6 +1814,8 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ];then
     doApt install fcitx5
     doApt install fcitx5-rime
     doApt install fcitx5-module-cloudpinyin
+    fcitx5&
+    sleep 3
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
         prompt -x "GTK_IM_MODULE DEFAULT=fcitx
 QT_IM_MODULE  DEFAULT=fcitx
@@ -1851,6 +1855,10 @@ if [ "$SET_INSTALL_RIME" -ne 0 ];then
             doApt install git
         fi
         git clone https://github.com/rime-aca/dictionaries.git
+        if [ $? -ne 0 ];then
+            prompt -e "Git克隆公开词库出错。"
+            quitThis
+        fi
         cp dictionaries/luna_pinyin.dict/* $rime_config_dir
     elif [ "$SET_IMPORT_RIME_DICT" -eq 2 ];then
         prompt -x "导入本地词库。"
@@ -1917,7 +1925,7 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > old-dconf-custom-keybindings.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
         dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ <<< $GNOME_CUSTOM_KEYBINDINGS_DCONF
-        dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings $GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings "$GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR"
     fi
     # 导入GNOME 区域截屏快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS" != 0 ];then
@@ -1940,7 +1948,7 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
     # 导入GNOME 电源的dconf配置
     if [ "$SET_IMPORT_GNOME_POWER_DCONF" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/power/ > old-dconf-settings-daemon-power.backup
-        prompt -x "导入GNOME 自定义快捷键的dconf配置"
+        prompt -x "导入GNOME 自定义电源的dconf配置"
         dconf load /org/gnome/settings-daemon/plugins/power/ <<< $GNOME_POWER_DCONF
     fi
 fi
