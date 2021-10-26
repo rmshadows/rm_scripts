@@ -1903,20 +1903,20 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
     if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" != 0 ];then
         dconf dump /org/gnome/terminal/ > old-dconf-gonme-terminal.backup
         prompt -x "导入GNOME Terminal的dconf配置"
-        dconf load /org/gnome/terminal/ $GNOME_TERMINAL_DCONF
+        dconf load /org/gnome/terminal/ <<< $GNOME_TERMINAL_DCONF
     fi
     # 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" != 0 ];then
         dconf dump /org/gnome/desktop/wm/keybindings/ > old-dconf-custom-wm-keybindings.backup
         prompt -x "导入GNOME 您自定义修改的系统内置快捷键的dconf配置"
-        dconf load /org/gnome/desktop/wm/keybindings/ $GNOME_WM_KEYBINDINGS_DCONF
+        dconf load /org/gnome/desktop/wm/keybindings/  <<<  $GNOME_WM_KEYBINDINGS_DCONF
     fi
     # 导入GNOME 自定义快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" != 0 ];then
         dconf read /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings > old-dconf-custom-keybindings-var.backup
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > old-dconf-custom-keybindings.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ $GNOME_CUSTOM_KEYBINDINGS_DCONF
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ <<< $GNOME_CUSTOM_KEYBINDINGS_DCONF
         dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings $GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR
     fi
     # 导入GNOME 区域截屏快捷键的dconf配置
@@ -1941,7 +1941,7 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
     if [ "$SET_IMPORT_GNOME_POWER_DCONF" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/power/ > old-dconf-settings-daemon-power.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
-        dconf load /org/gnome/settings-daemon/plugins/power/ $GNOME_POWER_DCONF
+        dconf load /org/gnome/settings-daemon/plugins/power/ <<< $GNOME_POWER_DCONF
     fi
 fi
 
