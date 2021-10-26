@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.2
+Version：0.0.3
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -155,18 +155,65 @@ SET_SSH_KEY_PUBLIC_TEXT=""
 ## 检查点七(谨慎！可能弄坏您的应用软件)
 # 是否接受dconf配置带来的风险 Preset=1
 SET_DCONF_SETTING=1
-# 导入GNOME Terminal的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/terminal/ > dconf-gonme-terminal) Preset=0
+# 导入GNOME Terminal的dconf配置 0:否 Preset=0
 SET_IMPORT_GNOME_TERMINAL_DCONF=0
-# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/desktop/wm/keybindings/ > dconf-custom-wm-keybindings) Preset=0
+GNOME_TERMINAL_DCONF="[legacy]
+mnemonics-enabled=false
+theme-variant='dark'
+
+[legacy/keybindings]
+full-screen='F11'
+next-tab='<Alt>x'
+prev-tab='<Alt>z'"
+# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0:否 Preset=0
 SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=0
-# 导入GNOME 自定义快捷键的dconf配置 0: 否 Other：文件路径(dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > dconf-custom-keybindings) Preset=0
+GNOME_WM_KEYBINDINGS_DCONF="[/]
+always-on-top=['<Alt>O']
+switch-to-workspace-1=['<Primary>Left']
+switch-to-workspace-2=['<Primary>Right']
+switch-to-workspace-3=['<Primary>Up']
+switch-to-workspace-4=['<Primary>Down']"
+# 导入GNOME 自定义快捷键的dconf配置 0: 否 Preset=0
 SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
+GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/']"
+GNOME_CUSTOM_KEYBINDINGS_DCONF="[custom0]
+binding='<Alt>q'
+command='gnome-terminal'
+name='gnome-terminal'
+
+[custom1]
+binding='<Alt>e'
+command='nautilus'
+name='nautilus'
+
+[custom2]
+binding='<Alt>w'
+command='gnome-system-monitor'
+name='gnome-system-monitor'
+
+[custom3]
+binding='<Alt>t'
+command='virtualbox'
+name='virtualbox'
+
+[custom4]
+binding='<Alt>r'
+command='firefox-esr'
+name='firefox-esr'"
 # 导入GNOME 选区截屏配置 Preset=0
 SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
+GNOME_AREASCREENSHOT_KEYBINDINGS="['<Shift><Alt>s']"
+GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP="['<Primary><Shift>s']"
 # 导入GNOME 屏幕放大镜配置 Preset=0
 SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
+GNOME_MAGNIFIER_KEYBINDINGS="['<Alt>0']"
+GNOME_MAGNIFIER_KEYBINDINGS_IN="['<Alt>equal']"
+GNOME_MAGNIFIER_KEYBINDINGS_OUT="['<Alt>minus']"
 # 导入GNOME 电源配置 Preset=0
 SET_IMPORT_GNOME_POWER_DCONF=0
+GNOME_POWER_DCONF="[/]
+sleep-inactive-ac-timeout=3600
+sleep-inactive-ac-type='nothing'"
 
 ###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
@@ -1856,43 +1903,45 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
     if [ "$SET_IMPORT_GNOME_TERMINAL_DCONF" != 0 ];then
         dconf dump /org/gnome/terminal/ > old-dconf-gonme-terminal.backup
         prompt -x "导入GNOME Terminal的dconf配置"
-        dconf load /org/gnome/terminal/ < $SET_IMPORT_GNOME_TERMINAL_DCONF
+        dconf load /org/gnome/terminal/ $GNOME_TERMINAL_DCONF
     fi
     # 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF" != 0 ];then
         dconf dump /org/gnome/desktop/wm/keybindings/ > old-dconf-custom-wm-keybindings.backup
         prompt -x "导入GNOME 您自定义修改的系统内置快捷键的dconf配置"
-        dconf load /org/gnome/desktop/wm/keybindings/ < $SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF
+        dconf load /org/gnome/desktop/wm/keybindings/ $GNOME_WM_KEYBINDINGS_DCONF
     fi
     # 导入GNOME 自定义快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF" != 0 ];then
+        dconf read /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings > old-dconf-custom-keybindings-var.backup
         dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ > old-dconf-custom-keybindings.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ < $SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF
+        dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ $GNOME_CUSTOM_KEYBINDINGS_DCONF
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings $GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR
     fi
     # 导入GNOME 区域截屏快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS" != 0 ];then
-        dconf dump /org/gnome/settings-daemon/plugins/media-keys/area-screenshot > old-dconf-settings-daemon-area-screenshot.backup
-        dconf dump /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip/ > old-dconf-settings-daemon-area-screenshot-clip.backup
+        dconf read /org/gnome/settings-daemon/plugins/media-keys/area-screenshot > old-dconf-settings-daemon-area-screenshot.backup
+        dconf read /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip > old-dconf-settings-daemon-area-screenshot-clip.backup
         prompt -x "导入GNOME 区域截屏快捷键的dconf配置"
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/area-screenshot < $SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip/ < $SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/area-screenshot $GNOME_AREASCREENSHOT_KEYBINDINGS
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip $GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP
     fi
     # 导入GNOME 放大镜快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS" != 0 ];then
-        dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier/ > old-dconf-settings-daemon-magnifier.backup
-        dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in/ > old-dconf-settings-daemon-magnifier-zoom-in.backup
-        dconf dump /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out/ > old-dconf-settings-daemon-magnifier-zoom-out.backup
+        dconf read /org/gnome/settings-daemon/plugins/media-keys/magnifier > old-dconf-settings-daemon-magnifier.backup
+        dconf read /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in > old-dconf-settings-daemon-magnifier-zoom-in.backup
+        dconf read /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out > old-dconf-settings-daemon-magnifier-zoom-out.backup
         prompt -x "导入GNOME 放大镜快捷键的dconf配置"
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
-        dconf load /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out/ < $SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/magnifier $GNOME_MAGNIFIER_KEYBINDINGS
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in $GNOME_MAGNIFIER_KEYBINDINGS_IN
+        dconf write /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out $GNOME_MAGNIFIER_KEYBINDINGS_OUT
     fi
     # 导入GNOME 电源的dconf配置
     if [ "$SET_IMPORT_GNOME_POWER_DCONF" != 0 ];then
         dconf dump /org/gnome/settings-daemon/plugins/power/ > old-dconf-settings-daemon-power.backup
         prompt -x "导入GNOME 自定义快捷键的dconf配置"
-        dconf load /org/gnome/settings-daemon/plugins/power/ < $SET_IMPORT_GNOME_POWER_DCONF
+        dconf load /org/gnome/settings-daemon/plugins/power/ $GNOME_POWER_DCONF
     fi
 fi
 

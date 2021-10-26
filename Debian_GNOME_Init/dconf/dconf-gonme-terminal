@@ -1,8 +1,0 @@
-[legacy]
-mnemonics-enabled=false
-theme-variant='dark'
-
-[legacy/keybindings]
-full-screen='F11'
-next-tab='<Alt>x'
-prev-tab='<Alt>z'
