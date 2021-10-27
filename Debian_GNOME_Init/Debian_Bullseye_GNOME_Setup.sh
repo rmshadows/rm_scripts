@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.4
+Version：0.0.5
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -1483,7 +1483,7 @@ PrivateTmp=True
 
 [Install]
 WantedBy=multi-user.target
-" > /lib/systemd/system/customize-autorun.service
+" | sudo tee /lib/systemd/system/customize-autorun.service
     fi
 fi
 
