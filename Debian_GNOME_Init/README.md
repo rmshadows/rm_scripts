@@ -448,6 +448,11 @@
 - 2021年9月26日——0.0.1
   - 从Debian 10迁移到Debian 11
 
+# 其他脚本——OtherScripts
+
+- Cancel_All_Print_Task.sh——取消所有打印任务
+- GNOME_Lock_Screen.sh——GNOME锁屏
+
 # Debian10_GNOME.sh(2021年7月停止维护)
 
 >Last Version: v3.3.7
