@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.3
+Version：0.0.4
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -2098,20 +2098,6 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
     fi
 fi
 
-# 安装wps-office
-if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
-    if ! [ -x "$(command -v wps)" ]; then
-        prompt -x "安装wps-office"
-        # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/9615/wps-office_11.1.0.9615_amd64.deb
-        # 较稳定版本
-        # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10161/wps-office_11.1.0.10161_amd64.deb
-        wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10702/wps-office_11.1.0.10702_amd64.deb
-        doApt install ./wps-office*amd64.deb
-    else
-        prompt -m "您可能已经安装了WPS"
-    fi
-fi
-
 # 安装skype
 if [ "$SET_INSTALL_SKYPE" -eq 1 ];then
     if ! [ -x "$(command -v skypeforlinux)" ]; then
@@ -2157,6 +2143,20 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
     elif [ "$SET_ENABLE_DOCKER_CE" -eq 1 ];then
         prompt -x "配置docker-ce服务开机自启"
         sudo systemctl enable docker.service
+    fi
+fi
+
+# 安装wps-office
+if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
+    if ! [ -x "$(command -v wps)" ]; then
+        prompt -x "安装wps-office"
+        # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/9615/wps-office_11.1.0.9615_amd64.deb
+        # 较稳定版本
+        # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10161/wps-office_11.1.0.10161_amd64.deb
+        wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10702/wps-office_11.1.0.10702_amd64.deb
+        doApt install ./wps-office*amd64.deb
+    else
+        prompt -m "您可能已经安装了WPS"
     fi
 fi
 

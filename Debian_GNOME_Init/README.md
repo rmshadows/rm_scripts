@@ -1,6 +1,6 @@
 # Debian11_GNOME.sh
 
->Current Version: 0.0.1
+>Current Version: 0.0.4
 
 ## 使用方法
 
@@ -143,6 +143,7 @@
     - openssh-server——SSH
     - pwgen——随机密码生成
     - python3-pip——pip3
+    - qt5ct——qt界面
     - reaver——无线WPS测试
     - screenfetch——显示系统信息
     - sed——文本编辑工具
