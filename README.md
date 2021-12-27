@@ -8,7 +8,7 @@
   - Debian11_GNOME.sh——Debian 11(Bullseye) GNOME配置脚本
 - Debian_Server_Init——用于初始化新的服务器
   - *Debian10_Server_Init.sh——Debian 10服务器部署(停止更新，最终版本v0.0.4)*
-  - Debian11_Server_Init.sh——Debian 11服务器部署
+  - Debian11_Server_Init.sh——Debian 11服务器部署(TODO/未完成)
 
 ## 未分类脚本
 
@@ -17,8 +17,8 @@
 ## 更新日志
 
 - 2021年10月27日——0.0.3
-  - 发布修复了BUG的Debian 11部署脚本正式版0.0.5
-  - 发布Debian 11部署脚本正式版0.0.4
+  - 发布修复了BUG的Debian 11 GNOME部署脚本正式版0.0.5
+  - 发布Debian 11桌面部署脚本正式版0.0.4
 - 2021年9月28日——0.0.1
   - **停止对Debian 10 脚本的更新**
   - 开始Debian 11脚本的编写，采用**预配置的方式一键部署**
