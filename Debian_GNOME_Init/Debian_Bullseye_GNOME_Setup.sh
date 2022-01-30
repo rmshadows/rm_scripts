@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.5
+Version：3.3.8
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -235,6 +235,7 @@ SET_APT_TO_INSTALL_INDEX_0="
 SET_APT_TO_INSTALL_LATER="
 - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
 - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
+- wireshark——wireshark。注意：阻碍自动安装，请过后手动安装
 "
 
 # 轻便安装 (仅我个人认为必要的常用软件)
@@ -332,7 +333,6 @@ APT_TO_INSTALL_INDEX_1="
 - wafw00f——网站防火墙检测
 - websploit——Web渗透测试
 - wget——wget网络下载工具
-- wireshark——wireshark
 - xdotool——X自动化工具
 - xprobe——网页防火墙测试
 - xsel——剪贴板操作
@@ -480,7 +480,6 @@ APT_TO_INSTALL_INDEX_2="
 - wafw00f——网站防火墙检测
 - websploit——Web渗透测试
 - wget——wget网络下载工具
-- wireshark——wireshark
 - xdotool——X自动化工具
 - xprobe——网页防火墙测试
 - xsel——剪贴板操作
@@ -637,7 +636,6 @@ APT_TO_INSTALL_INDEX_3="
 - wafw00f——网站防火墙检测
 - websploit——Web渗透测试
 - wget——wget网络下载工具
-- wireshark——wireshark
 - xdotool——X自动化工具
 - xprobe——网页防火墙测试
 - xsel——剪贴板操作
