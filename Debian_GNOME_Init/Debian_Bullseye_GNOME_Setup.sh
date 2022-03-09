@@ -1731,14 +1731,14 @@ if [ "$SET_INSTALL_NPM" -eq 1 ];then
         if [ "$SET_INSTALL_HEXO" -eq 1 ];then
             if ! [ -x "$(command -v hexo)" ]; then
                 prompt -x "安装HEXO"
-                cnpm install -g hexo-cli
+                sudo cnpm install -g hexo-cli
             fi
         fi
     fi
     if [ "$SET_INSTALL_HEXO" -eq 1 ];then
         if ! [ -x "$(command -v hexo)" ]; then
             prompt -x "安装HEXO"
-            npm install -g hexo-cli
+            sudo npm install -g hexo-cli
         fi
     fi
 fi
