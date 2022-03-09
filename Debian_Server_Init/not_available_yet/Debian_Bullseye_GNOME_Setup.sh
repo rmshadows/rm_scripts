@@ -2,30 +2,35 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.6
+Version：0.0.1
+0 for No.
+1 for Yes.
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
     
 fi
 !说明
-# root用户密码
-ROOT_PASSWD=""
-## 检查点一：
-# 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:1
-SET_APT_SOURCE=1
-# 你的更新源 Preset=""
-SET_YOUR_APT_SOURCE=""
-# 更新与安装是否不过问 Preset:1
+## Check 1 检查点一：
+# Set APT source 0:skip(跳过) 1:Tsinghua Mirror for Chinese(清华大学镜像源)  Preset:0
+SET_APT_SOURCE=0
+# Install without asking(更新与安装是否不过问) Preset:1
 SET_APT_RUN_WITHOUT_ASKING=1
-# 是否禁用unattended-upgrades.service 0:不做处理 1:启用 2:禁用  Preset=0
+# Disable unattended-upgrades.service ? (禁用unattended-upgrades.service?) 0:skip(跳过) 1:enable(启用) 2:disable(禁用)  Preset=0
 SET_ENABLE_UNATTENDED_UPGRADE=0
-# 是否在安装软件前更新整个系统 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
+# Update system with apt(是否在安装软件前更新整个系统) 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
 SET_APT_UPGRADE=1
-# 是否加入sudo组 Preset:1
+# Create a new user, if not, continue with current user(是否创建新用户，否的话将以当前用户进行配置)  Preset:1
+SET_CREATE_USER=1
+# User Name(要新建的用户名) Preset="admin"
+SET_USER_NAME="admin"
+# (要新建的用户密码) Preset="passwd"
+SET_USER_PASSWD="passwd"
+# Add user in sudo group(是否加入sudo组) Preset:1
 SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
 SET_SUDOER_NOPASSWD=1
+
 ## 检查点二：
 # 是否卸载vim-tiny，安装vim-full Preset:1
 SET_VIM_TINY_TO_FULL=1
@@ -45,8 +50,6 @@ SET_ZSH_AUTOSUGGESTIONS=1
 ## 检查点三：
 # 是否自定义一个systemctl服务(customize-autorun) Preset=1
 SET_SYSTEMCTL_SERVICE=1
-# 是否配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹 Preset=1
-SET_NAUTILUS_MENU=1
 # 配置启用NetworkManager、安装net-tools Preset=1
 SET_NETWORK_MANAGER=1
 # 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
@@ -83,59 +86,15 @@ SET_GIT_USER=$CURRENT_USER
 SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
 # 安装配置ssh Preset=1
 SET_INSTALL_OPENSSH=1
-# SSH开机是否自启 Preset=0 默认禁用
-SET_ENABLE_SSH=0
+# SSH开机是否自启 Preset=1 默认启用
+SET_ENABLE_SSH=1
 # 安装配置npm Preset=0
 SET_INSTALL_NPM=0
 # 是否安装Nodejs Preset=0
 SET_INSTALL_NODEJS=0
 # 是否安装CNPM Preset=0
 SET_INSTALL_CNPM=0
-# 是否安装Hexo Preset=0
-SET_INSTALL_HEXO=0
 
-#### 下列软件安装时间较长，故放在最后安装
-# 是否安装Virtual Box Preset=1
-SET_INSTALL_VIRTUALBOX=1
-# 设置vbox仓库，0:官网(bullseye) 1:清华大学镜像站(Buster) 注意：如果是sid源，则使用sid仓库 Preset=1
-SET_VIRTUALBOX_REPO=1
-# 是否安装anydesk (受国外仓库限制，安装慢) Preset=1
-SET_INSTALL_ANYDESK=1
-# 是否设置anydesk开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_ANYDESK=0
-# 是否安装typora  Preset=1
-SET_INSTALL_TYPORA=0
-# 是否安装sublime text  (受国外仓库限制，安装慢) Preset=0
-SET_INSTALL_SUBLIME_TEXT=0
-# 是否安装teamviewer (受国外仓库限制，安装慢) Preset=0
-SET_INSTALL_TEAMVIEWER=0
-# 是否设置teamviewer开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_TEAMVIEWER=0
-# 是否安装WPS (APT安装慢) Preset=1
-SET_INSTALL_WPS_OFFICE=1
-# 拷贝字体到wps文件夹下，如果需要，请将该变量设置为存放字体的文件夹路径(e.g.: WPS_FONTS). Preset=0
-SET_WPS_FONTS_SRC=0
-# 是否安装Skype Preset=1
-SET_INSTALL_SKYPE=0
-# 是否安装Docker-ce Preset=0
-SET_INSTALL_DOCKER_CE=0
-# 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1
-SET_DOCKER_CE_REPO=1
-# 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_DOCKER_CE=0
-# 安装网易云音乐 Preset=1
-SET_INSTALL_NETEASE_CLOUD_MUSIC=1
-
-## 检查点五
-# 注意：xdotool不支持在wayland运行，fcitx也建议在x11下运行。注销、登录界面选择运行于xorg的GNOME
-# 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime 3.fcitx5-rime Preset=1
-SET_INSTALL_RIME=1
-# 是否导入词库 0: 否 1:从Github导入公共词库 (注意网速！)  2:从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
-SET_IMPORT_RIME_DICT=0
-# 本地词库文件夹位置 Preset=RIME_DICT
-SET_RIME_DICT_DIR=RIME_DICT
-
-## 检查点六
 # 配置SSH Key Preset=1
 SET_CONFIG_SSH_KEY=1
 # 是否生成新的SSH Key 0:新的密钥 1:从文件夹导入现有密钥 2:从文本导入现有密钥 Preset=0
@@ -154,68 +113,14 @@ SET_SSH_KEY_PRIVATE_TEXT=""
 # 公钥
 SET_SSH_KEY_PUBLIC_TEXT=""
 
-## 检查点七(谨慎！可能弄坏您的应用软件)
-# 是否接受dconf配置带来的风险 Preset=1
-SET_DCONF_SETTING=1
-# 导入GNOME Terminal的dconf配置 0:否 Preset=0
-SET_IMPORT_GNOME_TERMINAL_DCONF=0
-GNOME_TERMINAL_DCONF="[legacy]
-mnemonics-enabled=false
-theme-variant='dark'
 
-[legacy/keybindings]
-full-screen='F11'
-next-tab='<Alt>x'
-prev-tab='<Alt>z'"
-# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0:否 Preset=0
-SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=0
-GNOME_WM_KEYBINDINGS_DCONF="[/]
-always-on-top=['<Alt>O']
-switch-to-workspace-1=['<Primary>Left']
-switch-to-workspace-2=['<Primary>Right']
-switch-to-workspace-3=['<Primary>Up']
-switch-to-workspace-4=['<Primary>Down']"
-# 导入GNOME 自定义快捷键的dconf配置 0: 否 Preset=0
-SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
-GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/']"
-GNOME_CUSTOM_KEYBINDINGS_DCONF="[custom0]
-binding='<Alt>q'
-command='gnome-terminal'
-name='gnome-terminal'
-
-[custom1]
-binding='<Alt>e'
-command='nautilus'
-name='nautilus'
-
-[custom2]
-binding='<Alt>w'
-command='gnome-system-monitor'
-name='gnome-system-monitor'
-
-[custom3]
-binding='<Alt>t'
-command='virtualbox'
-name='virtualbox'
-
-[custom4]
-binding='<Alt>r'
-command='firefox-esr'
-name='firefox-esr'"
-# 导入GNOME 选区截屏配置 Preset=0
-SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
-GNOME_AREASCREENSHOT_KEYBINDINGS="['<Shift><Alt>s']"
-GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP="['<Primary><Shift>s']"
-# 导入GNOME 屏幕放大镜配置 Preset=0
-SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
-GNOME_MAGNIFIER_KEYBINDINGS="['<Alt>0']"
-GNOME_MAGNIFIER_KEYBINDINGS_IN="['<Alt>equal']"
-GNOME_MAGNIFIER_KEYBINDINGS_OUT="['<Alt>minus']"
-# 导入GNOME 电源配置 Preset=0
-SET_IMPORT_GNOME_POWER_DCONF=0
-GNOME_POWER_DCONF="[/]
-sleep-inactive-ac-timeout=3600
-sleep-inactive-ac-type='nothing'"
+#### 下列软件安装时间较长，故放在最后安装
+# 是否安装Docker-ce Preset=0
+SET_INSTALL_DOCKER_CE=0
+# 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1
+SET_DOCKER_CE_REPO=1
+# 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_DOCKER_CE=0
 
 ###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
@@ -237,414 +142,11 @@ SET_APT_TO_INSTALL_INDEX_0="
 SET_APT_TO_INSTALL_LATER="
 - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
 - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
-- wireshark——wireshark。注意：阻碍自动安装，请过后手动安装
 "
 
 # 轻便安装 (仅我个人认为必要的常用软件)
 APT_TO_INSTALL_INDEX_1="
-- aircrack-ng——aircrack-ng
-- apt-transport-https——apt-transport-https
-- arp-scan——arp-scan
-- axel——axel下载器
-- bash-completion——终端自动补全
-- bleachbit——系统清理软件
-- build-essential——开发环境
-- clamav——Linux下的杀毒软件
-- cmake——cmake
-- crunch——字典生成
-- cups——cups打印机驱动
-- curl——curl
-- dislocker——查看bitlocker分区
-- dos2unix——将Windows下的文本文档转为Linux下的文本文档
-- drawing——GNOME画图
-- dsniff——网络审计
-- ettercap-graphical——ettercap-graphical
-- fcitx-rime——中州韵输入法
-- flatpak——flatpak平台
-- gedit-plugin*——Gedit插件
-- gimp——gimp图片编辑
-- gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
-- gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
-- gnome-shell-extension-bluetooth-quick-connect——GNOME扩展+蓝牙快速连接
-- gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
-- gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
-- gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
-- gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
-- gnome-shell-extension-gamemode——GNOME扩展+游戏模式
-- gnome-shell-extension-hard-disk-led——GNOME扩展
-- gnome-shell-extension-hide-activities——GNOME扩展
-- gnome-shell-extension-hide-veth——GNOME扩展
-- gnome-shell-extension-impatience——GNOME扩展
-- gnome-shell-extension-kimpanel——GNOME扩展
-- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
-- gnome-shell-extension-no-annoyance——GNOME扩展
-- gnome-shell-extension-panel-osd——GNOME扩展
-- gnome-shell-extension-pixelsaver——GNOME扩展
-- gnome-shell-extension-prefs——GNOME扩展
-- gnome-shell-extension-redshift——GNOME扩展
-- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
-- gnome-shell-extensions——GNOME扩展
-- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
-- gnome-shell-extension-shortcuts——GNOME扩展
-- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
-- gnome-shell-extension-tilix-shortcut——GNOME扩展
-- gnome-shell-extension-top-icons-plus——GNOME扩展
-- gnome-shell-extension-volume-mixer——GNOME扩展
-- gnome-shell-extension-weather——GNOME扩展+天气
-- gnucash——GNU账本
-- grub-customizer——GRUB或BURG定制器
-- gufw——防火墙
-- handbrake——视频转换
-- hping3——hping3
-- htop——htop彩色任务管理器
-- httrack——网站克隆
-- hydra——hydra
-- inotify-tools——inotify文件监视
-- kompare——文件差异对比
-- konversation——IRC客户端
-- lshw——显示硬件
-- make——make
-- masscan——masscan
-- mdk3——mdk3
-- meld——文件差异合并
-- nautilus-extension-*——nautilus插件
-- net-tools——ifconfig等工具
-- nmap——nmap
-- nodejs——nodejs
-- npm——nodejs包管理器
-- ntpdate——NTP时间同步
-- obs-studio——OBS
-- openssh-server——SSH
-- pwgen——随机密码生成
-- python3-pip——pip3
-- qt5ct——QT界面显示配置
-- reaver——无线WPS测试
-- screenfetch——显示系统信息
-- sed——文本编辑工具
-- silversearcher-ag——Ag快速搜索工具
-- slowhttptest——慢速HTTP链接测试
-- tcpdump——tcpdump
-- tree——树状显示文件夹
-- traceroute——路由跟踪
-- vim——VIM编辑器
-- vlc——vlc视频播放器
-- wafw00f——网站防火墙检测
-- websploit——Web渗透测试
-- wget——wget网络下载工具
-- xdotool——X自动化工具
-- xprobe——网页防火墙测试
-- xsel——剪贴板操作
-- zhcon——tty中文虚拟
-"
-# 部分安装(含有娱乐项目、行业软件、调试应用)
-APT_TO_INSTALL_INDEX_2="
-- aircrack-ng——aircrack-ng
-- apt-transport-https——apt-transport-https
-- arp-scan——arp-scan
-- axel——axel下载器
-- bash-completion——终端自动补全
-- bleachbit——系统清理软件
-- blender——3D开发
-- bridge-utils——网桥
-- build-essential——开发环境
-- bustle——D-Bus记录
-- calibre——Epub等多格式电子书阅读器。注意：Epub等多格式电子书阅读器，体积较大，87M
-- cewl——CeWL网站字典生成(关键词采集)
-- cifs-utils——访问Windows共享文件夹
-- clamav——Linux下的杀毒软件
-- cmake——cmake
-- cowpatty——wireless hash
-- crunch——字典生成
-- cups——cups打印机驱动
-- curl——curl
-- dislocker——查看bitlocker分区
-- dos2unix——将Windows下的文本文档转为Linux下的文本文档
-- drawing——GNOME画图
-- dsniff——网络审计
-- ettercap-graphical——ettercap-graphical
-- extremetuxracer——滑雪游戏
-- fcitx-rime——中州韵输入法
-- flatpak——flatpak平台
-- freeplane——思维导图
-- fritzing——电路设计
-- fping——fping
-- fuse——配合dislocker查看bitlocker分区
-- g++——C++
-- gcc——C
-- gedit-plugin*——Gedit插件
-- gimp——gimp图片编辑
-- glance——一个可以代替htop的软件
-- gnome-recipes——GNOME西餐菜单。注意：西餐为主的菜单
-- gnome-shell-extension-appindicator——GNOME扩展
-- gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
-- gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
-- gnome-shell-extension-bluetooth-quick-connect——GNOME扩展+蓝牙快速连接
-- gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
-- gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
-- gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
-- gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
-- gnome-shell-extension-gamemode——GNOME扩展+游戏模式
-- gnome-shell-extension-hamster——GNOME扩展+时间追踪器
-- gnome-shell-extension-hard-disk-led——GNOME扩展
-- gnome-shell-extension-hide-activities——GNOME扩展
-- gnome-shell-extension-hide-veth——GNOME扩展
-- gnome-shell-extension-impatience——GNOME扩展
-- gnome-shell-extension-kimpanel——GNOME扩展
-- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
-- gnome-shell-extension-no-annoyance——GNOME扩展+关闭应用准备就绪对话框
-- gnome-shell-extension-panel-osd——GNOME扩展
-- gnome-shell-extension-pixelsaver——GNOME扩展
-- gnome-shell-extension-prefs——GNOME扩展
-- gnome-shell-extension-redshift——GNOME扩展
-- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
-- gnome-shell-extensions——GNOME扩展
-- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
-- gnome-shell-extension-shortcuts——GNOME扩展
-- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
-- gnome-shell-extension-system-monitor——GNOME扩展+顶栏资源监视器
-- gnome-shell-extension-tilix-dropdown——GNOME扩展
-- gnome-shell-extension-tilix-shortcut——GNOME扩展
-- gnome-shell-extension-top-icons-plus——GNOME扩展
-- gnome-shell-extension-trash——GNOME扩展
-- gnome-shell-extension-volume-mixer——GNOME扩展
-- gnome-shell-extension-weather——GNOME扩展+天气
-- gnome-software-plugin-flatpak——GNOME Flatpak插件
-- gnucash——GNU账本
-- grub-customizer——GRUB或BURG定制器
-- gtranslator——GNOME本地应用翻译编辑
-- gufw——防火墙
-- handbrake——视频转换
-- hugin——全景照片拼合工具
-- homebank——家庭账本
-- hostapd——AP热点相关
-- hping3——hping3
-- htop——htop彩色任务管理器
-- httrack——网站克隆
-- hydra——hydra
-- inotify-tools——inotify文件监视
-- kdenlive——kdenlive视频编辑
-- kompare——文件差异对比
-- konversation——IRC客户端
-- libblockdev*——文件系统相关的插件
-- libgtk-3-dev——GTK3
-- linux-headers-$(uname -r)——Linux Headers
-- lshw——显示硬件
-- make——make
-- masscan——masscan
-- mc——MidnightCommander
-- mdk3——mdk3
-- meld——文件差异合并
-- nautilus-extension-*——nautilus插件
-- ncrack——ncrack
-- net-tools——ifconfig等工具
-- nmap——nmap
-- nodejs——nodejs
-- npm——nodejs包管理器
-- ntpdate——NTP时间同步
-- obs-studio——OBS
-- openssh-server——SSH
-- paperwork-gtk——办公文档扫描
-- pavucontrol——PulseAudioVolumeControl
-- pinfo——友好的命令帮助手册
-- pkg-config——pkg-config
-- pulseeffects——pulse audio的调音器。注意：可能影响到原音频系统
-- pwgen——随机密码生成
-- python-pip——pip
-- python3-pip——pip3
-- python3-tk——python3 TK界面
-- qmmp——qmmp音乐播放器
-- qt5ct——QT界面显示配置
-- reaver——无线WPS测试
-- screenfetch——显示系统信息
-- sed——文本编辑工具
-- silversearcher-ag——Ag快速搜索工具
-- slowhttptest——慢速HTTP链接测试
-- sqlmap——sqlmap
-- sshfs——挂载远程SSH目录
-- sslstrip——https降级
-- supertuxkart——Linux飞车游戏
-- sweethome3d——室内设计
-- synaptic——新立得包本地图形化管理器
-- tcpdump——tcpdump
-- tig——tig(类似github桌面)
-- tree——树状显示文件夹
-- traceroute——路由跟踪
-- vim——VIM编辑器
-- vlc——vlc视频播放器
-- wafw00f——网站防火墙检测
-- websploit——Web渗透测试
-- wget——wget网络下载工具
-- xdotool——X自动化工具
-- xprobe——网页防火墙测试
-- xsel——剪贴板操作
-- zenity——显示GTK+对话框
-- zhcon——tty中文虚拟
-- zsh——zsh
-- zsh-autosuggestions——zsh插件
-"
 
-# 全部安装 请注意查看标记有 注意 二字的条目
-APT_TO_INSTALL_INDEX_3="
-- aircrack-ng——aircrack-ng
-- apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
-- apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
-- apt-transport-https——apt-transport-https
-- arp-scan——arp-scan
-- axel——axel下载器
-- bash-completion——终端自动补全
-- bleachbit——系统清理软件
-- blender——3D开发
-- bridge-utils——网桥
-- build-essential——开发环境
-- bustle——D-Bus记录
-- calibre——Epub等多格式电子书阅读器。注意：Epub等多格式电子书阅读器，体积较大，87M
-- cewl——CeWL网站字典生成(关键词采集)
-- cifs-utils——访问Windows共享文件夹
-- clamav——Linux下的杀毒软件
-- cmake——cmake
-- cowpatty——wireless hash
-- crunch——字典生成
-- cups——cups打印机驱动
-- curl——curl
-- dislocker——查看bitlocker分区
-- dos2unix——将Windows下的文本文档转为Linux下的文本文档
-- drawing——GNOME画图
-- dsniff——网络审计
-- ettercap-graphical——ettercap-graphical
-- extremetuxracer——滑雪游戏
-- fcitx-rime——中州韵输入法
-- flatpak——flatpak平台
-- freeplane——思维导图
-- fritzing——电路设计
-- fping——fping
-- fuse——配合dislocker查看bitlocker分区
-- g++——C++
-- gajim——即时通讯
-- gcc——C
-- gedit-plugin*——Gedit插件
-- gimp——gimp图片编辑
-- glance——一个可以代替htop的软件
-- gnome-recipes——GNOME西餐菜单。注意：西餐为主的菜单
-- gnome-shell-extension-appindicator——GNOME扩展
-- gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
-- gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
-- gnome-shell-extension-bluetooth-quick-connect——GNOME扩展+蓝牙快速连接
-- gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
-- gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
-- gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
-- gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
-- gnome-shell-extension-gamemode——GNOME扩展+游戏模式
-- gnome-shell-extension-hamster——GNOME扩展+时间追踪器
-- gnome-shell-extension-hard-disk-led——GNOME扩展
-- gnome-shell-extension-hide-activities——GNOME扩展
-- gnome-shell-extension-hide-veth——GNOME扩展
-- gnome-shell-extension-impatience——GNOME扩展
-- gnome-shell-extension-kimpanel——GNOME扩展
-- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
-- gnome-shell-extension-no-annoyance——GNOME扩展+关闭应用准备就绪对话框
-- gnome-shell-extension-panel-osd——GNOME扩展
-- gnome-shell-extension-pixelsaver——GNOME扩展
-- gnome-shell-extension-prefs——GNOME扩展
-- gnome-shell-extension-redshift——GNOME扩展
-- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
-- gnome-shell-extensions——GNOME扩展
-- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
-- gnome-shell-extension-shortcuts——GNOME扩展
-- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
-- gnome-shell-extension-system-monitor——GNOME扩展+顶栏资源监视器
-- gnome-shell-extension-tilix-dropdown——GNOME扩展
-- gnome-shell-extension-tilix-shortcut——GNOME扩展
-- gnome-shell-extension-top-icons-plus——GNOME扩展
-- gnome-shell-extension-trash——GNOME扩展
-- gnome-shell-extension-volume-mixer——GNOME扩展
-- gnome-shell-extension-weather——GNOME扩展+天气
-- gnome-software-plugin-flatpak——GNOME Flatpak插件
-- gnucash——GNU账本
-- grub-customizer——GRUB或BURG定制器
-- gtranslator——GNOME本地应用翻译编辑
-- gufw——防火墙
-- handbrake——视频转换
-- hugin——全景照片拼合工具
-- homebank——家庭账本
-- hostapd——AP热点相关
-- hping3——hping3
-- htop——htop彩色任务管理器
-- httrack——网站克隆
-- hydra——hydra
-- inotify-tools——inotify文件监视
-- isc-dhcp-server——DHCP服务器
-- kdenlive——kdenlive视频编辑
-- kompare——文件差异对比
-- konversation——IRC客户端
-- libblockdev*——文件系统相关的插件
-- libgtk-3-dev——GTK3
-- linux-headers-$(uname -r)——Linux Headers
-- lshw——显示硬件
-- make——make
-- masscan——masscan
-- mc——MidnightCommander
-- mdk3——mdk3
-- meld——文件差异合并
-- nautilus-extension-*——nautilus插件
-- ncrack——ncrack
-- net-tools——ifconfig等工具
-- nmap——nmap
-- nodejs——nodejs
-- npm——nodejs包管理器
-- ntpdate——NTP时间同步
-- obs-studio——OBS
-- openssh-server——SSH
-- paperwork-gtk——办公文档扫描
-- pavucontrol——PulseAudioVolumeControl
-- pinfo——友好的命令帮助手册
-- pkg-config——pkg-config
-- pulseeffects——pulse audio的调音器。注意：可能影响到原音频系统
-- pwgen——随机密码生成
-- python-pip——pip
-- python3-pip——pip3
-- python3-tk——python3 TK界面
-- qmmp——qmmp音乐播放器
-- qt5ct——QT界面显示配置
-- reaver——无线WPS测试
-- screenfetch——显示系统信息
-- sed——文本编辑工具
-- silversearcher-ag——Ag快速搜索工具
-- slowhttptest——慢速HTTP链接测试
-- smbclient——SMB共享查看
-- sqlmap——sqlmap
-- sshfs——挂载远程SSH目录
-- sslstrip——https降级
-- supertuxkart——Linux飞车游戏
-- sweethome3d——室内设计
-- synaptic——新立得包本地图形化管理器
-- tcpdump——tcpdump
-- tig——tig(类似github桌面)
-- tree——树状显示文件夹
-- traceroute——路由跟踪
-- vim——VIM编辑器
-- vlc——vlc视频播放器
-- wafw00f——网站防火墙检测
-- websploit——Web渗透测试
-- wget——wget网络下载工具
-- xdotool——X自动化工具
-- xprobe——网页防火墙测试
-- xsel——剪贴板操作
-- zenity——显示GTK+对话框
-- zhcon——tty中文虚拟
-- zsh——zsh
-- zsh-autosuggestions——zsh插件
 "
 
 
@@ -653,12 +155,6 @@ APT_TO_INSTALL_INDEX_3="
 ROOT_UID=0
 # 当前 Shell名称
 CURRENT_SHELL=$SHELL
-# 是否临时加入sudoer
-TEMPORARILY_SUDOER=0
-# 第一次运行DoAsRoot
-FIRST_DO_AS_ROOT=1
-# 第一次运行APT任务
-FIRST_DO_APT=1
 
 #### 脚本内置函数调用
 
@@ -755,27 +251,6 @@ if [ "$FIRST_DO_AS_ROOT" -eq 1 ];then
     checkRootPasswd
     FIRST_DO_AS_ROOT=0
 fi
-# 下面不能有缩进！
-su - root <<!>/dev/null 2>&1
-$ROOT_PASSWD
-echo " Exec $1 as root"
-$1
-!
-}
-
-# 检查root密码是否正确
-checkRootPasswd () {
-# 下面不能有缩进！
-su - root <<! >/dev/null 2>/dev/null
-$ROOT_PASSWD
-pwd
-!
-# echo $?
-if [ "$?" -ne 0 ] ;then
-    prompt -e "Root 用户密码不正确！"
-    exit 1
-fi
-}
 
 
 ## 询问函数 Yes:1 No:2 ???:5
@@ -1101,61 +576,6 @@ if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
 fi
 "
 
-# 中州韵输入法词库配置头文件 luna_pinyin_simp.custom.yaml
-RIME_DICT_HEADER="# luna_pinyin.custom.yaml
-#
-# 補靪功能：將朙月拼音的詞庫修改爲朙月拼音擴充詞庫
-#
-# 作者：瑾昀 <cokunhui@gmail.com>
-#
-# 部署位置：
-# ~/.config/ibus/rime  (Linux)
-# ~/Library/Rime  (Mac OS)
-# %APPDATA%\Rime  (Windows)
-#
-# 於重新部署後生效
-#
-#
-# 注意：本補靪適用於所有朙月拼音系列方案（「朙月拼音」、「朙月拼音·简化字」、「朙月拼音·臺灣正體」、「朙月拼音·語句流」）。
-# 只須將本 custom.yaml 的前面名字改爲對應的輸入方案名字然後放入用戶文件夾重新部署即可。如 luna_pinyin_simp.custom.yaml。
-# 雙拼用戶請使用 double_pinyin.custom.yaml。
-#
-#
-# 附朙月拼音系列方案與其對應的 id 一覽表：
-# 輸入方案	id
-# 朙月拼音	luna_pinyin
-# 朙月拼音·简化字	luna_pinyin_simp
-# 朙月拼音·臺灣正體	luna_pinyin_tw
-# 朙月拼音·語句流	luna_pinyin_fluency
-#
-
-patch:
-  # 載入朙月拼音擴充詞庫
-  \"translator/dictionary\": luna_pinyin.udict
-  # 改寫拼寫運算，使得含西文的詞彙（位於 luna_pinyin.cn_en.dict.yaml 中）不影響簡拼功能（注意，此功能只適用於朙月拼音系列方案，不適用於各類雙拼方案）
-  # 本條補靪只在「小狼毫 0.9.30」、「鼠鬚管 0.9.25 」、「Rime-1.2」及更高的版本中起作用。
-  \"speller/algebra/@before 0\": xform/^([b-df-hj-np-tv-z])$/\$1_/
-"
-
-# 中州韵输入法，个人词库 luna_pinyin.udict.dict.yaml
-RIME_DICT_UDICT="# Rime dictionary
-# encoding: utf-8
-
----
-name: luna_pinyin.udict
-version: "2021.10.01"
-sort: by_weight
-use_preset_vocabulary: true
-import_tables:
-  - luna_pinyin
-...
-
-# 在下面添加用户词库
-举个例子	jugelizi	1
-测试词组	cscz
-
-"
-
 
 #### 正文
 echo -e "\e[1;31m
@@ -1168,104 +588,51 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 \e[1;32m
 ==========================================
 ┏ ^ǒ^*★*^ǒ^*☆*^ǒ^*★*^ǒ^*☆*^ǒ^★*^ǒ^*☆*^ǒ^ ┓ 
-┃        欢迎使用Debian部署脚本          ┃
+┃        欢迎使用Debian服务部署          ┃
+┃使用须知：                              ┃
+┃\e[1;31m运行环境：Linux Terminal(终端)          \e[1;32m┃
+┃\e[1;31m权限要求：需要管理员权限                \e[1;32m┃
+┃\e[1;32m——————————————————————————————————————— ┃
+┃使用方法：                              ┃
+┃\e[1;33m1.首先给予运行权限：                    \e[1;32m┃
+┃\e[1;34msudo chmod +x 「这个脚本的文件名」      \e[1;32m┃
+┃\e[1;33m2.运行脚本：                            \e[1;32m┃
+┃\e[1;34msudo 「脚本的路径(包括脚本文件名)」     \e[1;32m┃
 ┗ ^ǒ^*★*^ǒ^*☆*^ǒ^*★*^ǒ^*☆*^ǒ^★*^ǒ^*☆*^ǒ^ ┛ 
 ==========================================
 
 \e[0m"
 # R
-echo -e "\e[1;31m接下来请根据提示进行操作，正在准备(1s)...\n\e[0m"
+echo -e "\e[1;31m Preparing(1s)...\n\e[0m"
 sleep 1
 
-### 预先检查
-# 检查是否有root权限，有则退出，提示用户使用普通用户权限。
-prompt -i "\n检查权限  ——    Checking for root access...\n"
+# 检查是否有root权限，无则退出，提示用户使用root权限。
+prompt -i "\nChecking for root access...\n"
 if [ "$UID" -eq "$ROOT_UID" ]; then
-    # Error message
-    prompt -e "\n [ Error ] -> 请不要使用管理员权限运行 Please DO NOT run as root  \n"
-    exit 1
+  prompt -s "\n——————————  Unit Ready  ——————————\n"
 else
-    prompt -w "\n——————————  Unit Ready  ——————————\n"
+  # Error message
+  prompt -e "\n [ Error ] -> Please run as root  \n"
+  exit 1
 fi
 
-:<<!预先检查
-获取当前用户名
-获取root密码
-检查root密码
-检查是否在sudo组中
-是的话检查是否免密码
-检查是否GNOME
-如果不是sudo组，加入sudo组、设置免密码
-!预先检查
-# 获取当前用户名
-CURRENT_USER=$USER
-
-# 临时加入sudoer所使用的语句
-TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
-# 检查是否在sudo组中 0 false 1 true
-IS_SUDOER=-1
-is_sudoer=-1
-IS_SUDO_NOPASSWD=-1
-is_sudo_nopasswd=-1
-# 检查是否在sudo组
-if groups| grep sudo > /dev/null ;then
-    # 是sudo组
-    IS_SUDOER=1
-    is_sudoer="TRUE"
-    # 检查是否免密码sudo
-    check_var="ALL=(ALL)NOPASSWD:ALL"
-    if doAsRoot "cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null" ;then
-        # sudo免密码
-        IS_SUDO_NOPASSWD=1
-        is_sudo_nopasswd="TRUE"
-    else
-        # sudo要密码
-        IS_SUDO_NOPASSWD=0
-        is_sudo_nopasswd="FALSE"
-    fi
-else
-    # 不是sudoer
-    IS_SUDOER=0
-    IS_SUDO_NOPASSWD=0
-    is_sudoer="FALSE"
-    is_sudo_nopasswd="No a sudoer"
-fi
-
-# 检查是否是GNOME，不是则退出
-IS_GNOME_DE=-1
-check_var="gnome"
-if echo $DESKTOP_SESSION | grep $check_var > /dev/null ;then
-    IS_GNOME_DE="TRUE"
-else
-    IS_GNOME_DE="FALSE"
-    prompt -e "警告：不是GNOME桌面环境，慎用。"
-    exit 1
-fi
-
-prompt -i "__________________________________________________________"
-prompt -i "系统信息: "
-prompt -k "用户名：" "$CURRENT_USER"
-prompt -k "终端：" "$CURRENT_SHELL"
-prompt -k "是否为Sudo组成员：" "$is_sudoer"
-prompt -k "Sudo是否免密码：" "$is_sudo_nopasswd"
-prompt -k "是否是GNOME：" "$IS_GNOME_DE ( $DESKTOP_SESSION )"
-prompt -i "__________________________________________________________"
-prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止运行。"
-
-
-### 这里是确认运行的模块
-comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车谢谢」[y/N]\e[0m"
+### 确认运行模块
+# R
+comfirm "\e[1;31m Improperly usage of this script may has potential harm to your computer「If you don't know what you're doing, just press ENTER」[y/N]\e[0m"
 choice=$?
 if [ $choice == 1 ];then
-    prompt -m "开始部署……"
+  prompt -s "\n"
 elif [ $choice == 2 ];then
-    prompt -w "感谢您的关注！——  https://rmshadows.gitee.io"
-    exit 0
+  prompt -w "Looking forward to the next meeting ——  https://rmshadows.gitee.io"
+  exit 0
+else
+  prompt -e "ERROR:Unknown Option..."
+  exit 5
 fi
 
+
 :<<检查点一
-询问是否将当前用户加入sudo组, 是否sudo免密码（如果已经是sudoer且免密码则跳过）。
-临时成为免密sudoer(必选)。
+更改镜像（针对国内服务器）
 添加用户到sudo组。
 设置用户sudo免密码。
 默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release
@@ -1327,10 +694,6 @@ elif [ "$SET_APT_SOURCE" -eq 2 ];then
     sudo echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
 deb https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free
 # deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free" | sudo tee /etc/apt/sources.list
-elif [ "$SET_APT_SOURCE" -eq 3 ];then
-    backupFile "/etc/apt/sources.list"
-    prompt -x "添加你自己的源"
-    sudo echo "$SET_YOUR_APT_SOURCE" | sudo tee /etc/apt/sources.list
 fi
 
 # 配置unattended-upgrades
