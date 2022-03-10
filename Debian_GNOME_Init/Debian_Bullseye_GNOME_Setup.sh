@@ -125,7 +125,8 @@ SET_DOCKER_CE_REPO=1
 SET_ENABLE_DOCKER_CE=0
 # 安装网易云音乐 Preset=1
 SET_INSTALL_NETEASE_CLOUD_MUSIC=1
-
+# 安装Google-Chrome（for CN） Preset=1
+SET_INSTALL_GOOGLE_CHROME=1
 ## 检查点五
 # 注意：xdotool不支持在wayland运行，fcitx也建议在x11下运行。注销、登录界面选择运行于xorg的GNOME
 # 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime 3.fcitx5-rime Preset=1
@@ -1883,11 +1884,21 @@ if [ "$SET_CONFIG_SSH_KEY" -eq 1 ];then
             ssh-keygen -t rsa -N "$SET_NEW_SSH_KEY_PASSWD" -C "$SET_SSH_KEY_COMMENT" -f /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
         elif [ "$SET_SSH_KEY_SOURCE" -eq 1 ];then
             prompt -x "将存在的SSH Key从 $SET_EXISTED_SSH_KEY_SRC 移动到 /home/$CURRENT_USER/.ssh/"
+            sudo chmod 600 $SET_EXISTED_SSH_KEY_SRC/*
             mv $SET_EXISTED_SSH_KEY_SRC /home/$CURRENT_USER/.ssh/
+            # 设置ssh密钥
+            eval "$(ssh-agent -s)"
+            ssh-add
         elif [ "$SET_SSH_KEY_SOURCE" -eq 2 ];then
             prompt -x "从文本导入SSH Key到 /home/$CURRENT_USER/.ssh/"
             echo $SET_SSH_KEY_PRIVATE_TEXT > /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
             echo $SET_SSH_KEY_PUBLIC_TEXT > /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME.pub
+            # 设置权限
+            sudo chmod 600 /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME
+            sudo chmod 600 /home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME.pub
+            # 设置ssh密钥
+            eval "$(ssh-agent -s)"
+            ssh-add
         fi
     fi
 fi
@@ -2172,6 +2183,17 @@ if [ "$SET_INSTALL_NETEASE_CLOUD_MUSIC" -eq 1 ];then
         doApt install ./netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
     else
         prompt -m "您可能已经安装了netease-cloud-music"
+    fi
+fi
+
+# 安装Google Chrome（中国）
+if [ "$SET_INSTALL_GOOGLE_CHROME" -eq 1 ];then
+    if ! [ -x "$(command -v google-chrome)" ]; then
+        prompt -x "安装谷歌浏览器(中国大陆专用，其他地区未测试过)"
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        doApt install ./google-chrome-stable_current_amd64.deb
+    else
+        prompt -m "您可能已经安装了谷歌浏览器"
     fi
 fi
 
