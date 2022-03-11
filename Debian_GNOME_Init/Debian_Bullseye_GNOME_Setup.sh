@@ -1658,7 +1658,9 @@ fi
 # 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
 if [ "$SET_ETH0_ALLOW_HOTPLUG" -eq 1 ];then
     prompt -m "设置网卡eth0为热拔插模式以缩短开机时间。"
+    # Not /etc/network/interfaces !
     prompt -m "检查 /etc/network/interfaces.d/setup 中eth0设备是否设置为热拔插..."
+    backupFile /etc/network/interfaces.d/setup
     check_var="allow-hotplug eth0"
     if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
     then
