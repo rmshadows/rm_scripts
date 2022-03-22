@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.7
+Version：0.0.8
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -1340,8 +1340,8 @@ if groups| grep sudo > /dev/null ;then
     # 是sudo组
     IS_SUDOER=1
     is_sudoer="TRUE"
-    # 检查是否免密码sudo
-    check_var="ALL=(ALL)NOPASSWD:ALL"
+    # 检查是否免密码sudo 括号得注释
+    check_var="ALL=\(ALL\)NOPASSWD:ALL"
     if doAsRoot "cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null" ;then
         # sudo免密码
         IS_SUDO_NOPASSWD=1

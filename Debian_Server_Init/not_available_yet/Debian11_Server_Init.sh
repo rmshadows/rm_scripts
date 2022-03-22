@@ -41,7 +41,7 @@ SET_USER_PASSWD="passwd"
 # User should be a sudoer?(是否加入sudo用户组) Preset:1
 SET_USER_SUDOER=1
 # User should run `sudo` without passwd(是否设置sudo无需密码) Preset:1
-SET_USER_SUDOER_NOPASSWD=1
+SET_SUDOER_NOPASSWD=1
 
 ## Check-3-检查点三：
 # 是否卸载vim-tiny，安装vim-full Preset:1
@@ -234,15 +234,20 @@ echo -e "\e[1;31m Preparing(1s)...\n\e[0m" # TODO
 获取当前用户名
 Prep-预备步骤
 # Get Current User获取当前用户名(root,后面如果有指定用户，则是指定用户)
-CURRENT_USER=$USER
+CURRENT_USER_SET=$USER
+# 用户目录
 HOME_INDEX="$HOME"
+# 设置用户目录
 if [ "$SET_USER" -eq 1 ];then
-    CURRENT_USER=$SET_USER_NAME
-    HOME_INDEX=/home/$SET_USER_NAME
+    CURRENT_USER_SET=$SET_USER_NAME
+    HOME_INDEX="/home/$SET_USER_NAME"
+else
+    CURRENT_USER_SET=root
+    HOME_INDEX="/root"
 fi
-prompt -i "Current User: $CURRENT_USER"
+prompt -i "Current User Set: $CURRENT_USER_SET"
 prompt -i "Current Shell: $CURRENT_SHELL"
-prompt -i "Current Shell: $HOME_INDEX"
+prompt -i "Current User Set Home: $HOME_INDEX"
 # 检查是否有root权限，无则退出，提示用户使用root权限。
 prompt -i "\nChecking for root access...\n"
 if [ "$UID" -eq "$ROOT_UID" ]; then
@@ -277,17 +282,12 @@ fi
 Check-1-检查点一
 prompt -i "——————————  Check 1  ——————————"
 
-# 预安装 安装部分先决软件包
+# 预安装 安装部分先决软件包 后面还有
 prompt -x "Install pre-required packages..."
 doApt update
-# 确保https源可用
+# 确保https源可用 
 doApt install apt-transport-https
 doApt install ca-certificates
-# 保证后面Vbox密钥添加
-doApt install wget
-doApt install gnupg2
-doApt install gnupg
-doApt install lsb-release
 # 添加清华大学 Debian 11 镜像源
 if [ "$SET_APT_SOURCE" -eq 1 ];then
     backupFile "/etc/apt/sources.list"
@@ -321,6 +321,16 @@ elif [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 2 ];then
     systemctl disable unattended-upgrades.service
 fi
 
+# 更新源-预先安装的软件
+doApt update
+# 保证sudo添加可用
+doApt install gawk
+# 保证后面Vbox密钥添加
+doApt install wget
+doApt install gnupg2
+doApt install gnupg
+doApt install lsb-release
+
 # 更新系统
 if [ "$SET_APT_UPGRADE" -eq 0 ];then
     prompt -x "Apt update only...."
@@ -348,6 +358,7 @@ doApt install sudo
 doApt install openssh-server
 
 # 设置root用户使用zsh 注意，这里还不能用$HOME_INDEX
+# 配置root用户zsh
 prompt -i "Current shell：$CURRENT_SHELL"
 if [ "$CURRENT_SHELL" == "/bin/bash" ]; then
     shell_conf=".bashrc"
@@ -377,24 +388,22 @@ elif [ "$CURRENT_SHELL" == "/bin/zsh" ];then
         prompt -x "Config root's ZSHRC"
         echo "$ZSHRC_CONFIG" > /root/$shell_conf
     elif [ "$SET_ZSHRC" -eq 0 ];then
-      prompt -m "Keep original ZSHRC file."
+        prompt -m "Keep original ZSHRC file."
     fi
 fi
 
 # 新建用户 如果已经存在，不添加，直接配置该用户
 if [ "$SET_USER" -eq 1 ];then
-    # 再次赋值 
-    CURRENT_USER=$SET_USER_NAME
-    prompt -x "Creating user $CURRENT_USER...."
+    prompt -x "Creating user $CURRENT_USER_SET...."
     # 检测是否存在该用户
-    egrep "^$CURRENT_USER" /etc/passwd >/dev/null
+    egrep "^$CURRENT_USER_SET" /etc/passwd >/dev/null
     if [ $? -eq 0 ]; then
         # 存在用户 
-        prompt -e "Failed to add $CURRENT_USER. Username already exists! Continue with $CURRENT_USER"
+        prompt -e "Failed to add $CURRENT_USER_SET. Username already exists! Continue with $CURRENT_USER_SET"
     else
         # 不存在则新建
         encrypt_pass=$(perl -e 'print crypt($ARGV[0], "password")' $SET_USER_PASSWD)
-        useradd -m -s /bin/zsh -G sudo -p $encrypt_pass $CURRENT_USER
+        useradd -m -s /bin/zsh -G sudo -p $encrypt_pass $CURRENT_USER_SET
         if [ $? -eq 0 ];then
             prompt -i "User has been added to system!"
         else
@@ -402,49 +411,78 @@ if [ "$SET_USER" -eq 1 ];then
             exit 1
         fi
     fi
-    # 设置用户zsh
-    if [ "$SET_USER_ZSH" -eq 1 ];then
-        prompt -x "Set zsh for $CURRENT_USER"
-        usermod -s /bin/zsh $CURRENT_USER
+fi
+
+# 设置用户zsh
+if [ "$SET_USER_ZSH" -eq 1 ];then
+    prompt -x "Set zsh for $CURRENT_USER_SET"
+    usermod -s /bin/zsh $CURRENT_USER_SET
+fi
+
+# 检查是否在sudoer
+prompt -i "Check if $CURRENT_USER_SET in sudoers"
+# 检查是否在sudo组中 0 false 1 true
+IS_SUDOER=-1
+IS_SUDO_NOPASSWD=-1
+# 检查是否在sudo组
+if groups $CURRENT_USER_SET | grep sudo > /dev/null ;then
+    # 是sudo组
+    IS_SUDOER=1
+    # 检查是否免密码sudo
+    check_var="ALL=(ALL)NOPASSWD:ALL"
+    if cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER_SET > /dev/null ;then
+        # sudo免密码
+        IS_SUDO_NOPASSWD=1
+    else
+        # sudo要密码
+        IS_SUDO_NOPASSWD=0
     fi
-    # 检查是否在sudoer
-    prompt -i "Check if $CURRENT_USER in sudoers"
-    # 检查是否在sudo组中 0 false 1 true
-    IS_SUDOER=-1
-    IS_SUDO_NOPASSWD=-1
-    # 检查是否在sudo组
-    if groups| grep sudo > /dev/null ;then
-        # 是sudo组
+else
+    # 不是sudoer
+    IS_SUDOER=0
+    IS_SUDO_NOPASSWD=0
+fi
+
+# 配置用户为sudo
+if [ "$CURRENT_USER_SET" == "root" ];then
+    prompt -w "Not sudo for root, pass."
+elif [ "$IS_SUDOER" -eq 0 ];then
+    # 如果没有在sudo组,添加用户到sudo组
+    if [ "$SET_USER_SUDOER" -eq 1 ];then
+        prompt -x "Add $CURRENT_USER_SET to sudo group...."
+        usermod -a -G sudo $CURRENT_USER_SET
         IS_SUDOER=1
-        # 检查是否免密码sudo
+    fi
+    # 配置sudo免密码
+    if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ];then
+        prompt -x "Set $CURRENT_USER_SET sudo nopasswd...."
+        SUDOER_STRING="$CURRENT_USER_SET ALL=(ALL)NOPASSWD:ALL"
+        echo $SUDOER_STRING >> /etc/sudoers
+        IS_SUDO_NOPASSWD=1
+    fi
+elif [ "$IS_SUDOER" -eq 1 ];then
+    # 如果已经是sudoer 配置是否免密码
+    if [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ];then
+        prompt -x "Set $CURRENT_USER_SET sudo not passwd."
+        # 删除这一行
         check_var="ALL=(ALL)NOPASSWD:ALL"
-        if "cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null" ;then
+        if cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER_SET > /dev/null ;then
             # sudo免密码
             IS_SUDO_NOPASSWD=1
         else
-            # sudo要密码
+        # sudo要密码
             IS_SUDO_NOPASSWD=0
         fi
-    else
-        # 不是sudoer
-        IS_SUDOER=0
-        IS_SUDO_NOPASSWD=0
+    elif [ "$IS_SUDO_NOPASSWD" -eq 1 ] && [ "$SET_SUDOER_NOPASSWD" -eq 0 ];then
+        prompt -x "Set $CURRENT_USER_SET sudo required passwd."
+        check_var="ALL=(ALL)NOPASSWD:ALL"
+        # 获取行号
+        rm_line=`cat Text.txt | grep -n $check_var | gawk '{print $1}' FS=":"`
+        sed "$rm_line d" /etc/sudoers
     fi
-    # 如果没有在sudo组,添加用户到sudo组 TODO
-    if [ "$IS_SUDOER" -eq 0 ] && [ "$SET_USER_SUDOER" -eq 1 ];then
-        prompt -x "Add $CURRENT_USER to sudo group...."
-        usermod -a -G sudo $CURRENT_USER
-        IS_SUDOER=1
-    fi
-    # 如果已经是sudoer，但没有免密码，询问是否免密码
-    if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_USER_SUDOER_NOPASSWD" -eq 1 ];then
-        prompt -x "Set $CURRENT_USER sudo nopasswd...."
-        # 加入sudoer所使用的语句 TODO
-        SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
-    fi
-elif [ "$SET_USER" -eq 0 ];then
-    # 如果不指定用户，则配置root用户
-    CURRENT_USER=$USER
+else
+    prompt -e "$IS_SUDOER 不等于 0 or 1 ."
+    exit 1
 fi
 
 

@@ -8,6 +8,10 @@
 
 首先自定义脚本与配置，然后以`root`用户运行(`sudo`也不行，必须`root`用户)。
 
+注意事项：
+
+默认使用root用户运行(禁止使用sudo)，如果未指定配置某用户(没有的用户会被新建)，则全部配置root用户。
+
 ## 脚本内容
 
 - 检查点一：更改镜像（针对国内服务器）；默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release(必选)；配置unattended-upgrades
