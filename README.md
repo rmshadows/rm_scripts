@@ -9,6 +9,8 @@
 - Debian_Server_Init——用于初始化新的服务器
   - *Debian10_Server_Init.sh——Debian 10服务器部署(停止更新，最终版本v0.0.4)*
   - Debian11_Server_Init.sh——Debian 11服务器部署(TODO/未完成)
+- Windows——一些Windows的脚本(基本都是没用的东西)
+  - WindowsApplications.bat——打开软件下载页面
 
 ## 未分类脚本
 
