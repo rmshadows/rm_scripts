@@ -15,7 +15,7 @@ if [ "$" -eq 1 ];then
 fi
 !About-说明
 
-## Check 1 检查点一：
+## Check-1-检查点一：
 # Set APT source 0:skip(跳过) 1:Tsinghua Mirror for Chinese(清华大学镜像源) 2.Your Souce (你自定义的源)     Preset:0
 SET_APT_SOURCE=0
 # Your apt source Preset=""
@@ -27,24 +27,51 @@ SET_ENABLE_UNATTENDED_UPGRADE=0
 # Update system with apt(是否在安装软件前更新整个系统) 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
 SET_APT_UPGRADE=1
 
-## Check 2 检查点二：
+## Check-2-检查点二：
 # Set to 1 will specify a user.User will be created if not exist.If set to 0, continue with root(是否指定某用户进行配置，否的话将以root用户继续)  Preset:1
 SET_USER=1
-# User Name(要新建的用户名) Preset="admin"
+# Change bash to zsh 是否替换Bash为Zsh（包括root用户） Preset:1
+SET_BASH_TO_ZSH=1
+# Change zshrc file for all user 是否配置ZSHRC Preset:1
+SET_ZSHRC=1
+# User Name in lower case(要新建的用户名-必须小写英文！) Preset="admin"
 SET_USER_NAME="admin"
 # User password(要新建的用户密码) Preset="passwd"
 SET_USER_PASSWD="passwd"
 # User should be a sudoer?(是否加入sudo用户组) Preset:1
-SET_SUDOER=1
+SET_USER_SUDOER=1
 # User should run `sudo` without passwd(是否设置sudo无需密码) Preset:1
-SET_SUDOER_NOPASSWD=1
+SET_USER_SUDOER_NOPASSWD=1
 
+## Check-3-检查点三：
+# 是否卸载vim-tiny，安装vim-full Preset:1
+SET_VIM_TINY_TO_FULL=1
+# 是否替换Bash为Zsh（包括root用户） Preset:1
+SET_BASH_TO_ZSH=1
+# 是否配置ZSHRC Preset:1
+SET_ZSHRC=1
+# 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
+SET_REPLACE_ROOT_RC_FILE=1
+# 添加/usr/sbin到环境变量 Preset=1
+SET_ADD_SBIN_ENV=1
+# 是否安装bash-completion Preset=1
+SET_BASH_COMPLETION=1
+# 是否安装zsh-autosuggestions Preset=1
+SET_ZSH_AUTOSUGGESTIONS=1
+
+
+
+### 配置文件
+# Zshrc文件
+ZSHRC_CONFIG=""
 
 ### 脚本变量
 # Root用户UID
 ROOT_UID=0
 # 当前 Shell名称
 CURRENT_SHELL=$SHELL
+# 用户路径
+HOME_INDEX=""
 
 #### 脚本内置函数调用
 
@@ -74,7 +101,7 @@ prompt () {
     "-s"|"--success")
       echo -e "${b_CGSC}${@/-s/}${CDEF}";;          # print success message
     "-x"|"--exec")
-      echo -e "日志：${b_CGSC}${@/-x/}${CDEF}";;          # print exec message
+      echo -e "Exec：${b_CGSC}${@/-x/}${CDEF}";;          # print exec message
     "-e"|"--error")
       echo -e "${b_CRER}${@/-e/}${CDEF}";;          # print error message
     "-w"|"--warning")
@@ -82,7 +109,7 @@ prompt () {
     "-i"|"--info")
       echo -e "${b_CCIN}${@/-i/}${CDEF}";;          # print info message
     "-m"|"--msg")
-      echo -e "信息：${b_CCIN}${@/-m/}${CDEF}";;          # print iinfo message
+      echo -e "Info：${b_CCIN}${@/-m/}${CDEF}";;          # print iinfo message
     "-k"|"--kv")  # 三个参数
       echo -e "${b_CCIN} ${2} ${b_CWAR} ${3} ${CDEF}";;          # print success message
     *)
@@ -137,11 +164,11 @@ backupFile () {
         # 如果有bak备份文件 ，生成newbak
         if [ -f "$1.bak" ];then
             # bak文件存在
-            prompt -x "(sudo)正在备份 $1 文件到 $1.newbak (覆盖) "
+            prompt -x "正在备份 $1 文件到 $1.newbak (覆盖) "
             cp $1 $1.newbak
         else
             # 没有bak文件，创建备份
-            prompt -x "(sudo)正在备份 $1 文件到 $1.bak"
+            prompt -x "正在备份 $1 文件到 $1.bak"
             cp $1 $1.bak
         fi
     else
@@ -195,11 +222,6 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 ┃\e[1;31m运行环境：Linux Terminal(终端)          \e[1;32m┃
 ┃\e[1;31m权限要求：需要管理员权限                \e[1;32m┃
 ┃\e[1;32m——————————————————————————————————————— ┃
-┃使用方法：                              ┃
-┃\e[1;33m1.首先给予运行权限：                    \e[1;32m┃
-┃\e[1;34msudo chmod +x 「这个脚本的文件名」      \e[1;32m┃
-┃\e[1;33m2.运行脚本：                            \e[1;32m┃
-┃\e[1;34msudo 「脚本的路径(包括脚本文件名)」     \e[1;32m┃
 ┗ ^ǒ^*★*^ǒ^*☆*^ǒ^*★*^ǒ^*☆*^ǒ^★*^ǒ^*☆*^ǒ^ ┛ 
 ==========================================
 
@@ -213,12 +235,14 @@ echo -e "\e[1;31m Preparing(1s)...\n\e[0m" # TODO
 Prep-预备步骤
 # Get Current User获取当前用户名(root,后面如果有指定用户，则是指定用户)
 CURRENT_USER=$USER
+HOME_INDEX="$HOME"
 if [ "$SET_USER" -eq 1 ];then
     CURRENT_USER=$SET_USER_NAME
+    HOME_INDEX=/home/$SET_USER_NAME
 fi
 prompt -i "Current User: $CURRENT_USER"
 prompt -i "Current Shell: $CURRENT_SHELL"
-
+prompt -i "Current Shell: $HOME_INDEX"
 # 检查是否有root权限，无则退出，提示用户使用root权限。
 prompt -i "\nChecking for root access...\n"
 if [ "$UID" -eq "$ROOT_UID" ]; then
@@ -244,17 +268,14 @@ else
 fi
 
 
-:<<检查点一
+:<<Check-1-检查点一
 更改镜像（针对国内服务器）
 系统更新
-新建用户
-添加用户到sudo组。
-设置用户sudo免密码。
 默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release
 更新源、更新系统。
 配置unattended-upgrades
-检查点一
-prompt -i "——————————  检查点一  ——————————"
+Check-1-检查点一
+prompt -i "——————————  Check 1  ——————————"
 
 # 预安装 安装部分先决软件包
 prompt -x "Install pre-required packages..."
@@ -271,7 +292,7 @@ doApt install lsb-release
 if [ "$SET_APT_SOURCE" -eq 1 ];then
     backupFile "/etc/apt/sources.list"
     prompt -x "Set Tsinghua Debian 11 mirror..."
-    sudo echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+    echo "# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
 deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free
 # deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free
 deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-updates main contrib non-free
@@ -281,12 +302,12 @@ deb https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib
 # deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye-backports main contrib non-free
 
 deb https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free" | sudo tee /etc/apt/sources.list
-# 添加清华大学Debian sid 镜像源
+# deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security bullseye-security main contrib non-free" | tee /etc/apt/sources.list
+# 添加自己的Debian源
 elif [ "$SET_APT_SOURCE" -eq 2 ];then
     backupFile "/etc/apt/sources.list"
     prompt -x "Set your apt source..."
-    sudo echo "$SET_YOUR_APT_SOURCE" | sudo tee /etc/apt/sources.list
+    echo "$SET_YOUR_APT_SOURCE" | tee /etc/apt/sources.list
 fi
 
 # 配置unattended-upgrades
@@ -294,24 +315,140 @@ if [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 0 ];then
     prompt -m "Leave unattended-upgrades.service nothing done...."
 elif [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 1 ];then
     prompt -x "Enable unattended-upgrades.service"
-    sudo systemctl enable unattended-upgrades.service
+    systemctl enable unattended-upgrades.service
 elif [ "$SET_ENABLE_UNATTENDED_UPGRADE" -eq 2 ];then
     prompt -x "Disable unattended-upgrades.service"
-    sudo systemctl disable unattended-upgrades.service
+    systemctl disable unattended-upgrades.service
 fi
 
-# 如果没有在sudo组,添加用户到sudo组
-if [ "$IS_SUDOER" -eq 0 ] && [ "$SET_SUDOER" -eq 1 ];then
-    prompt -x "添加用户 $CURRENT_USER 到sudo组。"
-    sudo usermod -a -G sudo $CURRENT_USER
-    IS_SUDOER=1
+# 更新系统
+if [ "$SET_APT_UPGRADE" -eq 0 ];then
+    prompt -x "Apt update only...."
+    doApt update
+elif [ "$SET_APT_UPGRADE" -eq 1 ];then
+    prompt -x "Apt Dist-upgrade...."
+    doApt update && doApt dist-upgrade
+elif [ "$SET_APT_UPGRADE" -eq 2 ];then
+    prompt -x "Apt upgrade...."
+    doApt update && doApt upgrade
 fi
 
-# 如果已经是sudoer，但没有免密码，询问是否免密码
-if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ];then
-    prompt -x "设置用户 $CURRENT_USER sudo免密码"
-    TEMPORARILY_SUDOER=0
+:<<Check-2-检查点二
+安装sudo openssh-server zsh(必选)
+配置root用户zsh
+新建用户
+配置用户zsh
+添加用户到sudo组。
+设置用户sudo免密码。
+Check-2-检查点二
+
+# 安装sudo openssh-server zsh
+prompt -i "sudo openssh-server will be installed."
+doApt install sudo
+doApt install openssh-server
+
+# 设置root用户使用zsh 注意，这里还不能用$HOME_INDEX
+prompt -i "Current shell：$CURRENT_SHELL"
+if [ "$CURRENT_SHELL" == "/bin/bash" ]; then
+    shell_conf=".bashrc"
+    if [ "$SET_BASH_TO_ZSH" -eq 1 ];then
+        # 判断是否安装zsh
+        if ! [ -x "$(command -v zsh)" ]; then
+            prompt -i 'Error: Zsh is not installed.' >&2
+            prompt -x "Install Zsh..."
+            doApt install zsh
+        fi
+        if ! [ -x "$(command -v zsh)" ]; then
+            prompt -e "ZSH install failed !"
+            exit 1
+        else
+            shell_conf=".zshrc"
+            prompt -x "Config ZSHRC...."
+            echo "$ZSHRC_CONFIG" > /root/$shell_conf
+            prompt -x "Set zsh for root."
+            usermod -s /bin/zsh root
+        fi
+    fi
+elif [ "$CURRENT_SHELL" == "/bin/zsh" ];then
+    # 如果使用zsh，则更改zsh配置
+    shell_conf=".zshrc"
+    if [ "$SET_ZSHRC" -eq 1 ];then
+        backupFile "/root/$shell_conf"
+        prompt -x "Config root's ZSHRC"
+        echo "$ZSHRC_CONFIG" > /root/$shell_conf
+    elif [ "$SET_ZSHRC" -eq 0 ];then
+      prompt -m "Keep original ZSHRC file."
+    fi
 fi
+
+# 新建用户 如果已经存在，不添加，直接配置该用户
+if [ "$SET_USER" -eq 1 ];then
+    # 再次赋值 
+    CURRENT_USER=$SET_USER_NAME
+    prompt -x "Creating user $CURRENT_USER...."
+    # 检测是否存在该用户
+    egrep "^$CURRENT_USER" /etc/passwd >/dev/null
+    if [ $? -eq 0 ]; then
+        # 存在用户 
+        prompt -e "Failed to add $CURRENT_USER. Username already exists! Continue with $CURRENT_USER"
+    else
+        # 不存在则新建
+        encrypt_pass=$(perl -e 'print crypt($ARGV[0], "password")' $SET_USER_PASSWD)
+        useradd -m -s /bin/zsh -G sudo -p $encrypt_pass $CURRENT_USER
+        if [ $? -eq 0 ];then
+            prompt -i "User has been added to system!"
+        else
+            echo "Failed to add a user!"
+            exit 1
+        fi
+    fi
+    # 设置用户zsh
+    if [ "$SET_USER_ZSH" -eq 1 ];then
+        prompt -x "Set zsh for $CURRENT_USER"
+        usermod -s /bin/zsh $CURRENT_USER
+    fi
+    # 检查是否在sudoer
+    prompt -i "Check if $CURRENT_USER in sudoers"
+    # 检查是否在sudo组中 0 false 1 true
+    IS_SUDOER=-1
+    IS_SUDO_NOPASSWD=-1
+    # 检查是否在sudo组
+    if groups| grep sudo > /dev/null ;then
+        # 是sudo组
+        IS_SUDOER=1
+        # 检查是否免密码sudo
+        check_var="ALL=(ALL)NOPASSWD:ALL"
+        if "cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null" ;then
+            # sudo免密码
+            IS_SUDO_NOPASSWD=1
+        else
+            # sudo要密码
+            IS_SUDO_NOPASSWD=0
+        fi
+    else
+        # 不是sudoer
+        IS_SUDOER=0
+        IS_SUDO_NOPASSWD=0
+    fi
+    # 如果没有在sudo组,添加用户到sudo组 TODO
+    if [ "$IS_SUDOER" -eq 0 ] && [ "$SET_USER_SUDOER" -eq 1 ];then
+        prompt -x "Add $CURRENT_USER to sudo group...."
+        usermod -a -G sudo $CURRENT_USER
+        IS_SUDOER=1
+    fi
+    # 如果已经是sudoer，但没有免密码，询问是否免密码
+    if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_USER_SUDOER_NOPASSWD" -eq 1 ];then
+        prompt -x "Set $CURRENT_USER sudo nopasswd...."
+        # 加入sudoer所使用的语句 TODO
+        SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
+    fi
+elif [ "$SET_USER" -eq 0 ];then
+    # 如果不指定用户，则配置root用户
+    CURRENT_USER=$USER
+fi
+
+
+
 
 
 

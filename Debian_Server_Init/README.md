@@ -10,8 +10,10 @@
 
 ## 脚本内容
 
-- 检查点一：更改镜像（针对国内服务器）
-- 检查点二：安装SSH zsh sudo更新系统、新建用户
+- 检查点一：更改镜像（针对国内服务器）；默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release(必选)；配置unattended-upgrades
+- 检查点二：安装sudo openssh-server zsh(必选)；设置所有用户使用zsh；新建用户(包括配置sudo、是否使用zshrc、sudo免密码)
+- 检查点三：添加HOME目录文件夹
+- 
 
 ## 更新日志
 
