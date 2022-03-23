@@ -478,7 +478,9 @@ elif [ "$IS_SUDOER" -eq 1 ];then
         check_var="ALL=(ALL)NOPASSWD:ALL"
         # 获取行号
         rm_line=`cat Text.txt | grep -n $check_var | gawk '{print $1}' FS=":"`
-        sed "$rm_line d" /etc/sudoers
+        sed -i "$rm_line d" /etc/sudoers
+        SUDO_STRING="ALL=(ALL:ALL) ALL"
+        TODO
     fi
 else
     prompt -e "$IS_SUDOER 不等于 0 or 1 ."

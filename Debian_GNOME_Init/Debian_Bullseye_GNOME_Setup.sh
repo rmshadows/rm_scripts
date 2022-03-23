@@ -1342,7 +1342,7 @@ if groups| grep sudo > /dev/null ;then
     is_sudoer="TRUE"
     # 检查是否免密码sudo 括号得注释
     check_var="ALL=\(ALL\)NOPASSWD:ALL"
-    if doAsRoot "cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER > /dev/null" ;then
+    if doAsRoot "cat '/etc/sudoers' | grep ^$CURRENT_USER | grep $check_var > /dev/null" ;then
         # sudo免密码
         IS_SUDO_NOPASSWD=1
         is_sudo_nopasswd="TRUE"

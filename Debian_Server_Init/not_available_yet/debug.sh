@@ -301,10 +301,16 @@ elif [ "$IS_SUDOER" -eq 1 ];then
     elif [ "$IS_SUDO_NOPASSWD" -eq 1 ] && [ "$SET_SUDOER_NOPASSWD" -eq 0 ];then
         prompt -x "Set $CURRENT_USER_SET sudo required passwd."
         check_var="ALL=(ALL)NOPASSWD:ALL"
-        l=`cat Text.txt | grep -n $check_var | gawk '{print $1}' FS=":"`
+        l=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
         echo $l
-        sed "$l d" Text.txt
-        
+        ll=($l)
+        echo ${#ll[@]}
+        if ! echo "$l" | grep "\ " > /dev/null ;then
+          echo 12333333333333333333333333333333
+        fi
+        # sed "$l d" Text.txt
+        # str="ALL=(ALL:ALL) ALL"
+        # echo $str >> Text.txt
     fi
 else
     prompt -e "$IS_SUDOER 不等于 0 or 1 ."
