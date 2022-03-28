@@ -9,6 +9,7 @@
 - Debian_Server_Init——用于初始化新的服务器
   - *Debian10_Server_Init.sh——Debian 10服务器部署(停止更新，最终版本v0.0.4)*
   - Debian11_Server_Init.sh——Debian 11服务器部署(TODO/未完成)
+  - rsshub_docker.sh——简单粗暴删除RSSHUB后重装启动
 - Windows——一些Windows的脚本(基本都是没用的东西)
   - WindowsApplications.bat——打开软件下载页面
 
@@ -20,6 +21,8 @@
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2022年3月29日
+  - 添加了一个简单粗暴的Docker RSSHub安装脚本(不建议直接运行，更建议作为备忘录看一看就好)
 - 2022年3月11日
   - 更新了Debian 11 GNOME部署脚本0.0.7
 - 2021年10月27日
