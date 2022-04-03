@@ -702,6 +702,12 @@ fi
 
 :<<Check-5-检查点五
 从apt仓库拉取常用软件
+安装Python3
+配置Python3源为清华大学镜像
+安装配置Apache2
+安装配置Git(配置User Email)
+安装配置SSH
+安装配置npm
 Check-5-检查点五
 # 从APT仓库安装常用软件包
 if [ "$SET_APT_INSTALL" -eq 1 ];then
@@ -758,20 +764,68 @@ if [ "$SET_APT_INSTALL" -eq 1 ];then
     done
     sleep 10
     doApt install ${immediately_task[@]}
-    if [ $? != 0 ];then # TODO
-        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
+    if [ $? != 0 ];then
+        prompt -e "Continue...."
         sleep 2
         num=1
         for var in ${immediately_task[@]}
         do
-            prompt -m "正在安装第 $num 个软件包: $var。"
+            prompt -m "Install package: $num - $var ..."
             doApt install $var
             num=$((num+1))
         done
     fi 
 fi
 
+# 安装Python3
+if [ "$SET_PYTHON3_INSTALL" -eq 1 ];then
+    prompt -x "Install Python3 and pip3..."
+    doApt install python3
+    doApt install python3-pip
+fi
 
+# 配置Python3源为清华大学镜像
+if [ "$SET_PYTHON3_MIRROR" -eq 1 ];then
+    prompt -x "Setup pip mirror "
+    doApt install software-properties-common
+    doApt install python3-software-properties
+    doApt install python3-pip
+    pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+    pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
+    pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+elif [ "$SET_PYTHON3_MIRROR" -eq 0 ];then
+    prompt -i "Pass pip mirror site setup."
+else
+    prompt -w "Setup customize pip mirror !"
+    doApt install software-properties-common
+    doApt install python3-software-properties
+    doApt install python3-pip
+    pip install -i $SET_PYTHON3_MIRROR -U
+    pip config set global.index-url $SET_PYTHON3_MIRROR
+    pip3 install -i $SET_PYTHON3_MIRROR pip -U
+    pip3 config set global.index-url $SET_PYTHON3_MIRROR
+fi
+
+# 安装配置Apache2
+
+# 安装配置Git(配置User Email)
+# 安装配置Git(配置User Email)
+if [ "$SET_INSTALL_GIT" -eq 1 ];then
+    prompt -x "Install Git"
+    doApt install git
+    if [ $? -eq 0 ];then
+        git config --global user.name $SET_GIT_USER
+        git config --global user.email $SET_GIT_EMAIL
+    else
+        prompt -e "Failed to install git"
+        exit 2
+    fi
+fi
+
+# 安装配置SSH
+
+# 安装配置npm
 
 
 
