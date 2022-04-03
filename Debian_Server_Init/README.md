@@ -16,7 +16,9 @@
 
 - 检查点一：更改镜像（针对国内服务器）；默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release(必选)；配置unattended-upgrades
 - 检查点二：安装sudo openssh-server zsh(必选)；设置所有用户使用zsh；新建用户(包括配置sudo、是否使用zshrc、sudo免密码)
-- 检查点三：添加HOME目录文件夹
+- 检查点三：安装vim-full，卸载vim-tiny；添加/usr/sbin到环境变量；添加添加HOME目录文件夹（Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service）；安装bash-completion；安装zsh-autosuggestions
+- 检查点四：自定义自己的服务（运行一个shell脚本）；
+- 检查点五：从apt仓库拉取常用软件
 - 
 
 ## 更新日志

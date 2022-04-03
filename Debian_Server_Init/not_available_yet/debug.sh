@@ -238,84 +238,8 @@ fi
 
 ##########################################################################################
 CURRENT_USER_SET="ryan"
-echo $CURRENT_USER_SET
-# 检查是否在sudoer
-prompt -i "Check if $CURRENT_USER_SET in sudoers"
-# 检查是否在sudo组中 0 false 1 true
-IS_SUDOER=-1
-IS_SUDO_NOPASSWD=-1
-# 检查是否在sudo组
-if groups $CURRENT_USER_SET | grep sudo > /dev/null ;then
-    # 是sudo组
-    IS_SUDOER=1
-    # 检查是否免密码sudo
-    check_var="ALL=(ALL)NOPASSWD:ALL"
-    if cat 'Text.txt' | grep $check_var | grep $CURRENT_USER_SET > /dev/null ;then
-        # sudo免密码
-        IS_SUDO_NOPASSWD=1
-        echo nopass
-    else
-        # sudo要密码
-        IS_SUDO_NOPASSWD=0
-        echo need pass
-    fi
-else
-    # 不是sudoer
-    IS_SUDOER=0
-    IS_SUDO_NOPASSWD=0
-    echo Not a sudoer
-fi
-   
-# 配置用户为sudo
-if [ "$CURRENT_USER_SET" == "root" ];then
-    prompt -w "Not sudo for root, pass."
-elif [ "$IS_SUDOER" -eq 0 ];then
-    # 如果没有在sudo组,添加用户到sudo组
-    if [ "$SET_USER_SUDOER" -eq 1 ];then
-        prompt -x "Add $CURRENT_USER_SET to sudo group...."
-        # usermod -a -G sudo $CURRENT_USER_SET
-        IS_SUDOER=1
-    fi
-    # 配置sudo免密码
-    if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_USER_SUDOER_NOPASSWD" -eq 1 ];then
-        prompt -x "Set $CURRENT_USER_SET sudo nopasswd...."
-        SUDOER_STRING="$CURRENT_USER_SET ALL=(ALL)NOPASSWD:ALL"
-        echo $SUDOER_STRING >> Text.txt
-        IS_SUDO_NOPASSWD=1
-    fi
-elif [ "$IS_SUDOER" -eq 1 ];then
-    # 如果已经是sudoer 配置是否免密码
-    if [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ];then
-        prompt -x "Set $CURRENT_USER_SET sudo not passwd."
-        # 删除这一行
-        cat 'Text.txt' | grep $CURRENT_USER_SET
-        exit 0
-        check_var="ALL=(ALL)NOPASSWD:ALL"
-        if cat 'Text.txt' | grep $check_var | grep $CURRENT_USER_SET > /dev/null ;then
-            # sudo免密码
-            IS_SUDO_NOPASSWD=1
-        else
-        # sudo要密码
-            IS_SUDO_NOPASSWD=0
-        fi
-    elif [ "$IS_SUDO_NOPASSWD" -eq 1 ] && [ "$SET_SUDOER_NOPASSWD" -eq 0 ];then
-        prompt -x "Set $CURRENT_USER_SET sudo required passwd."
-        check_var="ALL=(ALL)NOPASSWD:ALL"
-        l=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
-        echo $l
-        ll=($l)
-        echo ${#ll[@]}
-        if ! echo "$l" | grep "\ " > /dev/null ;then
-          echo 12333333333333333333333333333333
-        fi
-        # sed "$l d" Text.txt
-        # str="ALL=(ALL:ALL) ALL"
-        # echo $str >> Text.txt
-    fi
-else
-    prompt -e "$IS_SUDOER 不等于 0 or 1 ."
-    exit 1
-fi
+
+echo $HOME_INDEX/DA
 
 
 

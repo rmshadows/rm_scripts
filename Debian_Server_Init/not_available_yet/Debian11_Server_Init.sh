@@ -44,21 +44,125 @@ SET_USER_SUDOER=1
 SET_SUDOER_NOPASSWD=1
 
 ## Check-3-检查点三：
-# 是否卸载vim-tiny，安装vim-full Preset:1
+# Uninstall vim-tiny and install vim-full(是否卸载vim-tiny，安装vim-full) Preset:1
 SET_VIM_TINY_TO_FULL=1
-# 是否替换Bash为Zsh（包括root用户） Preset:1
-SET_BASH_TO_ZSH=1
-# 是否配置ZSHRC Preset:1
-SET_ZSHRC=1
-# 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
-SET_REPLACE_ROOT_RC_FILE=1
-# 添加/usr/sbin到环境变量 Preset=1
+# Create folders in User Home path (新建home文件夹中的目录Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service) Preset:1
+SET_HOME=1
+# Add sbin to env (添加/usr/sbin到用户环境变量) Preset=1
 SET_ADD_SBIN_ENV=1
-# 是否安装bash-completion Preset=1
+# Install bash-completion (是否安装bash-completion) Preset=1
 SET_BASH_COMPLETION=1
-# 是否安装zsh-autosuggestions Preset=1
+# Install zsh-autosuggestions (是否安装zsh-autosuggestions) Preset=1
 SET_ZSH_AUTOSUGGESTIONS=1
 
+## Check-4-检查点四：
+# Create a /lib/systemd/system/customize-autorun.service(自定义自己的服务（运行一个shell脚本）) Preset:1
+SET_SYSTEMCTL_SERVICE=1
+
+## Check-5-检查点五：
+# 从apt仓库拉取常用软件
+# Install packages from apt repo (是否从APT源安装常用软件) Preset=1
+SET_APT_INSTALL=1
+:<<注释
+要安装的的软件的列表,列表在下方！！往下一直拉
+有几个预选的安装列表供参考:
+0.自定义列表
+1.轻便安装
+2.部分安装
+3.全部安装
+Preset=1
+注释
+# Which package list should be installed.
+SET_APT_INSTALL_LIST_INDEX=1
+# Install python3(安装Python3) Preset=1
+SET_PYTHON3_INSTALL=1
+# [Chinese only!]Config Pip mirror to tsinghua,for other mirror, replace 0 or 1 with mirror addr(string) (配置Python3源为清华大学镜像,自定义源请用字符串) Preset=0
+SET_PYTHON3_MIRROR=0
+# 安装配置Apache2 Preset=1
+SET_INSTALL_APACHE2=1
+# 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_APACHE2=0
+# 安装配置git Preset=1
+SET_INSTALL_GIT=1
+# Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
+SET_GIT_USER=$CURRENT_USER
+SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
+# 安装配置ssh Preset=1
+SET_INSTALL_OPENSSH=1
+# SSH开机是否自启 Preset=1 默认启用
+SET_ENABLE_SSH=1
+# 安装配置npm Preset=0
+SET_INSTALL_NPM=0
+# 是否安装Nodejs Preset=0
+SET_INSTALL_NODEJS=0
+# 是否安装CNPM Preset=0
+SET_INSTALL_CNPM=0
+
+# 配置SSH Key Preset=1
+SET_CONFIG_SSH_KEY=1
+# 是否生成新的SSH Key 0:新的密钥 1:从文件夹导入现有密钥 2:从文本导入现有密钥 Preset=0
+SET_SSH_KEY_SOURCE=0
+# 新生成的、或者导入文本生成的SSH密钥名称 Preset=id_rsa
+SET_SSH_KEY_NAME=id_rsa
+# 新生成的SSH密钥密码 Preset=""
+SET_NEW_SSH_KEY_PASSWD=""
+# 新密钥的备注
+SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script"
+# 存放已存在的SSH密钥文件夹名称 1:从文件夹导入
+SET_EXISTED_SSH_KEY_SRC=SSH_KEY
+# SSH 密钥文本 2:从文本导入
+# 私钥
+SET_SSH_KEY_PRIVATE_TEXT=""
+# 公钥
+SET_SSH_KEY_PUBLIC_TEXT=""
+
+
+
+
+
+:<<注释
+下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
+注意：列表中请不要使用中括号
+注释
+
+# Customize 自定义列表
+SET_APT_TO_INSTALL_INDEX_0="
+
+"
+
+# 这里是 脚本运行后 要安装的软件。格式同上，注意是稍后安装的，所以会放在脚本执行结束后才安装。
+SET_APT_TO_INSTALL_LATER="
+- apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
+- apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
+"
+
+# 轻便安装 (仅我个人认为必要的常用软件)
+APT_TO_INSTALL_INDEX_1="
+- apt-listbugs——apt_list_bug
+- apt-listchanges——apt_list_change
+- apt-transport-https——apt-transport-https
+- axel——axel_downloader
+- bash-completion——bash_completion
+- build-essential——build-essential
+- ca-certificates——ca-certificates
+- curl——curl
+- gnupg——GPG
+- htop——colored_top
+- httrack——website_clone
+- lsb-release——lsb-release
+- make——make
+- net-tools——ifconfig
+- screenfetch——display_system_info
+- sed——text_edit
+- silversearcher-ag——Ag_searcher
+- tcpdump——tcpdump
+- tree——ls_dir_as_tree
+- traceroute——trace_route
+- wget——wget
+- zhcon——tty_display_Chinese
+- zsh——zsh
+- zsh-autosuggestions——zsh_plugin
+"
 
 
 ### 配置文件
@@ -390,6 +494,9 @@ elif [ "$CURRENT_SHELL" == "/bin/zsh" ];then
     elif [ "$SET_ZSHRC" -eq 0 ];then
         prompt -m "Keep original ZSHRC file."
     fi
+else
+    prompt -e "Unknown shell: $CURRENT_SHELL"
+    exit 1
 fi
 
 # 新建用户 如果已经存在，不添加，直接配置该用户
@@ -464,23 +571,40 @@ elif [ "$IS_SUDOER" -eq 1 ];then
     # 如果已经是sudoer 配置是否免密码
     if [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ];then
         prompt -x "Set $CURRENT_USER_SET sudo not passwd."
-        # 删除这一行
-        check_var="ALL=(ALL)NOPASSWD:ALL"
-        if cat '/etc/sudoers' | grep $check_var | grep $CURRENT_USER_SET > /dev/null ;then
-            # sudo免密码
-            IS_SUDO_NOPASSWD=1
-        else
-        # sudo要密码
-            IS_SUDO_NOPASSWD=0
+        check_var="ALL=(ALL:ALL) ALL"
+        # 获取行号
+        idx=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
+        # echo $idx
+        # 找到的Index
+        idxl=($idx)
+        idxlen=${#idxl[@]}  
+        # echo $idxlen
+        if [ $idxlen -ne 1 ];then
+          prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
+          exit 1
         fi
+        SUDO_STRING="$CURRENT_USER_SET  ALL=(ALL)NOPASSWD:ALL"
+        sed -i "$idx d" /etc/sudoers
+        echo $SUDO_STRING >> /etc/sudoers
+        IS_SUDO_NOPASSWD=1
     elif [ "$IS_SUDO_NOPASSWD" -eq 1 ] && [ "$SET_SUDOER_NOPASSWD" -eq 0 ];then
         prompt -x "Set $CURRENT_USER_SET sudo required passwd."
         check_var="ALL=(ALL)NOPASSWD:ALL"
         # 获取行号
-        rm_line=`cat Text.txt | grep -n $check_var | gawk '{print $1}' FS=":"`
-        sed -i "$rm_line d" /etc/sudoers
-        SUDO_STRING="ALL=(ALL:ALL) ALL"
-        TODO
+        idx=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
+        # echo $idx
+        # 找到的Index
+        idxl=($idx)
+        idxlen=${#idxl[@]}  
+        # echo $idxlen
+        if [ $idxlen -ne 1 ];then
+          prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
+          exit 1
+        fi
+        SUDO_STRING="$CURRENT_USER_SET  ALL=(ALL:ALL) ALL"
+        sed -i "$idx d" /etc/sudoers
+        echo $SUDO_STRING >> /etc/sudoers
+        IS_SUDO_NOPASSWD=0
     fi
 else
     prompt -e "$IS_SUDOER 不等于 0 or 1 ."
@@ -488,14 +612,164 @@ else
 fi
 
 
+:<<Check-3-检查点三
+安装vim-full，卸载vim-tiny；
+添加/usr/sbin到环境变量；
+添加添加HOME目录文件夹（Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service）；
+安装bash-completion；
+安装zsh-autosuggestions
+Check-3-检查点三
+# 安装vim-full，卸载vim-tiny；
+if [ "$SET_VIM_TINY_TO_FULL" -eq 1 ];then
+    prompt -x "Uninstall vim-tiny and install vim-full."
+    doApt remove vim-tiny
+    doApt install vim
+fi
+
+# 添加添加HOME目录文件夹（Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service）；
+if [ "$SET_HOME" -eq 1 ];then
+    prompt -x "Creating folders in $HOME_INDEX..."
+    mkdir $HOME_INDEX/Data
+    mkdir $HOME_INDEX/Applications
+    mkdir $HOME_INDEX/Temp
+    mkdir $HOME_INDEX/Workplace
+    mkdir $HOME_INDEX/Services
+    mkdir $HOME_INDEX/Logs
+    mkdir $HOME_INDEX/Logs/apache2
+    mkdir $HOME_INDEX//Logs/nginx
+    chown $CURRENT_USER_SET -hR $HOME_INDEX
+fi
+
+# 添加/usr/sbin到环境变量；
+if [ "$SET_ADD_SBIN_ENV" -eq 1 ];then
+    prompt -x "Add sbin to path..."
+    check_var="export PATH=\"\$PATH:/usr/sbin\""
+    # G
+    echo -e "\e[1;32m Checking path in $shell_conf…… \e[0m"
+    if cat '$HOME_INDEX/$shell_conf' | grep "$check_var"
+    then
+        # B
+        echo -e "\e[1;34m $check_var  detected, path already existd, pass.\e[0m"
+    else
+        # G
+        echo -e "\e[1;32m Add /usr/sbin to $shell_conf. \e[0m"
+        echo "export PATH=\"\$PATH:/usr/sbin\"" >> $HOME_INDEX/$shell_conf
+    fi
+fi
+
+# 安装bash-completion；
+if [ "$SET_BASH_COMPLETION" -eq 1 ];then
+    prompt -x "Install bash-completion..."
+    doApt install bash-completion
+fi
+
+# 安装zsh-autosuggestions
+if [ "$SET_ZSH_AUTOSUGGESTIONS" -eq 1 ];then
+    prompt -x "Install zsh-autosuggestions..."
+    doApt install zsh-autosuggestions
+fi
+
+:<<Check-4-检查点四
+自定义自己的服务（运行一个shell脚本）
+Check-4-检查点四
+# 自定义自己的服务（运行一个shell脚本）
+if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ];then
+    prompt -x "Create a /lib/systemd/system/customize-autorun.service."
+    addFolder $HOME_INDEX/.$CURRENT_USER_SET/
+    addFolder $HOME_INDEX/.$CURRENT_USER_SET/scripts/
+    prompt -x "Generate file: $HOME_INDEX/.$CURRENT_USER_SET/scripts/autorun.sh "
+    echo "#!/bin/bash
+echo -e \"\e[1;33m Hello World \e[0m\"
+" > $HOME_INDEX/.$CURRENT_USER_SET/scripts/autorun.sh
+    chmod +x $HOME_INDEX/.$CURRENT_USER_SET/scripts/autorun.sh
+    prompt -x "Build /lib/systemd/system/customize-autorun.service."
+    if ! [ -f /lib/systemd/system/customize-autorun.service ];then
+        echo "[Unit]
+Description=自定义的服务，用于开启启动/home/用户/.用户名/script下的shell脚本，配置完成请手动启用。注意，此脚本将以root身份运行！
+After=network.target 
+
+[Service]
+ExecStart=$HOME_INDEX/.$CURRENT_USER_SET/scripts/autorun.sh
+Type=forking
+PrivateTmp=True
+
+[Install]
+WantedBy=multi-user.target
+" > /lib/systemd/system/customize-autorun.service
+    fi
+fi
 
 
-
-
-
-
-
-
+:<<Check-5-检查点五
+从apt仓库拉取常用软件
+Check-5-检查点五
+# 从APT仓库安装常用软件包
+if [ "$SET_APT_INSTALL" -eq 1 ];then
+    # 准备安装的包名列表
+    immediately_task=()
+    # 脚本运行结束后要安装的包名
+    later_task=()
+    # 先判断要安装的列表
+    if [ "$SET_APT_INSTALL_LIST_INDEX" -eq 0 ];then
+        # 自定义安装
+        app_list=$SEAPT_TO_INSTALL_INDEX_0
+    elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 1 ];then
+        app_list=$APT_TO_INSTALL_INDEX_1
+    else
+        prompt -e "APT_TO_INSTALL_INDEX List not found !"
+        exit 2
+    fi
+    # 首先，处理稍后要安装的软件包
+    later_list=$SET_APT_TO_INSTALL_LATER
+    later_list=$(echo $later_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
+    later_list=($later_list)
+    later_len=${#later_list[@]}
+    prompt -m "Packages below will be installed: "
+    for ((i=0;i<$later_len;i++));do
+        each=${later_list[$i]}
+        index=`expr index "$each" —`
+        # 软件包名
+        name=${later_list[$i]/$each/${each:0:($index-1)}}
+        # 添加到列表
+        later_task[$num]=${name}
+        prompt -i "$each"
+    done
+    sleep 8
+    echo -e "\n\n\n"
+    # 处理app_list列表
+    # 把“- ”转为换行符 然后删除所有空格 最后删除第一行。echo $LST | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d'
+    app_list=$(echo $app_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
+    # 生成新的列表
+    app_list=($app_list)
+    # 接下来打印要安装的软件包列表, 显示的序号从0开始
+    num=0
+    app_len=${#app_list[@]}
+    prompt -m "Begin installation: "
+    for ((i=0;i<$app_len;i++));do
+        # 显示序号
+        echo -en "\e[1;35m$num)\e[0m"
+        each=${app_list[$i]}
+        index=`expr index "$each" —`
+        # 软件包名
+        name=${app_list[$i]/$each/${each:0:($index-1)}}
+        immediately_task[$num]=${name}
+        prompt -i "$each"
+        num=$((num+1))
+    done
+    sleep 10
+    doApt install ${immediately_task[@]}
+    if [ $? != 0 ];then # TODO
+        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
+        sleep 2
+        num=1
+        for var in ${immediately_task[@]}
+        do
+            prompt -m "正在安装第 $num 个软件包: $var。"
+            doApt install $var
+            num=$((num+1))
+        done
+    fi 
+fi
 
 
 
