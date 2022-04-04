@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.8
+Version：0.0.9
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -79,8 +79,8 @@ SET_ENABLE_APACHE2=0
 # 安装配置git Preset=1
 SET_INSTALL_GIT=1
 # Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
-SET_GIT_USER=$CURRENT_USER
-SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
+SET_GIT_USER=0
+SET_GIT_EMAIL=0
 # 安装配置ssh Preset=1
 SET_INSTALL_OPENSSH=1
 # SSH开机是否自启 Preset=0 默认禁用
@@ -145,8 +145,8 @@ SET_SSH_KEY_SOURCE=0
 SET_SSH_KEY_NAME=id_rsa
 # 新生成的SSH密钥密码 Preset=""
 SET_NEW_SSH_KEY_PASSWD=""
-# 新密钥的备注
-SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script"
+# 新密钥的备注 默认："A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script" Preset=0 （0就是默认备注！）
+SET_SSH_KEY_COMMENT=0
 # 存放已存在的SSH密钥文件夹名称 1:从文件夹导入
 SET_EXISTED_SSH_KEY_SRC=SSH_KEY
 # SSH 密钥文本 2:从文本导入
@@ -1327,6 +1327,20 @@ fi
 !预先检查
 # 获取当前用户名
 CURRENT_USER=$USER
+HOSTNAME=$HOST
+
+#### 默认变量赋值
+# Git
+if [ "$SET_GIT_USER" -eq 0 ];then
+    SET_GIT_USER=$CURRENT_USER
+fi
+if [ "$SET_GIT_EMAIL" -eq 0 ];then
+    SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
+fi
+# SSH
+if [ "$SET_SSH_KEY_COMMENT" -eq 0 ];then
+    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian 11_GNOME_Deploy_Script"
+fi
 
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"

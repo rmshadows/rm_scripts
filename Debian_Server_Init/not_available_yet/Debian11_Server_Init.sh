@@ -58,6 +58,16 @@ SET_ZSH_AUTOSUGGESTIONS=1
 ## Check-4-检查点四：
 # Create a /lib/systemd/system/customize-autorun.service(自定义自己的服务（运行一个shell脚本）) Preset:1
 SET_SYSTEMCTL_SERVICE=1
+# Set hostname(设置HostName) Preset=0
+SET_HOST_NAME=0
+# Set locales(If you do not need this, just set 0) (设置语言支持，不需要请设置为0) Preset="en_US.UTF-8 UTF-8"
+SET_LOCALES="# Setup locales
+en_US.UTF-8 UTF-8
+zh_CN.UTF-8 UTF-8
+"
+# Set time zone (zoneinfo file path)(设置时间支持) Preset=0
+# e.g.:Shanghai China,You need to set this: /usr/share/zoneinfo/Asia/Shanghai 
+SET_TIME_ZONE=0
 
 ## Check-5-检查点五：
 # 从apt仓库拉取常用软件
@@ -78,36 +88,32 @@ SET_APT_INSTALL_LIST_INDEX=1
 SET_PYTHON3_INSTALL=1
 # [Chinese only!]Config Pip mirror to tsinghua,for other mirror, replace 0 or 1 with mirror addr(string) (配置Python3源为清华大学镜像,自定义源请用字符串) Preset=0
 SET_PYTHON3_MIRROR=0
-# 安装配置Apache2 Preset=1
-SET_INSTALL_APACHE2=1
-# 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_APACHE2=0
-# 安装配置git Preset=1
+# Install git (安装配置git) Preset=1
 SET_INSTALL_GIT=1
-# Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
-SET_GIT_USER=$CURRENT_USER
-SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
-# 安装配置ssh Preset=1
+# Git User & E-mail(Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST) Preset=0
+SET_GIT_USER=0
+SET_GIT_EMAIL=0
+# Install openssh-server(安装配置ssh) Preset=1
 SET_INSTALL_OPENSSH=1
-# SSH开机是否自启 Preset=1 默认启用
+# Enable ssh server(SSH开机是否自启 默认启用) Preset=1 
 SET_ENABLE_SSH=1
-# 安装配置npm Preset=0
+# Install npm(安装配置npm) Preset=0
 SET_INSTALL_NPM=0
-# 是否安装Nodejs Preset=0
+# Install nodejs(是否安装Nodejs) Preset=0
 SET_INSTALL_NODEJS=0
-# 是否安装CNPM Preset=0
+# Install cnpm (For Chinese) (是否安装CNPM) Preset=0
 SET_INSTALL_CNPM=0
 
-# 配置SSH Key Preset=1
+# Config SSH Key(配置SSH Key) Preset=1
 SET_CONFIG_SSH_KEY=1
-# 是否生成新的SSH Key 0:新的密钥 1:从文件夹导入现有密钥 2:从文本导入现有密钥 Preset=0
+# Generate New SSH Key(是否生成新的SSH Key 0:新的密钥 1:从文件夹导入现有密钥 2:从文本导入现有密钥) Preset=0
 SET_SSH_KEY_SOURCE=0
-# 新生成的、或者导入文本生成的SSH密钥名称 Preset=id_rsa
+# New ssh key file name(新生成的、或者导入文本生成的SSH密钥名称) Preset=id_rsa
 SET_SSH_KEY_NAME=id_rsa
-# 新生成的SSH密钥密码 Preset=""
+# ssh key passwd(新生成的SSH密钥密码) Preset=""
 SET_NEW_SSH_KEY_PASSWD=""
-# 新密钥的备注
-SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script"
+# 新密钥的备注 "A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian 11_Server_Deploy_Script")
+SET_SSH_KEY_COMMENT=0
 # 存放已存在的SSH密钥文件夹名称 1:从文件夹导入
 SET_EXISTED_SSH_KEY_SRC=SSH_KEY
 # SSH 密钥文本 2:从文本导入
@@ -116,8 +122,14 @@ SET_SSH_KEY_PRIVATE_TEXT=""
 # 公钥
 SET_SSH_KEY_PUBLIC_TEXT=""
 
+## Check-6-检查点六：
 
 
+## Check-7-检查点七：
+# Install http server安装配置Apache2 Preset=1
+SET_INSTALL_APACHE2=1
+# 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_APACHE2=0
 
 
 :<<注释
@@ -341,6 +353,13 @@ Prep-预备步骤
 CURRENT_USER_SET=$USER
 # 用户目录
 HOME_INDEX="$HOME"
+# 主机名
+if [ "$SET_HOST_NAME" -ne 0 ];then
+    HOSTNAME=$SET_HOST_NAME
+else
+    HOSTNAME=$HOST
+fi
+
 # 设置用户目录
 if [ "$SET_USER" -eq 1 ];then
     CURRENT_USER_SET=$SET_USER_NAME
@@ -361,6 +380,21 @@ else
   prompt -e "\n [ Error ] -> Please run with root(ROOT, NOT SUDO !)  \n"
   exit 1
 fi
+
+#### 预运行
+# 参数赋值
+# Git
+if [ "$SET_GIT_USER" -eq 0 ];then
+    SET_GIT_USER=$CURRENT_USER_SET
+fi
+if [ "$SET_GIT_EMAIL" -eq 0 ];then
+    SET_GIT_EMAIL=$CURRENT_USER_SET@$HOSTNAME
+fi
+# SSH
+if [ "$SET_SSH_KEY_COMMENT" -eq 0 ];then
+    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian 11_GNOME_Deploy_Script"
+fi
+
 
 ### 确认运行模块
 # R
@@ -699,6 +733,29 @@ WantedBy=multi-user.target
     fi
 fi
 
+# 设置主机名
+if [ "$SET_HOST_NAME" -ne 0 ];then
+    prompt -x "Setup hostname"
+    echo $hostname > /etc/hostname
+    echo "127.0.1.1	$hostname" >> /etc/hosts
+fi
+
+# 设置语言支持
+if [ "$SET_LOCALES" -ne 0 ];then
+    prompt -x "Setup locales"
+    backupFile /etc/locale.gen
+    echo "$SET_LOCALES" > /etc/locale.gen
+    locale-gen
+fi
+
+# 设置时区
+if [ "$SET_TIME_ZONE" -ne 0 ];then
+    prompt -x "Setup timezone"
+    backupFile /etc/localtime
+    # echo "ZONE=Asia/Shanghai" >> /etc/sysconfig/clock
+    # rm -f /etc/localtime
+    ln -sf "$SET_TIME_ZONE" /etc/localtime
+fi
 
 :<<Check-5-检查点五
 从apt仓库拉取常用软件
@@ -807,7 +864,6 @@ else
     pip3 config set global.index-url $SET_PYTHON3_MIRROR
 fi
 
-# 安装配置Apache2
 
 # 安装配置Git(配置User Email)
 # 安装配置Git(配置User Email)
@@ -824,13 +880,58 @@ if [ "$SET_INSTALL_GIT" -eq 1 ];then
 fi
 
 # 安装配置SSH
-
+if [ "$SET_INSTALL_OPENSSH" -eq 1 ];then
+    doApt install openssh-server
+    if [ "$SET_ENABLE_SSH" -eq 1 ];then
+        prompt -x "Enable sh.service"
+        sudo systemctl enable ssh.service
+    elif [ "$SET_ENABLE_SSH" -eq 0 ];then
+        prompt -x "Disable sh.service"
+        sudo systemctl disable ssh.service
+    fi
+fi
 # 安装配置npm
+if [ "$SET_INSTALL_NPM" -eq 1 ];then
+    doApt install npm
+    if [ "$SET_INSTALL_CNPM" -eq 1 ];then
+        if ! [ -x "$(command -v cnpm)" ]; then
+            prompt -x "Install CNPM"
+            npm install cnpm -g --registry=https://r.npm.taobao.org
+        fi
+    fi
+fi
+
+# Nodejs
+if [ "$SET_INSTALL_NODEJS" -eq 1 ];then
+    doApt install nodejs
+fi
 
 
-
-
-
+# 安装配置Apache2
+if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
+    prompt -x "安装Apache2"
+    doApt install apache2
+    prompt -m "配置Apache2 共享目录为 /home/HTML"
+    addFolder /home/HTML
+    prompt -x "设置/home/HTML读写权限为755"
+    sudo chmod 755 /home/HTML
+    if [ $? -eq 0 ];then
+        backupFile /etc/apache2/apache2.conf
+        prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
+        sudo sed -i 's/\/var\/www\//\/home\/HTML\//g' /etc/apache2/apache2.conf
+        sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/home\/HTML/g' /etc/apache2/sites-available/000-default.conf
+        if [ "$SET_ENABLE_APACHE2" -eq 0 ];then
+            prompt -x "禁用Apache2服务开机自启"
+            sudo systemctl disable apache2.service
+        elif [ "$SET_ENABLE_APACHE2" -eq 1 ];then
+            prompt -x "配置Apache2服务开机自启"
+            sudo systemctl enable apache2.service
+        fi
+    else
+        prompt -e "Apache2似乎安装失败了。"
+        quitThis
+    fi
+fi
 
 
 

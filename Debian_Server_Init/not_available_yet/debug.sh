@@ -239,7 +239,7 @@ fi
 ##########################################################################################
 CURRENT_USER_SET="ryan"
 
-echo $HOME_INDEX/DA
+echo "$CURRENT_USER_SET" > 1.txt
 
 
 
