@@ -11,7 +11,7 @@
   - Debian11_Server_Init.sh——Debian 11服务器部署(TODO/未完成)
   - rsshub_docker.sh——简单粗暴删除RSSHUB后重装启动
 - Windows——一些Windows的脚本(基本都是没用的东西)
-  - WindowsApplications.bat——打开软件下载页面
+  - OpenApplicationDownloadPages.bat——打开软件下载页面
 
 ## 未分类脚本
 

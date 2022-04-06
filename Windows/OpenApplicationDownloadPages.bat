@@ -46,9 +46,11 @@ https://www.zerotier.com/
 REM WPS
 start https://platform.wps.cn/
 
+REM 百度云盘 Baidu NetDisk
+start https://pan.baidu.com/download/
 
-
-
+REM 企业微信
+start https://work.weixin.qq.com/#indexDownload/
 
 
 
