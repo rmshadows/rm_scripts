@@ -69,6 +69,12 @@ zh_CN.UTF-8 UTF-8
 # e.g.:Shanghai China,You need to set this: /usr/share/zoneinfo/Asia/Shanghai 
 SET_TIME_ZONE=0
 
+# Set tty1 auto-login (设置TTY1自动登录) Preset=1
+SET_TTY_AUTOLOGIN=1
+
+# Modify the default rules for naming network card in GRUB(配置GRUB网卡默认命名方式) Preset=1
+SET_GRUB_NETCARD_NAMING=1
+
 ## Check-5-检查点五：
 # 从apt仓库拉取常用软件
 # Install packages from apt repo (是否从APT源安装常用软件) Preset=1
@@ -705,6 +711,11 @@ fi
 
 :<<Check-4-检查点四
 自定义自己的服务（运行一个shell脚本）
+配置主机名
+配置语言支持
+配置时区
+设置TTY1自动登录
+配置GRUB网卡默认命名方式
 Check-4-检查点四
 # 自定义自己的服务（运行一个shell脚本）
 if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ];then
@@ -752,10 +763,40 @@ fi
 if [ "$SET_TIME_ZONE" -ne 0 ];then
     prompt -x "Setup timezone"
     backupFile /etc/localtime
+    # Discard
     # echo "ZONE=Asia/Shanghai" >> /etc/sysconfig/clock
     # rm -f /etc/localtime
     ln -sf "$SET_TIME_ZONE" /etc/localtime
 fi
+
+# 设置TTY1自动登录
+if [ "$SET_TTY_AUTOLOGIN" -ne 0 ];then
+    prompt -x "Setup tty1 automatic login..."
+    sed -i "s/#NAutoVTs=6/NAutoVTs=1/g" /etc/systemd/logind.conf
+    mkdir /etc/systemd/system/getty@tty1.service.d
+    echo "[Service]
+ExecStart=
+ExecStart=-/usr/sbin/agetty --autologin $CURRENT_USER_SET --noclear %I \$TERM
+" > /etc/systemd/system/getty@tty1.service.d/override.conf
+fi
+
+# 设置GRUB网卡命名规则
+if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
+    prompt -x "Modify the default rules for naming network card in GRUB..."
+    prompt -m "Check if already config…… "
+    check_var="GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\""
+    if cat /etc/default/grub | grep "$check_var" > /dev/null
+    then
+        prompt -w "Pass."
+    else
+        backupFile /etc/default/grub
+        prompt -x "Add GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" to /etc/default/grub ..."
+        sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
+        prompt -x "Update GRUB"
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+    fi
+fi
+
 
 :<<Check-5-检查点五
 从apt仓库拉取常用软件
