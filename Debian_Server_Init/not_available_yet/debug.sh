@@ -239,7 +239,7 @@ fi
 ##########################################################################################
 CURRENT_USER_SET="ryan"
 
-echo "$CURRENT_USER_SET" > 1.txt
+sed 's#/var/www/#'$HOME_INDEX'/'$CURRENT_USER_SET'/#g' 1.txt
 
 
 

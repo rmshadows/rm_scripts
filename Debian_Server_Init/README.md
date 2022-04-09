@@ -1,6 +1,6 @@
 # Debian11_Server_Init.sh
 
->Current Version: 0.0.1
+>Current Version: 0.0.3
 
 ## 使用方法
 
@@ -25,7 +25,7 @@
 - 检查点三：
   - 安装vim-full，卸载vim-tiny；
   - 添加/usr/sbin到环境变量；
-  - 添加添加HOME目录文件夹（Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service）；
+    - 添加添加HOME目录文件夹（Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service）(必选)；
   - 安装bash-completion；
   - 安装zsh-autosuggestions
 - 检查点四：
@@ -37,9 +37,15 @@
   - 设置GRUB网卡命名规则
 - 检查点五：
   - 从apt仓库拉取常用软件
-  - TODO
+  - 安装Python3
+  - 安装Git
+  - 安装Openssh
+  - 安装nodejs
+  - 安装npm
 - 检查点六：
+  - 安装、配置HTTP服务
 - 检查点七：
+  - 安装docker-ce
 - 检查点八：
 - 检查点九：
 
@@ -47,6 +53,8 @@
 
 >dev: Not available yet.
 
+- 2022.04.10——0.0.3-dev
+  - 更新了检查点六
 - 2022.04.09——0.0.2-dev
   - 更新了检查点三
 - 2021.09.28——0.0.1-dev

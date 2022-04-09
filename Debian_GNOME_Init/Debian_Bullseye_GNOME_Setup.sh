@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.0.9
+Version：0.1.0
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -764,6 +764,8 @@ $1
 !
 }
 
+# For debug
+# !>/dev/null 2>&1
 # 检查root密码是否正确
 checkRootPasswd () {
 # 下面不能有缩进！
@@ -1077,7 +1079,7 @@ alias l='ls -CF'
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
 # FFMPEG
 # 裁剪 开始、结尾、文件、输出文件
-alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss $1 -to $2 -i $3 -vcodec copy -acodec copy $4};ffmpegCutVideo'
+alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$1 -to \$2 -i \$3 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 # HTTP服务器
 alias apastart='sudo systemctl start apache2.service'
 alias apastop='sudo systemctl stop apache2.service'
