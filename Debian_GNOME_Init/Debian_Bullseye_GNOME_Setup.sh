@@ -765,7 +765,7 @@ $1
 }
 
 # For debug
-# !>/dev/null 2>&1
+!>/dev/null 2>&1
 # 检查root密码是否正确
 checkRootPasswd () {
 # 下面不能有缩进！

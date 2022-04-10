@@ -1553,6 +1553,9 @@ fi
 if [ "$SET_USER_ZSH" -eq 1 ];then
     prompt -x "Set zsh for $CURRENT_USER_SET"
     usermod -s /bin/zsh $CURRENT_USER_SET
+    backupFile "$HOME_INDEX/$shell_conf"
+    prompt -x "Config user's ZSHRC"
+    echo "$ZSHRC_CONFIG" > $HOME_INDEX/$shell_conf
 fi
 
 # 检查是否在sudoer
@@ -2204,8 +2207,8 @@ if [ "$SET_INSTALL_UFW" -eq 1 ];then
         for var in ${idxl[@]}
         do
             prompt -m "UFW Allow: $var "
-        done
-        ufw allow $var    
+            ufw allow $var
+        done   
     fi
     prompt -x "Enable UFW"
     ufw enable
@@ -2213,6 +2216,22 @@ fi
 
 
 #### 最后的步骤
+# 安装later_task中的软件
+if [ "$SET_APT_INSTALL" -eq 1 ];then
+    doApt install ${later_task[@]}
+    if [ $? != 0 ];then
+        prompt -e "Continue installation..."
+        sleep 2
+        num=1
+        for var in ${later_task[@]}
+        do
+            prompt -m "$num : $var。"
+            doApt install $var
+            num=$((num+1))
+        done
+    fi 
+fi
+
 prompt -i "=================================================="
 
 if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ];then
