@@ -3,7 +3,7 @@ ryan	ALL=(ALL)NOPASSWD:ALL
 # User alias specification
 
 root	ALL=(ALL:ALL) ALL
-
+127.0.0.1	1234
 # Allow members of group sudo to execute any command
 %sudo	ALL=(ALL:ALL) ALL
 ALL=(ALL:ALL) ALL

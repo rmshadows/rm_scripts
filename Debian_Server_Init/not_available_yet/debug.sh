@@ -239,7 +239,22 @@ fi
 ##########################################################################################
 CURRENT_USER_SET="ryan"
 
-sed 's#/var/www/#'$HOME_INDEX'/'$CURRENT_USER_SET'/#g' 1.txt
+SET_UFW_ALLOW="22 80 443"
+
+
+# 端口列表
+    idxl=($SET_UFW_ALLOW)
+    idxlen=${#idxl[@]}
+    # echo $idxlen
+    if [ $idxlen -eq 0 ];then
+        prompt -w "Are you sure to have UFW not allow anything ?!...ENEN SSH PORT???!"
+        exit 1
+    else
+        for var in ${idxl[@]}
+        do
+            prompt -m "正在安装第 $num 个软件包: $var。"
+        done
+    fi
 
 
 

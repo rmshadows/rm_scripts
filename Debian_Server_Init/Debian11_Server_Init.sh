@@ -145,6 +145,12 @@ SET_APACHE_DENY_USR_SHARE=0
 # Install docker-ce (安装docker-ce)(0:No 1:Offcial 2:tsinghua mirror) Preset=1
 SET_INSTALL_DOCKER_CE=1
 
+## Check-8-检查点八：
+# Install ufw [WARN(IMPORTANT): If your ssh port is not 22, you may LOSS CONTROL of the server ! ](安装ufw 默认开放22，80，443) Preset=1
+SET_INSTALL_UFW=1
+# UFW allow port (UFW允许的端口) Preset=22 80 443
+SET_UFW_ALLOW="22 80 443"
+
 
 :<<注释
 下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
@@ -1334,8 +1340,9 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 
 \e[0m"
 # R
-echo -e "\e[1;31m Preparing(1s)...\n\e[0m" # TODO
-# sleep 1
+echo -e "\e[1;31m Preparing(1s)...\n\e[0m" 
+# TODO
+sleep 1
 
 :<<Prep-预备步骤
 获取当前用户名
@@ -1604,31 +1611,39 @@ elif [ "$IS_SUDOER" -eq 1 ];then
         idxl=($idx)
         idxlen=${#idxl[@]}  
         # echo $idxlen
-        if [ $idxlen -ne 1 ];then
-          prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
-          exit 1
-        fi
         SUDO_STRING="$CURRENT_USER_SET  ALL=(ALL)NOPASSWD:ALL"
-        sed -i "$idx d" /etc/sudoers
-        echo $SUDO_STRING >> /etc/sudoers
+        if [ $idxlen -eq 1 ];then
+            sed -i "$idx d" /etc/sudoers
+            echo $SUDO_STRING >> /etc/sudoers
+        elif [ $idxlen -eq 0 ];then
+            prompt -w "Setting not found in /etc/sudoers!"
+            echo $SUDO_STRING >> /etc/sudoers
+        else
+            prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
+            exit 1
+        fi
         IS_SUDO_NOPASSWD=1
     elif [ "$IS_SUDO_NOPASSWD" -eq 1 ] && [ "$SET_SUDOER_NOPASSWD" -eq 0 ];then
         prompt -x "Set $CURRENT_USER_SET sudo required passwd."
         check_var="ALL=(ALL)NOPASSWD:ALL"
         # 获取行号
-        idx=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
+        idx=`cat /etc/sudoers | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
         # echo $idx
         # 找到的Index
         idxl=($idx)
         idxlen=${#idxl[@]}  
         # echo $idxlen
-        if [ $idxlen -ne 1 ];then
-          prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
-          exit 1
-        fi
         SUDO_STRING="$CURRENT_USER_SET  ALL=(ALL:ALL) ALL"
-        sed -i "$idx d" /etc/sudoers
-        echo $SUDO_STRING >> /etc/sudoers
+        if [ $idxlen -eq 1 ];then
+            sed -i "$idx d" /etc/sudoers
+            echo $SUDO_STRING >> /etc/sudoers
+        elif [ $idxlen -eq 0 ];then
+            prompt -w "Setting not found in /etc/sudoers!"
+            echo $SUDO_STRING >> /etc/sudoers
+        else
+            prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
+            exit 1
+        fi
         IS_SUDO_NOPASSWD=0
     fi
 else
@@ -1730,9 +1745,28 @@ fi
 # 设置主机名
 if [ "$SET_HOST_NAME" -ne 0 ];then
     prompt -x "Setup hostname"
-    echo $hostname > /etc/hostname
-    # TODO
-    echo "127.0.1.1	$hostname" >> /etc/hosts
+    echo $SET_HOST_NAME > /etc/hostname
+    check_var="127.0.1.1"
+    # 获取行号
+    idx=`cat /etc/hostname | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+    # 找到的Index
+    idxl=($idx)
+    idxlen=${#idxl[@]}  
+    # echo $idxlen
+    I_STRING="127.0.1.1\t$HOSTNAME"
+    if [ $idxlen -eq 1 ];then
+        # 删除行
+        sed -i "$idx d" /etc/hosts
+        # echo "127.0.1.1	$HOSTNAME" >> /etc/hosts
+        # 在前面插入
+        sed -i "$idx i $I_STRING" /etc/hosts
+    elif [ $idxlen -eq 0 ];then
+        prompt -w "Setting not found in /etc/hosts!"
+        echo $I_STRING >> /etc/hosts
+    else
+        prompt -e "Find duplicate user setting 127.0.1.1 in /etc/hosts! Check manually!"
+        exit 1
+    fi
 fi
 
 # 设置语言支持
@@ -1907,25 +1941,48 @@ fi
 # 安装配置SSH
 if [ "$SET_INSTALL_OPENSSH" -eq 1 ];then
     doApt install openssh-server
-    
-    ssh_keep_alive="ClientAliveInterval 60
-ClientAliveCountMax 3
-"
     prompt -x "SSH keep alive interval set 60s."
-    # TODO
-    check_var="ClientAliveInterval 60"
-        # 获取行号
-        idx=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
-        # echo $idx
-        # 找到的Index
-        idxl=($idx)
-        idxlen=${#idxl[@]}  
-        # echo $idxlen
-        if [ $idxlen -ne 1 ];then
-          prompt -e "Find duplicate user setting in /etc/sudoers! Check manually!"
-          exit 1
-        fi
-    echo "$ssh_keep_alive" >> /etc/ssh/sshd_config
+    check_var="ClientAliveInterval"
+    # 获取行号
+    idx=`cat /etc/ssh/sshd_config | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+    # 找到的Index
+    idxl=($idx)
+    idxlen=${#idxl[@]}  
+    # echo $idxlen
+    I_STRING="ClientAliveInterval 60"
+    if [ $idxlen -eq 1 ];then
+        # 删除行
+        sed -i "$idx d" /etc/ssh/sshd_config
+        # 在前面插入
+        sed -i "$idx i $I_STRING" /etc/ssh/sshd_config
+    elif [ $idxlen -eq 0 ];then
+        prompt -w "Setting not found in /etc/ssh/sshd_config!"
+        echo $I_STRING >> /etc/ssh/sshd_config
+    else
+        prompt -e "Find duplicate user setting 'ClientAliveInterval' in /etc/ssh/sshd_config! Check manually!"
+        exit 1
+    fi
+
+    check_var="ClientAliveCountMax"
+    # 获取行号
+    idx=`cat /etc/ssh/sshd_config | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+    # 找到的Index
+    idxl=($idx)
+    idxlen=${#idxl[@]}  
+    # echo $idxlen
+    I_STRING="ClientAliveCountMax 3"
+    if [ $idxlen -eq 1 ];then
+        # 删除行
+        sed -i "$idx d" /etc/ssh/sshd_config
+        # 在前面插入
+        sed -i "$idx i $I_STRING" /etc/ssh/sshd_config
+    elif [ $idxlen -eq 0 ];then
+        prompt -w "Setting not found in /etc/ssh/sshd_config!"
+        echo $I_STRING >> /etc/ssh/sshd_config
+    else
+        prompt -e "Find duplicate user setting 'ClientAliveCountMax' in /etc/ssh/sshd_config! Check manually!"
+        exit 1
+    fi
 
     if [ "$SET_ENABLE_SSH" -eq 1 ];then
         prompt -x "Enable sh.service"
@@ -2130,6 +2187,32 @@ elif [ "$SET_INSTALL_DOCKER_CE" -eq 2 ];then
 fi
 
 
+:<<Check-8-检查点八
+安装UFW
+Check-8-检查点八
+# 安装UFW，默认开放22 ，80，443
+if [ "$SET_INSTALL_UFW" -eq 1 ];then
+    prompt -x "Install UFW"
+    doApt install ufw
+    ufw default deny incoming
+    ufw default allow outgoing
+    # 端口列表
+    idxl=($SET_UFW_ALLOW)
+    idxlen=${#idxl[@]}
+    # echo $idxlen
+    if [ $idxlen -eq 0 ];then
+        prompt -w "Are you sure to have UFW not allow anything ?!...ENEN SSH PORT???!"
+        exit 1
+    else
+        for var in ${idxl[@]}
+        do
+            prompt -m "UFW Allow: $var "
+        done
+        ufw allow $var    
+    fi
+    prompt -x "Enable UFW"
+    ufw enable
+fi
 
 
 #### 最后的步骤

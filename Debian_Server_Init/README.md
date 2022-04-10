@@ -1,6 +1,6 @@
 # Debian11_Server_Init.sh
 
->Current Version: 0.0.3
+>Current Version: 0.0.4
 
 ## 使用方法
 
@@ -39,7 +39,7 @@
   - 从apt仓库拉取常用软件
   - 安装Python3
   - 安装Git
-  - 安装Openssh
+  - 安装OpenSSH
   - 安装nodejs
   - 安装npm
 - 检查点六：
@@ -47,12 +47,14 @@
 - 检查点七：
   - 安装docker-ce
 - 检查点八：
-- 检查点九：
+  - 安装ufw防火墙(默认开放22、80 、443)
 
 ## 更新日志
 
 >dev: Not available yet.
 
+- 2022.04.11——0.0.4
+  - 大体完成	
 - 2022.04.10——0.0.3-dev
   - 更新了检查点六
 - 2022.04.09——0.0.2-dev
