@@ -1,9 +1,8 @@
 #!/bin/bash
 # https://github.com/rmshadows/rm_scripts
-# 未完成！
 
 :<<!About-说明
-Version：0.0.1
+Version：0.0.4
 ============================================
 0 for No.
 1 for Yes.
@@ -396,7 +395,7 @@ alias l='ls -CF'
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
 # FFMPEG
 # 裁剪 开始、结尾、文件、输出文件
-alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$1 -to \$2 -i \$3 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
+# alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$1 -to \$2 -i \$3 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 # HTTP服务器
 alias apastart='sudo systemctl start apache2.service'
 alias apastop='sudo systemctl stop apache2.service'
@@ -1085,9 +1084,7 @@ APACHE2_HTTP_SITE="<VirtualHost *:80>
 
 # vim: syntax=apache ts=4 sw=4 sts=4 sr noet"
 
-APACHE2_HTTPS_SITE=""
-
-JITSI_APACHE2="# generated 2021-03-20, Mozilla Guideline v5.6, Apache 2.4.38, OpenSSL 1.1.1d, modern configuration
+APACHE2_HTTPS_SITE="# generated 2021-03-20, Mozilla Guideline v5.6, Apache 2.4.38, OpenSSL 1.1.1d, modern configuration
 # https://ssl-config.mozilla.org/#server=apache&version=2.4.38&config=modern&openssl=1.1.1d&guideline=5.6
 
 # this configuration requires mod_ssl, mod_socache_shmcb, mod_rewrite, and mod_headers
