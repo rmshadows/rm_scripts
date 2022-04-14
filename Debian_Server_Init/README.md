@@ -1,6 +1,6 @@
 # Debian11_Server_Init.sh
 
->Current Version: 0.0.4
+>Current Version: 0.0.7
 
 ## 使用方法
 
@@ -34,7 +34,6 @@
   - 配置语言
   - 配置时区
   - 配置tty1自动登录
-  - 设置GRUB网卡命名规则
 - 检查点五：
   - 从apt仓库拉取常用软件
   - 安装Python3
@@ -53,6 +52,12 @@
 
 >dev: Not available yet.
 
+- 2022.04.14——0.0.7
+  - 修复了语言配置、等问题(0.0.6)
+  -  去除了GRUB网卡命名规则(0.0.6)
+  -  修复了`nginx`配置问题(0.0.7)
+- 2022.04.13——0.0.5
+  - 修复了部分bug
 - 2022.04.11——0.0.4
   - 大体完成	
 - 2022.04.10——0.0.3-dev
@@ -61,6 +66,18 @@
   - 更新了检查点三
 - 2021.09.28——0.0.1-dev
   - 从Debian 10迁移到Debian 11，采用预配置方式。
+
+# Install Applications
+
+**注意**：
+
+1. 要求**非root**用户身份运行(**run as non-root user**)
+2. 需要使用`sudo` 权限(**sudo required**)
+3. 需要 **有人职守** 执行！
+
+## RSS Hub
+
+文件：`rsshub_docker.sh`
 
 # Debian10_Server_Init.sh(2021年7月停止维护)
 

@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!About-说明
-Version：0.0.4
+Version：0.0.7
 ============================================
 0 for No.
 1 for Yes.
@@ -68,9 +68,6 @@ SET_TIME_ZONE=0
 
 # Set tty1 auto-login (设置TTY1自动登录) Preset=1
 SET_TTY_AUTOLOGIN=1
-
-# Modify the default rules for naming network card in GRUB(配置GRUB网卡默认命名方式) Preset=1
-SET_GRUB_NETCARD_NAMING=1
 
 ## Check-5-检查点五：
 # 从apt仓库拉取常用软件
@@ -150,6 +147,28 @@ SET_INSTALL_UFW=1
 # UFW allow port (UFW允许的端口) Preset=22 80 443
 SET_UFW_ALLOW="22 80 443"
 
+####
+# Get Current User获取当前用户名(root,后面如果有指定用户，则是指定用户)
+CURRENT_USER_SET=$USER
+# 用户目录
+HOME_INDEX="$HOME"
+# 主机名
+if ! [ "$SET_HOST_NAME" == 0 ];then
+    if [ "$HOSTNAME" == "" ];then
+        HOSTNAME=$HOST
+    fi
+else
+    HOSTNAME=$SET_HOST_NAME
+fi
+
+# 设置用户目录
+if [ "$SET_USER" -eq 1 ];then
+    CURRENT_USER_SET=$SET_USER_NAME
+    HOME_INDEX="/home/$SET_USER_NAME"
+else
+    CURRENT_USER_SET=root
+    HOME_INDEX="/root"
+fi
 
 :<<注释
 下面是需要填写的列表，要安装的软件。注意，格式是短杠空格接软件包名接破折号接软件包描述“- 【软件包名】——【软件包描述】”
@@ -169,8 +188,6 @@ SET_APT_TO_INSTALL_LATER="
 
 # 轻便安装 (仅我个人认为必要的常用软件)
 APT_TO_INSTALL_INDEX_1="
-- apt-listbugs——apt_list_bug
-- apt-listchanges——apt_list_change
 - apt-transport-https——apt-transport-https
 - axel——axel_downloader
 - bash-completion——bash_completion
@@ -399,8 +416,10 @@ alias l='ls -CF'
 # HTTP服务器
 alias apastart='sudo systemctl start apache2.service'
 alias apastop='sudo systemctl stop apache2.service'
-# alias ngxstop='sudo systemctl stop nginx.service'
-# alias ngxstop='sudo systemctl stop nginx.service'
+alias ngxstart='sudo systemctl stop nginx.service'
+alias ngxstop='sudo systemctl stop nginx.service'
+alias ngxr='sudo systemctl restart nginx.service'
+# alias ngxhttps='sudo nano /etc/apache2/sites-available/https && sudo nginx -t'
 # 其他
 alias duls='du -sh ./*'
 alias dulsd='du -sh \`la\`'
@@ -578,6 +597,19 @@ http
 #		proxy      on;
 #	}
 #}
+"
+
+NGINX_BLOCK_IP="deny 45.155.205.211;
+deny 34.251.241.226;
+deny 13.233.73.212;
+deny 54.176.188.51;
+deny 13.233.73.21;
+deny 13.232.96.1;
+deny 51.38.40.95;
+deny 46.101.207.180;
+deny 3.143.11.66;
+deny 211.40.129.246;
+deny 157.230.114.6;
 "
 
 NGINX_HTTP_SITE="##
@@ -1274,16 +1306,16 @@ backupFile () {
         # 如果有bak备份文件 ，生成newbak
         if [ -f "$1.bak" ];then
             # bak文件存在
-            prompt -x "正在备份 $1 文件到 $1.newbak (覆盖) "
+            prompt -x "Backup $1 as $1.newbak (rewrite) "
             cp $1 $1.newbak
         else
             # 没有bak文件，创建备份
-            prompt -x "正在备份 $1 文件到 $1.bak"
+            prompt -x "Backup $1 as $1.bak"
             cp $1 $1.bak
         fi
     else
         # 如果不存在要备份的文件,不执行
-        prompt -e "没有$1文件，不做备份"
+        prompt -e "File $1 not found, pass."
     fi
 } 
 
@@ -1304,11 +1336,11 @@ doApt () {
 # 新建文件夹 $1
 addFolder () {
     if [ $# -ne 1 ];then
-        prompt -e "addFolder () 只能有一个参数"
+        prompt -e "addFolder () can only have one param"
         exit 5
     fi
     if ! [ -d $1 ];then
-        prompt -x "新建文件夹$1 "
+        prompt -x "Mkdir $1 "
         mkdir $1
     fi
 }
@@ -1338,46 +1370,26 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 \e[0m"
 # R
 echo -e "\e[1;31m Preparing(1s)...\n\e[0m" 
-# TODO
 sleep 1
 
-:<<Prep-预备步骤
-获取当前用户名
-Prep-预备步骤
-# Get Current User获取当前用户名(root,后面如果有指定用户，则是指定用户)
-CURRENT_USER_SET=$USER
-# 用户目录
-HOME_INDEX="$HOME"
-# 主机名
-if [ "$SET_HOST_NAME" -ne 0 ];then
-    HOSTNAME=$SET_HOST_NAME
-else
-    HOSTNAME=$HOST
-fi
+# Prep-预备步骤
 
-# 设置用户目录
-if [ "$SET_USER" -eq 1 ];then
-    CURRENT_USER_SET=$SET_USER_NAME
-    HOME_INDEX="/home/$SET_USER_NAME"
-else
-    CURRENT_USER_SET=root
-    HOME_INDEX="/root"
-fi
 prompt -i "Current User Set: $CURRENT_USER_SET"
 prompt -i "Current Shell: $CURRENT_SHELL"
 prompt -i "Current User Set Home: $HOME_INDEX"
+prompt -i "Current Hostname Set: $HOSTNAME"
 # 检查是否有root权限，无则退出，提示用户使用root权限。
 prompt -i "\nChecking for root access...\n"
 if [ "$UID" -eq "$ROOT_UID" ]; then
   prompt -s "\n——————————  Unit Ready  ——————————\n"
 else
   # Error message
-  prompt -e "\n [ Error ] -> Please run with root(ROOT, NOT SUDO !)  \n"
+  prompt -e "\n [ Error ] -> Please run with root user(ROOT, NOT SUDO !)  \n"
   exit 1
 fi
 
 #### 预运行
-# 参数赋值
+# 参数赋值(从已经初始化的参数中获得)
 # Git
 if [ "$SET_GIT_USER" -eq 0 ];then
     SET_GIT_USER=$CURRENT_USER_SET
@@ -1550,12 +1562,14 @@ if [ "$SET_USER" -eq 1 ];then
 fi
 
 # 设置用户zsh
-if [ "$SET_USER_ZSH" -eq 1 ];then
+if [ "$SET_BASH_TO_ZSH" -eq 1 ];then
     prompt -x "Set zsh for $CURRENT_USER_SET"
     usermod -s /bin/zsh $CURRENT_USER_SET
-    backupFile "$HOME_INDEX/$shell_conf"
-    prompt -x "Config user's ZSHRC"
-    echo "$ZSHRC_CONFIG" > $HOME_INDEX/$shell_conf
+    if [ "$SET_ZSHRC" -eq 1 ];then
+        backupFile "$HOME_INDEX/$shell_conf"
+        prompt -x "Config user's ZSHRC"
+        echo "$ZSHRC_CONFIG" > $HOME_INDEX/$shell_conf
+    fi
 fi
 
 # 检查是否在sudoer
@@ -1605,7 +1619,7 @@ elif [ "$IS_SUDOER" -eq 1 ];then
         prompt -x "Set $CURRENT_USER_SET sudo not passwd."
         check_var="ALL=(ALL:ALL) ALL"
         # 获取行号
-        idx=`cat Text.txt | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
+        idx=`cat /etc/sudoers | grep -n ^$CURRENT_USER_SET | grep $check_var | gawk '{print $1}' FS=":"`
         # echo $idx
         # 找到的Index
         idxl=($idx)
@@ -1647,7 +1661,7 @@ elif [ "$IS_SUDOER" -eq 1 ];then
         IS_SUDO_NOPASSWD=0
     fi
 else
-    prompt -e "$IS_SUDOER 不等于 0 or 1 ."
+    prompt -e "$IS_SUDOER not 0 or 1 ."
     exit 1
 fi
 
@@ -1673,9 +1687,14 @@ addFolder $HOME_INDEX/Applications
 addFolder $HOME_INDEX/Temp
 addFolder $HOME_INDEX/Workplace
 addFolder $HOME_INDEX/Services
+echo "#!/bin/bash
+cp *.service /lib/systemd/system/
+sudo systemctl daemon-reload
+" > $HOME_INDEX/Services/Install_Servces.sh
+chmod +x $HOME_INDEX/Services/Install_Servces.sh
 addFolder $HOME_INDEX/Logs
 addFolder $HOME_INDEX/Logs/apache2
-addFolder $HOME_INDEX//Logs/nginx
+addFolder $HOME_INDEX/Logs/nginx
 chown $CURRENT_USER_SET -hR $HOME_INDEX
 
 # 添加/usr/sbin到环境变量；
@@ -1713,7 +1732,6 @@ fi
 配置语言支持
 配置时区
 设置TTY1自动登录
-配置GRUB网卡默认命名方式
 Check-4-检查点四
 # 自定义自己的服务（运行一个shell脚本）
 if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ];then
@@ -1743,12 +1761,12 @@ WantedBy=multi-user.target
 fi
 
 # 设置主机名
-if [ "$SET_HOST_NAME" -ne 0 ];then
+if ! [ "$SET_HOST_NAME" -eq 0 ];then
     prompt -x "Setup hostname"
-    echo $SET_HOST_NAME > /etc/hostname
+    echo "$HOSTNAME" > /etc/hostname
     check_var="127.0.1.1"
     # 获取行号
-    idx=`cat /etc/hostname | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+    idx=`cat /etc/hosts | grep -n ^$check_var | gawk '{print $1}' FS=":"`
     # 找到的Index
     idxl=($idx)
     idxlen=${#idxl[@]}  
@@ -1770,25 +1788,27 @@ if [ "$SET_HOST_NAME" -ne 0 ];then
 fi
 
 # 设置语言支持
-if [ "$SET_LOCALES" -ne 0 ];then
-    prompt -x "Setup locales"
-    backupFile /etc/locale.gen
-    echo "$SET_LOCALES" > /etc/locale.gen
-    locale-gen
+if ! [ "$SET_LOCALES" == 0 ];then
+    check_var=$SET_LOCALES
+    if cat '/etc/locale.gen' | grep "$check_var" > /dev/null ;then
+        prompt -w "Locales NOT SET! Pass!"
+    else
+        prompt -x "Setup locales"
+        backupFile /etc/locale.gen
+        echo "$SET_LOCALES" > /etc/locale.gen
+        locale-gen  
+    fi
 fi
 
 # 设置时区
-if [ "$SET_TIME_ZONE" -ne 0 ];then
+if ! [ "$SET_TIME_ZONE" == 0 ];then
     prompt -x "Setup timezone"
     backupFile /etc/localtime
-    # Discard
-    # echo "ZONE=Asia/Shanghai" >> /etc/sysconfig/clock
-    # rm -f /etc/localtime
     ln -sf "$SET_TIME_ZONE" /etc/localtime
 fi
 
 # 设置TTY1自动登录
-if [ "$SET_TTY_AUTOLOGIN" -ne 0 ];then
+if [ "$SET_TTY_AUTOLOGIN" -eq 1 ];then
     prompt -x "Setup tty1 automatic login..."
     sed -i "s/#NAutoVTs=6/NAutoVTs=1/g" /etc/systemd/logind.conf
     addFolder /etc/systemd/system/getty@tty1.service.d
@@ -1797,24 +1817,6 @@ ExecStart=
 ExecStart=-/usr/sbin/agetty --autologin $CURRENT_USER_SET --noclear %I \$TERM
 " > /etc/systemd/system/getty@tty1.service.d/override.conf
 fi
-
-# 设置GRUB网卡命名规则
-if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
-    prompt -x "Modify the default rules for naming network card in GRUB..."
-    prompt -m "Check if already config…… "
-    check_var="GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\""
-    if cat /etc/default/grub | grep "$check_var" > /dev/null
-    then
-        prompt -w "Pass."
-    else
-        backupFile /etc/default/grub
-        prompt -x "Add GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" to /etc/default/grub ..."
-        sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
-        prompt -x "Update GRUB"
-        sudo grub-mkconfig -o /boot/grub/grub.cfg
-    fi
-fi
-
 
 :<<Check-5-检查点五
 从apt仓库拉取常用软件
@@ -2047,15 +2049,17 @@ if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ];then
         backupFile /etc/nginx/sites-available/default.conf
         prompt -i "Set up a new nginx.conf"
         echo "$NGINX_GLOBAL_CONF" > /etc/nginx/nginx.conf
+        echo "$NGINX_BLOCK_IP" > /etc/nginx/block_ip.conf
         prompt -i "Genarate a http website and a https website."
         echo "$NGINX_HTTP_SITE" > /etc/nginx/sites-available/http
         echo "$NGINX_HTTPS_SITE" > /etc/nginx/sites-available/https
-        if [ "$SET_ENABLE_HTTPS_SITE" -eq 0 ];then
+        if [ "$SET_ENABLE_HTTPS_SITE" -eq 1 ];then
             prompt -x "Disable default site and Enable nginx https site."
             if [ -f /etc/nginx/sites-enabled/default ];then
                 rm /etc/nginx/sites-enabled/default
             fi
             if ! [ -f /etc/nginx/sites-enabled/https ];then
+                # 请使用绝对路径
                 ln -s /etc/nginx/sites-available/https /etc/nginx/sites-enabled/https
             fi
         fi
