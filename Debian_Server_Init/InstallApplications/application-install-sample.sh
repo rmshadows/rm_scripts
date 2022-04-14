@@ -1,13 +1,13 @@
 #!/bin/bash
-# 简单粗暴删除rss后重装 要求安装有Docker
+# 
 # 要求非root用户
 # 要求sudo
 # 详情见readme
 
-# 指定运行端口(默认1200)
-RUN_PORT=1200
+# 指定运行端口(默认)
+RUN_PORT=
 # 服务名
-SRV_NAME=rsshub
+SRV_NAME=
 # 反向代理的端口
 REVERSE_PROXY_URL=/rsshub/
 
@@ -208,15 +208,9 @@ if ! [ -d $HOME/Applications ];then
     mkdir $HOME/Applications
 fi
 
-# 安装RSSHUB
+# 安装
 if ! [ -x "$(command -v docker)" ]; then
-    prompt -x "Stopping rsshub & Removing rsshub..."
-    sudo docker stop rsshub
-    sudo docker rm rsshub
-    prompt -x "Installing rsshub..."
-    sudo docker pull diygod/rsshub
-    prompt -x "Running rsshub on $RUN_PORT..."
-    sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
+    prompt -x "Stopping ..."
 fi
 
 # mk srv
@@ -236,12 +230,11 @@ PrivateTmp=True
 WantedBy=multi-user.target
 " > /home/$USER/Services/$SRV_NAME.service
 fi
+
 # Start and stop script
 echo "#!/bin/bash
-sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
 " > /home/$USER/Services/$SRV_NAME/$SRV_NAME_start.sh
 echo "#!/bin/bash
-sudo docker stop rsshub
 " > /home/$USER/Services/$SRV_NAME/$SRV_NAME_stop.sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 

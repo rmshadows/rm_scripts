@@ -764,8 +764,8 @@ $1
 !
 }
 
-# For debug
-!>/dev/null 2>&1
+# For debug (Debug的时候取消注释,使用的时候注释掉)
+# !>/dev/null 2>&1
 # 检查root密码是否正确
 checkRootPasswd () {
 # 下面不能有缩进！
