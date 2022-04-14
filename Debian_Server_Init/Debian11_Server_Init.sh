@@ -147,13 +147,14 @@ SET_INSTALL_UFW=1
 # UFW allow port (UFW允许的端口) Preset=22 80 443
 SET_UFW_ALLOW="22 80 443"
 
-####
+#### 这里为后面配置文件赋值
 # Get Current User获取当前用户名(root,后面如果有指定用户，则是指定用户)
 CURRENT_USER_SET=$USER
 # 用户目录
 HOME_INDEX="$HOME"
 # 主机名
-if ! [ "$SET_HOST_NAME" == 0 ];then
+if [ "$SET_HOST_NAME" == 0 ];then
+    # 如果没有配置主机名
     if [ "$HOSTNAME" == "" ];then
         HOSTNAME=$HOST
     fi
@@ -1212,8 +1213,6 @@ APACHE2_PROXYTEST_SITE="<VirtualHost *:80>
 ROOT_UID=0
 # 当前 Shell名称
 CURRENT_SHELL=$SHELL
-# 用户路径
-HOME_INDEX=""
 
 #### 脚本内置函数调用
 
