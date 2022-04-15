@@ -209,49 +209,52 @@ if ! [ -d $HOME/Applications ];then
 fi
 
 # 安装RSSHUB
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -x "Stopping rsshub & Removing rsshub..."
-    sudo docker stop rsshub
-    sudo docker rm rsshub
-    prompt -x "Installing rsshub..."
-    sudo docker pull diygod/rsshub
-    prompt -x "Running rsshub on $RUN_PORT..."
-    sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-fi
+prompt -x "Stopping rsshub & Removing rsshub..."
+sudo docker stop rsshub
+sudo docker rm rsshub
+prompt -x "Installing rsshub..."
+sudo docker pull diygod/rsshub
+prompt -x "Running rsshub on $RUN_PORT..."
+sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
 
 # mk srv
+# 创建专门文件夹
 if ! [ -d $HOME/Services/$SRV_NAME ];then
+    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
     mkdir $HOME/Services/$SRV_NAME
-    echo "[Unit]
+fi
+prompt -x "Make Service..."
+echo "[Unit]
 Description=自定义的服务，用于开启启动/home/用户/.用户名/script下的shell脚本，配置完成请手动启用。注意，此脚本将以root身份运行！
 After=network.target 
 
 [Service]
-ExecStart=/home/$USER/Services/$SRV_NAME/$SRV_NAME_start.sh
-ExecStop=/home/$USER/Services/$SRV_NAME/$SRV_NAME_stop.sh
+ExecStart=/home/$USER/Services/$SRV_NAME/"$SRV_NAME"_start.sh
+ExecStop=/home/$USER/Services/$SRV_NAME/"$SRV_NAME"_stop.sh
 Type=forking
 PrivateTmp=True
 
 [Install]
 WantedBy=multi-user.target
 " > /home/$USER/Services/$SRV_NAME.service
-fi
+
+prompt -x "Make start and stop script..."
 # Start and stop script
 echo "#!/bin/bash
 sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-" > /home/$USER/Services/$SRV_NAME/$SRV_NAME_start.sh
+" > /home/$USER/Services/$SRV_NAME/"$SRV_NAME"_start.sh
 echo "#!/bin/bash
 sudo docker stop rsshub
-" > /home/$USER/Services/$SRV_NAME/$SRV_NAME_stop.sh
+" > /home/$USER/Services/$SRV_NAME/"$SRV_NAME"_stop.sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
 prompt -i "Check manully and setting up reverse proxy by yourself."
 prompt -i "========================================================"
 prompt -s "For Nginx:"
-echo $NGINX_CONF
+echo "$NGINX_CONF"
 prompt -i "========================================================"
 prompt -s "For Apache2:"
-echo $APACHE2_CONF
+echo "$APACHE2_CONF"
 prompt -i "========================================================"
 
 
