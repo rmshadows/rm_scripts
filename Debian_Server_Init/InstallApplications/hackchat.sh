@@ -1,15 +1,96 @@
 #!/bin/bash
-# 简单粗暴删除rss后重装 要求安装有Docker
+# Hackchat安装
+# 需要交互！
 # 要求非root用户
 # 要求sudo
 # 详情见readme
 
-# 指定运行端口(默认1200)
-RUN_PORT=1200
+# 指定运行端口(默认) Preset:3000
+RUN_PORT=3000
 # 服务名
-SRV_NAME=rsshub
+SRV_NAME=hackchat
 # 反向代理的端口
-REVERSE_PROXY_URL=/rsshub/
+REVERSE_PROXY_URL=/hc/
+# 是否配置中文首页 Preset=0
+CN_INDEX=0
+
+CN_INDEX_CONFIG="
+var frontpage = [
+	\"                            _           _         _       _   \",
+	\"                           | |_ ___ ___| |_   ___| |_ ___| |_ \",
+	\"                           |   |_ ||  _| ' _| |  _|   |_ ||  _|\",
+	\"                           |_|_|__/|___|_,_|.|___|_|_|__/|_|  \",
+	\"\",
+	\"\",
+	\"欢迎使用hack.chat，这是一个迷你的、无干扰的加密聊天应用程序。\",
+	\"频道是通过url创建、加入和共享的，通过更改问号后的文本来创建自己的频道(请使用英文字母)。\",
+	\"如果您希望频道名称(房间名)为：‘ hello ’,请在浏览器地址栏输入： https://civiccccc.ltd/hc/?hello\",
+	\"这里没有公开频道列表，因此你可以使用秘密的频道名称(也就是别人都猜不到的房间名)进行私人讨论。在这里，聊天记录不会被记录，聊天信息传输也是加密的(除非你不是用的https访问本站，或者你的电脑遭到攻击)。\",
+	\"下面是预设的房间：休息室、元数据、数学、物理、化学、科技、编程、游戏、香蕉\",
+	\"\",
+	\"\",
+	\"?lounge ?meta\",
+	\"?math ?physics ?chemistry\",
+	\"?technology ?programming\",
+	\"?games ?banana\",
+	\"\",
+	\"\",
+	\"\",
+	\"\",
+	\"# 这里为你随机生成了一个聊天室（请点击链接进入房间）: ?\" + Math.random().toString(36).substr(2, 8),
+	\"\",
+	\"\",
+	\"\",
+	\"\",
+	\"语法支持(支持部分Markdown语法)：\",
+	\"空格缩进(两个或四个空格)、Tab键是保留字符，因此可以逐字粘贴源代码(回车请用Shift+Enter)。比如：\",
+	\"\`\`\`	\# 这是代码\`\`\`\",
+	\"\`\`\`	\#\!/bin/bash\`\`\`\",
+	\"\`\`\`	echo hello\`\`\`\",
+	\"支持LaTeX语法(数学公式)，单行显示请用一个美元符号包围数学公式，多行显示(展示公式)请用两个美元符号包围。\",
+	\"单行：\`\`\`$\"zeta(2) = \\\\pi^2/6$\`\`\`  $\\\\zeta(2) = \\\\pi^2/6$\",
+	\"多行：\`\`\`\$\$\\\\int_0^1 \\\\int_0^1 \\\\frac{1}{1-xy} dx dy = \\\\frac{\\\\pi^2}{6}\$\$\`\`\`  \$\$\\\\int_0^1 \\\\int_0^1 \\\\frac{1}{1-xy} dx dy = \\\\frac{\\\\pi^2}{6}\$\$\",
+	\"对于语法突出显示，将代码包装为：\`\`\`\<language\> \<the code\>\`\`\`其中<language>是任何已知的编程语言。\",
+	\"\",
+	\"当前的Github代码仓库: https://github.com/hack-chat\",
+	\"旧版GitHub代码仓库: https://github.com/AndrewBelt/hack.chat\",
+	\"\",
+
+	\"机器人，Android客户端，桌面客户端，浏览器扩展，Docker映像，编程库，服务器模块等:\",
+	\"https://github.com/hack-chat/3rd-party-software-list\",
+	\"根据WTFPL和MIT开源许可证发布的服务器和Web客户端。\",
+	\"hack.chat服务器不会保留任何聊天记录。\",
+	\"\",
+	\"\",
+	\"Welcome to hack.chat, a minimal, distraction-free chat application.\",
+	\"Channels are created, joined and shared with the url, create your own channel by changing the text after the question mark.\",
+	\"If you wanted your channel name to be 'your-channel': https://hack.chat/?your-channel\",
+	\"There are no channel lists, so a secret channel name can be used for private discussions.\",
+	\"\",
+	\"\",
+	\"Here are some pre-made channels you can join:\",
+	\"?lounge ?meta\",
+	\"?math ?physics ?chemistry\",
+	\"?technology ?programming\",
+	\"?games ?banana\",
+	\"And here's a random one generated just for you: ?\" + Math.random().toString(36).substr(2, 8),
+	\"\",
+	\"\",
+	\"Formatting:\",
+	\"Whitespace is preserved, so source code can be pasted verbatim.\",
+	\"Surround LaTeX with a dollar sign for inline style $\\\\zeta(2) = \\\\pi^2/6$, and two dollars for display. \$\$\\\\int_0^1 \\\\int_0^1 \\\\frac{1}{1-xy} dx dy = \\\\frac{\\\\pi^2}{6}\$\$\",
+	\"For syntax highlight, wrap the code like: \`\`\`\<language\> \<the code\>\`\`\` where <language> is any known programming language.\",
+	\"\",
+	\"Current Github: https://github.com/hack-chat\",
+	\"Legacy GitHub: https://github.com/AndrewBelt/hack.chat\",
+	\"\",
+	\"Bots, Android clients, desktop clients, browser extensions, docker images, programming libraries, server modules and more:\",
+	\"https://github.com/hack-chat/3rd-party-software-list\",
+	\"\",
+	\"Server and web client released under the WTFPL and MIT open source license.\",
+	\"No message history is retained on the hack.chat server.\"
+].join(\"\n\");
+"
 
 # Reverse Proxy 反向代理
 APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
@@ -24,29 +105,14 @@ APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
 </VirtualHost>
 "
 
-NGINX_CONF="location $REVERSE_PROXY_URL {
-    access_log $HOME/Logs/nginx/$SRV_NAME.log;
-    proxy_pass http://127.0.0.1:$RUN_PORT/;
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    expires 1d;
-  }
-
-  or (Choose one) 
-
-server {
-  listen xxx_port;
-  server_name xxx_server;
-  
+NGINX_CONF="
+# Hack chat
+location $REVERSE_PROXY_URL {
   access_log $HOME/Logs/nginx/$SRV_NAME.log;
   proxy_pass http://127.0.0.1:$RUN_PORT/;
-  proxy_set_header Host \$host;
-  proxy_set_header X-Real-IP \$remote_addr;
-  expires 1d;
-
-  # SSL setting
-  # ssl_certificate /etc/ssl/xxx.pem;
-  # ssl_certificate_key /etc/ssl/xxx.key;
+}
+location /hc-wss {
+  proxy_pass http://127.0.0.1:6060;
 }
 "
 
@@ -142,7 +208,6 @@ prompt -i "__________________________________________________________"
 prompt -k "是否为Sudo组成员：" "$is_sudoer"
 prompt -k "Sudo是否免密码：" "$is_sudo_nopasswd"
 prompt -i "__________________________________________________________"
-
 echo ""
 echo ""
 # 如果用户按下Ctrl+c
@@ -191,10 +256,23 @@ fi
 ##############################################################
 
 # 检查命令
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -e "Docker not found! Install docker first!"
-    quitThis
+if ! [ -x "$(command -v git)" ]; then
+    prompt -e "Git not found! Install git..."
+    sudo apt install git
 fi
+if ! [ -x "$(command -v npm)" ]; then
+    prompt -e "Npm not found! Install npm..."
+    sudo apt install npm
+fi
+if ! [ -x "$(command -v nodejs)" ]; then
+    prompt -e "Nodejs not found! Install nodejs..."
+    sudo apt install nodejs
+fi
+if ! [ -x "$(command -v gawk)" ]; then
+    prompt -e "Gawk not found! Install gawk..."
+    sudo apt install gawk
+fi
+
 
 # 检查文件夹
 if ! [ -d $HOME/Services ];then
@@ -210,31 +288,30 @@ if ! [ -d $HOME/Applications ];then
     mkdir $HOME/Applications
 fi
 
-# 安装RSSHUB
-prompt -x "Stopping rsshub & Removing rsshub..."
-sudo docker stop rsshub
-sudo docker rm rsshub
-prompt -x "Installing rsshub..."
-sudo docker pull diygod/rsshub
-prompt -x "Creating rsshub container on $RUN_PORT..."
-sudo docker create --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-# prompt -x "Running rsshub on $RUN_PORT..."
-# sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
+# 安装
+prompt -x "Install hackchat..."
+cd $HOME/Applications
+git clone https://github.com/hack-chat/main.git hackchat
+cd hackchat
+npm install
 
+prompt -i "Back to home."
+cd
+pwd
 # mk srv
-# 创建专门文件夹
+prompt -x "Make Service..."
 if ! [ -d $HOME/Services/$SRV_NAME ];then
     prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
     mkdir $HOME/Services/$SRV_NAME
 fi
-prompt -x "Make Service..."
 echo "[Unit]
-Description=$SRV_NAME
+Description=自定义的服务，用于启动"$SRV_NAME"
 After=network.target 
 
 [Service]
 ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
 ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+User=$USER
 Type=forking
 PrivateTmp=True
 
@@ -249,12 +326,30 @@ sudo $HOME/Services/Install_Servces.sh
 prompt -x "Make start and stop script..."
 # Start and stop script
 echo "#!/bin/bash
-docker start -a rsshub&
+cd $HOME/Applications/hackchat
+npm start
 " > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
 echo "#!/bin/bash
-docker stop rsshub
+cd $HOME/Applications/hackchat
+npm stop
 " > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
+
+# 修改端口号
+if [ "$RUN_PORT" -ne 3000 ];then
+    prompt -x "Change web page port at $WEB_PORT"
+    cd $HOME/Applications/hackchat
+    pwd
+    # pm2.config.js
+    sed -i s/client\ -p\ 3000\ -o/client\ -p\ $WEB_PORT\ -o/g pm2.config.js
+fi
+# 修改主页
+if [ "$CN_INDEX" -eq 1 ];then
+    ss="var frontpage"
+    se="function \$(query)"
+
+fi
+
 
 prompt -i "Check manully and setting up reverse proxy by yourself."
 prompt -i "========================================================"

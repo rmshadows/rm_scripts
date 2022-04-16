@@ -24,8 +24,8 @@ APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
 </VirtualHost>
 "
 
-NGINX_CONF="location /rsshub/ {
-    access_log $HOME/Logs/nginx/rsshub.log;
+NGINX_CONF="location $REVERSE_PROXY_URL {
+    access_log $HOME/Logs/nginx/$SRV_NAME.log;
     proxy_pass http://127.0.0.1:$RUN_PORT/;
     proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
@@ -142,7 +142,8 @@ prompt -i "__________________________________________________________"
 prompt -k "是否为Sudo组成员：" "$is_sudoer"
 prompt -k "Sudo是否免密码：" "$is_sudo_nopasswd"
 prompt -i "__________________________________________________________"
-
+echo ""
+echo ""
 # 如果用户按下Ctrl+c
 trap "onSigint" SIGINT
 
@@ -216,16 +217,17 @@ fi
 # mk srv
 prompt -x "Make Service..."
 if ! [ -d $HOME/Services/$SRV_NAME ];then
-    prompt -x "Mldir $HOME/Services/$SRV_NAME..."
+    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
     mkdir $HOME/Services/$SRV_NAME
 fi
 echo "[Unit]
-Description=自定义的服务，用于开启启动/home/用户/.用户名/script下的shell脚本，配置完成请手动启用。注意，此脚本将以root身份运行！
+Description=自定义的服务，用于启动"$SRV_NAME"
 After=network.target 
 
 [Service]
-ExecStart=/home/$USER/Services/$SRV_NAME/"$SRV_NAME"_start.sh
-ExecStop=/home/$USER/Services/$SRV_NAME/"$SRV_NAME"_stop.sh
+ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
+ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+User=$USER
 Type=forking
 PrivateTmp=True
 
@@ -233,14 +235,18 @@ PrivateTmp=True
 WantedBy=multi-user.target
 " > /home/$USER/Services/$SRV_NAME.service
 
+prompt -x "Install service..."
+cd $HOME/Services/
+sudo $HOME/Services/Install_Servces.sh
+
 prompt -x "Make start and stop script..."
 # Start and stop script
 echo "#!/bin/bash
 sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-" > /home/$USER/Services/$SRV_NAME/"$SRV_NAME"_start.sh
+" > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
 echo "#!/bin/bash
 sudo docker stop rsshub
-" > /home/$USER/Services/$SRV_NAME/"$SRV_NAME"_stop.sh
+" > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
 prompt -i "Check manully and setting up reverse proxy by yourself."

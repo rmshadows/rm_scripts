@@ -75,6 +75,14 @@
 1. 要求**非root**用户身份运行(**run as non-root user**)
 2. 需要使用`sudo` 权限(**sudo required**)
 3. 需要 **有人职守** 执行！
+4. 防火墙需自行开启(除非另有说明)！
+
+## Hackchat
+
+文件：`hackchat.sh`
+
+- 需要交互，需要输入管理员账户及密码，需要Websocket端口。Web界面默认运行在3000端口（支持更改）
+- 需要自行打开UFW
 
 ## RSS Hub
 
