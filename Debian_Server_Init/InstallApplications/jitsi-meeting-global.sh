@@ -1,19 +1,22 @@
 #!/bin/bash
-# 
+# 注意。此脚本是全局安装！
 # 要求非root用户
 # 要求sudo
 # 详情见readme
 
 # 指定运行端口(默认)
-RUN_PORT=
+RUN_PORT=3000
 # 服务名
-SRV_NAME=
+SRV_NAME=jitsi-meet
 # 反向代理的端口
-REVERSE_PROXY_URL=/rsshub/
+REVERSE_PROXY_URL=/jitsi-meet/
+# docker下载地址
+DOCKER_STABLE="https://github.com/jitsi/docker-jitsi-meet/archive/refs/tags/stable-7001.tar.gz"
+
 
 # Reverse Proxy 反向代理
 APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
-    CustomLog $HOME/Logs/apache/$SRV_NAME-$RUN_PORT.log common
+    CustomLog $HOME/Logs/apache/rsshub-$RUN_PORT.log common
     ServerName xxx_server
     ProxyPass / http://127.0.0.1:$RUN_PORT/
     ProxyPassReverse / http://127.0.0.1:$RUN_PORT/
@@ -195,6 +198,11 @@ if ! [ -x "$(command -v docker)" ]; then
     quitThis
 fi
 
+if ! [ -x "$(command -v docker-compose)" ]; then
+    prompt -e "Docker-compose not found! Install docker-compose first!"
+    quitThis
+fi
+
 # 检查文件夹
 if ! [ -d $HOME/Services ];then
     mkdir $HOME/Services
@@ -210,6 +218,26 @@ if ! [ -d $HOME/Applications ];then
 fi
 
 # 安装
+cd $HOME/Applications
+prompt -x "Downloading docker"
+wget "$DOCKER_STABLE" -O jitsi-meet-docker.tar.gz
+if ! [ -f jitsi-meet-docker.tar.gz ]; then
+    prompt -e "Wget seems wrong. Stopping ..."
+    quitThis
+fi
+prompt -x "Unzip tar.gz..."
+tar xzvf jitsi-meet-docker.tar.gz
+prompt -x "Rename..."
+mv docker-jitsi-meet-* docker-jitsi-meet
+cd docker-jitsi-meet
+cp env.example .env
+./gen-passwords.sh
+prompt -x "Create required CONFIG directories ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}..."
+mkdir -p ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
+prompt -x "Access the web UI at https://localhost:8443 (or a different port, in case you edited the compose file)."
+docker-compose up -d
+
+
 if ! [ xxx ]; then
     prompt -x "Stopping ..."
 fi

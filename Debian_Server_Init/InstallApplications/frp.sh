@@ -5,18 +5,52 @@
 # 详情见readme
 
 # 指定运行端口(默认)
-RUN_PORT=
+RUN_PORT=8000
 # 服务名
-SRV_NAME=
+SRV_NAME=frp
 # 反向代理的端口
-REVERSE_PROXY_URL=/rsshub/
+REVERSE_PROXY_URL=/frp/
+
+# Docs: https://gofrp.org/docs/
+FRP_DOWNLOAD="https://github.com/fatedier/frp/releases/download/v0.41.0/frp_0.41.0_linux_amd64.tar.gz"
+# 本地压缩包（tar.gz）注意：需要将上面设置为0
+LOCAL_FRP=""
+
+# frps配置
+FRPS_INI="[common]
+bind_port = 5000
+token = token
+dashboard_port = 7500
+# dashboard 用户名密码，可选，默认为空
+dashboard_user = user
+dashboard_pwd = passwd
+log_file = $HOME/Logs/frp/frps.log
+log_max_days=30
+# 是否返回详细报错
+detailed_errors_to_client = false
+# 允许的端口
+allow_ports = 
+"
+FRPC_SAMPLE="[common]
+server_addr = 
+server_port = 5000
+
+[Name]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 
+remote_port = 
+use_encryption = true
+token = token
+"
 
 # Reverse Proxy 反向代理
+# FRP Admin http://127.0.0.1:7500/是默认的管理页面
 APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
-    CustomLog $HOME/Logs/apache/$SRV_NAME-$RUN_PORT.log common
+    CustomLog $HOME/Logs/apache/frp-$RUN_PORT.log common
     ServerName xxx_server
-    ProxyPass / http://127.0.0.1:$RUN_PORT/
-    ProxyPassReverse / http://127.0.0.1:$RUN_PORT/
+    ProxyPass / http://127.0.0.1:7500/
+    ProxyPassReverse / http://127.0.0.1:7500/
     SSLEngine on
     SSLProxyEngine on
     SSLCertificateFile /etc/ssl/xxx.pem
@@ -26,7 +60,7 @@ APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
 
 NGINX_CONF="location $REVERSE_PROXY_URL {
     access_log $HOME/Logs/nginx/$SRV_NAME.log;
-    proxy_pass http://127.0.0.1:$RUN_PORT/;
+    proxy_pass http://127.0.0.1:7500/;
     proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
     expires 1d;
@@ -39,7 +73,7 @@ server {
   server_name xxx_server;
   
   access_log $HOME/Logs/nginx/rsshub.log;
-  proxy_pass http://127.0.0.1:$RUN_PORT/;
+  proxy_pass http://127.0.0.1:7500/;
   proxy_set_header Host \$host;
   proxy_set_header X-Real-IP \$remote_addr;
   expires 1d;
@@ -103,8 +137,6 @@ if [ "$UID" -eq 0 ]; then
 else
     prompt -w "\n——————————  Unit Ready  ——————————\n"
 fi
-
-sudo ls > /dev/null
 
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$USER ALL=(ALL)NOPASSWD:ALL"
@@ -175,7 +207,7 @@ onExit () {
 # 中途异常退出脚本要执行的
 quitThis () {
     onExit
-    exit
+    exit 1
 }
 if [ "$IS_SUDOER" -eq 0 ];then
     prompt -e "Not a sudoer!"
@@ -190,9 +222,9 @@ fi
 ##############################################################
 
 # 检查命令
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -e "Docker not found! Install docker first!"
-    quitThis
+if ! [ -x "$(command -v wget)" ]; then
+    prompt -e "Wget not found! Install .."
+    sudo apt install wget
 fi
 
 # 检查文件夹
@@ -210,9 +242,35 @@ if ! [ -d $HOME/Applications ];then
 fi
 
 # 安装
-if ! [ xxx ]; then
-    prompt -x "Stopping ..."
+cd "$HOME/Applications/"
+if [ "$FRP_DOWNLOAD" == 0 ];then
+    prompt -x "Downloading frp...."
+    wget "$FRP_DOWNLOAD" -O frp.tar.gz
+    if ! [ -f "frp.tar.gz" ]; then
+        prompt -x "Wget seems error. Stopping ..."
+        quitThis
+    fi
+else
+    prompt -x "Move $LOCAL_FRP to `pwd`..."
+    mv "$LOCAL_FRP" ./frp.tar.gz
 fi
+prompt -x "Unzip frp...."
+tar xzvf frp.tar.gz
+prompt -x "Rename...."
+mv frp*amd64 frp
+# prompt -x "Moving frp...."
+# mv frp $HOME/Applications/
+rm frp.tar.gz
+pwd
+prompt -x "Cd $HOME/Applications/frp"
+cd frp
+prompt -x "Set up server..."
+echo "$FRPS_INI" > frps.ini
+prompt -x "Set up client sample..."
+mkdir client_config
+cd client_config
+echo "$FRPC_SAMPLE" > sample.ini
+cd
 
 # mk srv
 prompt -x "Make Service..."
@@ -220,20 +278,39 @@ if ! [ -d $HOME/Services/$SRV_NAME ];then
     prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
     mkdir $HOME/Services/$SRV_NAME
 fi
+
+prompt -x "Make Frp-server service..."
 echo "[Unit]
-Description=自定义的服务，用于启动"$SRV_NAME"
-After=network.target 
+Description=Frp Server Service
+After=network.target
 
 [Service]
-ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+Type=simple
 User=$USER
-Type=forking
-PrivateTmp=True
+Restart=on-failure
+RestartSec=5s
+ExecStart=/home/$USER/Services/$SRV_NAME/server_"$SRV_NAME".sh
+LimitNOFILE=1048576
 
 [Install]
 WantedBy=multi-user.target
-" > /home/$USER/Services/$SRV_NAME.service
+" > /home/$USER/Services/$SRV_NAME-server.service
+prompt -x "Make Frp-client service..."
+echo "[Unit]
+Description=Frp Client Service
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+Restart=on-failure
+RestartSec=5s
+ExecStart=/home/$USER/Services/$SRV_NAME/client_"$SRV_NAME".sh
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
+" > /home/$USER/Services/$SRV_NAME-client.service
 
 prompt -x "Install service..."
 cd $HOME/Services/
@@ -242,11 +319,12 @@ sudo $HOME/Services/Install_Servces.sh
 prompt -x "Make start and stop script..."
 # Start and stop script
 echo "#!/bin/bash
-sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-" > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
+cd $HOME/Applications/frp
+./frps -c ./frps.ini
+" > /home/$USER/Services/$SRV_NAME/server_"$SRV_NAME".sh
 echo "#!/bin/bash
-sudo docker stop rsshub
-" > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+cd $HOME/Applications/frp
+./frpc -c ./frpc.ini" > /home/$USER/Services/$SRV_NAME/client_"$SRV_NAME".sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
 prompt -i "Check manully and setting up reverse proxy by yourself."
