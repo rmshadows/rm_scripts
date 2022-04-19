@@ -85,12 +85,33 @@
 
 文件：`hackchat.sh`
 
-- 需要交互，需要输入管理员账户及密码，需要Websocket端口。Web界面默认运行在3000端口（支持更改）
+- **需要交互**，需要输入管理员账户及密码，需要Websocket端口。Web界面默认运行在3000端口（支持更改）
 - 需要自行打开UFW
+
+## Jitsi-Meeting
+
+### Debian
+
+文件：`jitsi-meeting_global.sh`
+
+注意：
+
+- 此脚本是全局安装
+- **需要交互**！
+
+### Docker
+
+文件：`docker_jitsi-meeting.sh`
+
+注意：
+
+- 需要Docker
+- 需要Docker-compose
+- 需要手动配置防火墙、反向代理、域名参数等内容
 
 ## RSS Hub
 
-文件：`rsshub_docker.sh`
+文件：`docker_rsshub.sh`
 
 # Debian10_Server_Init.sh(2021年7月停止维护)
 

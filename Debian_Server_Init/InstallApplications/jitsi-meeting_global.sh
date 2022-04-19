@@ -4,54 +4,14 @@
 # 要求sudo
 # 详情见readme
 
-# 指定运行端口(默认)
-RUN_PORT=3000
 # 服务名
 SRV_NAME=jitsi-meet
 # 反向代理的端口
-REVERSE_PROXY_URL=/jitsi-meet/
-# docker下载地址
-DOCKER_STABLE="https://github.com/jitsi/docker-jitsi-meet/archive/refs/tags/stable-7001.tar.gz"
-
-
-# Reverse Proxy 反向代理
-APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
-    CustomLog $HOME/Logs/apache/rsshub-$RUN_PORT.log common
-    ServerName xxx_server
-    ProxyPass / http://127.0.0.1:$RUN_PORT/
-    ProxyPassReverse / http://127.0.0.1:$RUN_PORT/
-    SSLEngine on
-    SSLProxyEngine on
-    SSLCertificateFile /etc/ssl/xxx.pem
-    SSLCertificateKeyFile /etc/ssl/xxx.key
-</VirtualHost>
-"
-
-NGINX_CONF="location $REVERSE_PROXY_URL {
-    access_log $HOME/Logs/nginx/$SRV_NAME.log;
-    proxy_pass http://127.0.0.1:$RUN_PORT/;
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    expires 1d;
-  }
-
-  or (Choose one) 
-
-server {
-  listen xxx_port;
-  server_name xxx_server;
-  
-  access_log $HOME/Logs/nginx/rsshub.log;
-  proxy_pass http://127.0.0.1:$RUN_PORT/;
-  proxy_set_header Host \$host;
-  proxy_set_header X-Real-IP \$remote_addr;
-  expires 1d;
-
-  # SSL setting
-  # ssl_certificate /etc/ssl/xxx.pem;
-  # ssl_certificate_key /etc/ssl/xxx.key;
-}
-"
+REVERSE_PROXY_URL=/
+# 你的jitsi服务器公共IP
+JIP=""
+# 你的jitsi服务器域名
+JDOMAIN_NAME=""
 
 ## 控制台颜色输出
 # 红色：警告、重点
@@ -192,16 +152,6 @@ fi
 
 ##############################################################
 
-# 检查命令
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -e "Docker not found! Install docker first!"
-    quitThis
-fi
-
-if ! [ -x "$(command -v docker-compose)" ]; then
-    prompt -e "Docker-compose not found! Install docker-compose first!"
-    quitThis
-fi
 
 # 检查文件夹
 if ! [ -d $HOME/Services ];then
@@ -218,73 +168,32 @@ if ! [ -d $HOME/Applications ];then
 fi
 
 # 安装
-cd $HOME/Applications
-prompt -x "Downloading docker"
-wget "$DOCKER_STABLE" -O jitsi-meet-docker.tar.gz
-if ! [ -f jitsi-meet-docker.tar.gz ]; then
-    prompt -e "Wget seems wrong. Stopping ..."
-    quitThis
+sudo apt update
+sudo apt install apt-transport-https
+prompt -x "Set hostname"
+sudo hostnamectl set-hostname "$DOMAIN_NAME"
+echo "$JIP $JDOMAIN_NAME" | sudo tee -a /etc/hosts
+prompt -x "Add repo.."
+echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list
+wget https://prosody.im/files/prosody-debian-packages.key -O- | sudo apt-key add -
+curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
+echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
+sudo apt update
+if [ -x "$(command -v ufw)" ]; then
+    prompt -w "Ufw detected."
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw allow 10000/udp
+    sudo ufw allow 22/tcp
+    sudo ufw allow 3478/udp
+    sudo ufw allow 5349/tcp
+    sudo ufw enable  
 fi
-prompt -x "Unzip tar.gz..."
-tar xzvf jitsi-meet-docker.tar.gz
-prompt -x "Rename..."
-mv docker-jitsi-meet-* docker-jitsi-meet
-cd docker-jitsi-meet
-cp env.example .env
-./gen-passwords.sh
-prompt -x "Create required CONFIG directories ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}..."
-mkdir -p ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
-prompt -x "Access the web UI at https://localhost:8443 (or a different port, in case you edited the compose file)."
-docker-compose up -d
+prompt -x "Install jitsi-meeting"
+sudo apt install jitsi-meet
 
+prompt -i "Check manully and setting up http server for jitsi-meeting by yourself."
 
-if ! [ xxx ]; then
-    prompt -x "Stopping ..."
-fi
-
-# mk srv
-prompt -x "Make Service..."
-if ! [ -d $HOME/Services/$SRV_NAME ];then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    mkdir $HOME/Services/$SRV_NAME
-fi
-echo "[Unit]
-Description=自定义的服务，用于启动"$SRV_NAME"
-After=network.target 
-
-[Service]
-ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
-User=$USER
-Type=forking
-PrivateTmp=True
-
-[Install]
-WantedBy=multi-user.target
-" > /home/$USER/Services/$SRV_NAME.service
-
-prompt -x "Install service..."
-cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
-
-prompt -x "Make start and stop script..."
-# Start and stop script
-echo "#!/bin/bash
-sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-" > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-echo "#!/bin/bash
-sudo docker stop rsshub
-" > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
-chmod +x /home/$USER/Services/$SRV_NAME/*.sh
-
-prompt -i "Check manully and setting up reverse proxy by yourself."
-prompt -i "========================================================"
-prompt -s "For Nginx:"
-echo "$NGINX_CONF"
-prompt -i "========================================================"
-prompt -s "For Apache2:"
-echo "$APACHE2_CONF"
-prompt -i "========================================================"
 
 
 
