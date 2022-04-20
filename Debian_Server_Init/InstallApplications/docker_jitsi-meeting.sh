@@ -4,6 +4,8 @@
 # 要求sudo
 # 详情见readme
 
+# 运行端口
+RUN_PORT=
 # 服务名
 SRV_NAME=jitsi-meet-docker
 # 反向代理的端口
