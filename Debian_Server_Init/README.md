@@ -101,7 +101,7 @@
 
 ### Docker
 
-文件：`docker_jitsi-meeting.sh`
+文件：`docker_jitsi-meeting.sh`  | [文档](https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-docker)
 
 注意：
 
@@ -112,6 +112,10 @@
 ## RSS Hub
 
 文件：`docker_rsshub.sh`
+
+## Other
+
+- `generate_ssl_cert.sh`——生成SSL证书
 
 # Debian10_Server_Init.sh(2021年7月停止维护)
 
