@@ -1,22 +1,63 @@
 #!/bin/bash
-# 注意。此脚本是全局安装！
+# 
 # 要求非root用户
 # 要求sudo
 # 详情见readme
+# https://posativ.org/isso/
 
-# 运行端口
-RUN_PORT=
+# 指定运行端口(默认)
+RUN_PORT=3500
 # 服务名
-SRV_NAME=jitsi-meet-docker
+SRV_NAME=isso
 # 反向代理的端口
-REVERSE_PROXY_URL=/jm/
-# docker下载地址
-DOCKER_STABLE="https://github.com/jitsi/docker-jitsi-meet/archive/refs/tags/stable-7001.tar.gz"
+REVERSE_PROXY_URL=/isso/
+# 你的域名 Include https://
+DOMAIN_N="https://127.0.0.1/"
 
+# ISSO配置
+ISSO_CONFIG="[general]
+dbpath = $HOME/Applications/isso/comments.db
+name = default
+host = "$DOMAIN_N"
+#notify = smtp
+log-file = $HOME/Logs/isso/isso.log
+
+[server]
+listen = http://localhost:$RUN_PORT/
+
+#[moderation]
+#enabled = true
+#purge-after = 30d
+
+#[smtp]
+#username = .com
+#password = m
+#host = 127.0.0.1
+#port = 587
+#security = starttls
+#to = @.com
+#from = \"Isso Comment\"<username@example.com>
+#timeout = 10
+
+[markup]
+options = strikethrough, superscript, autolink
+
+[guard]
+enabled = true
+ratelimit = 5
+direct-reply = 30
+reply-to-self = true
+require-author = true
+require-email = true
+
+[hash]
+salt = Eech7co8Ohloopo9Ol6baimi
+algorithm = pbkdf2
+"
 
 # Reverse Proxy 反向代理
 APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
-    CustomLog $HOME/Logs/apache/rsshub-$RUN_PORT.log common
+    CustomLog $HOME/Logs/apache/$SRV_NAME-$RUN_PORT.log common
     ServerName xxx_server
     ProxyPass / http://127.0.0.1:$RUN_PORT/
     ProxyPassReverse / http://127.0.0.1:$RUN_PORT/
@@ -29,8 +70,11 @@ APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
 
 NGINX_CONF="location $REVERSE_PROXY_URL {
     access_log $HOME/Logs/nginx/$SRV_NAME.log;
-    proxy_pass http://127.0.0.1:$RUN_PORT/;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Script-Name $REVERSE_PROXY_URL;
     proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_pass http://127.0.0.1:$RUN_PORT/;
     proxy_set_header X-Real-IP \$remote_addr;
     expires 1d;
   }
@@ -193,15 +237,13 @@ fi
 ##############################################################
 
 # 检查命令
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -e "Docker not found! Install docker first!"
+if ! [ -x "$(command -v python3)" ]; then
+    prompt -e "Python3 not found! Install it first!"
     quitThis
 fi
 
-if ! [ -x "$(command -v docker-compose)" ]; then
-    prompt -e "Docker-compose not found! Install docker-compose first!"
-    quitThis
-fi
+# sudo apt-get install python-setuptools python-virtualenv
+sudo apt-get install python-dev sqlite3 build-essential
 
 # 检查文件夹
 if ! [ -d $HOME/Services ];then
@@ -217,37 +259,23 @@ if ! [ -d $HOME/Applications ];then
     mkdir $HOME/Applications
 fi
 
-# 安装
-cd $HOME/Applications
-prompt -x "Downloading docker"
-wget "$DOCKER_STABLE" -O jitsi-meet-docker.tar.gz
-if ! [ -f jitsi-meet-docker.tar.gz ]; then
-    prompt -e "Wget seems wrong. Stopping ..."
-    quitThis
-fi
-prompt -x "Unzip tar.gz..."
-tar xzvf jitsi-meet-docker.tar.gz
-prompt -x "Rename..."
-mv docker-jitsi-meet-* docker-jitsi-meet
-cd docker-jitsi-meet
-cp env.example .env
-./gen-passwords.sh
-prompt -x "Create required CONFIG directories ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}..."
-mkdir -p ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
-prompt -x "Access the web UI at https://localhost:8443 (or a different port, in case you edited the compose file)."
-prompt -w "Testing......"
-docker-compose up -d
-if [ "$?" -ne 0 ];then
-    prompt -e "Docker-compose may wrong....Check manually."
-    docker-compose down
-    quitThis
-else
-    prompt -x "Test done."
-    docker-compose down
+if ! [ -d $HOME/Applications/isso/ ];then
+    mkdir $HOME/Applications/isso/
 fi
 
-prompt -x "Backhome..."
-cd 
+if ! [ -d $HOME/Logs ];then
+    mkdir $HOME/Logs/
+fi
+
+if ! [ -d $HOME/Logs/isso/ ];then
+    mkdir $HOME/Logs/isso/
+fi
+
+# 安装
+pip3 install --upgrade pip && pip3 install isso
+sudo apt-get install sqlite3
+
+echo "$ISSO_CONFIG" > $HOME/Applications/isso/isso.conf
 
 # mk srv
 prompt -x "Make Service..."
@@ -260,8 +288,7 @@ Description=自定义的服务，用于启动"$SRV_NAME"
 After=network.target 
 
 [Service]
-ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+ExecStart=/home/admin/.local/bin/isso -c $HOME/Applications/isso/isso.conf run
 User=$USER
 Type=forking
 PrivateTmp=True
@@ -277,12 +304,10 @@ sudo $HOME/Services/Install_Servces.sh
 prompt -x "Make start and stop script..."
 # Start and stop script
 echo "#!/bin/bash
-cd $HOME/Applications/docker-jitsi-meet/
-docker-compose up&
+sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
 " > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
 echo "#!/bin/bash
-cd $HOME/Applications/docker-jitsi-meet/
-docker-compose down&
+sudo docker stop rsshub
 " > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
@@ -294,8 +319,26 @@ prompt -i "========================================================"
 prompt -s "For Apache2:"
 echo "$APACHE2_CONF"
 prompt -i "========================================================"
-
-
+prompt -s "For Web Site:"
+echo "
+<script data-isso=\"http://example.com/isso/\"
+        data-isso-css=\"true\"
+        data-isso-lang=\"en\"
+        data-isso-reply-to-self=\"false\"
+        data-isso-require-author=\"false\"
+        data-isso-require-email=\"false\"
+        data-isso-max-comments-top=\"10\"
+        data-isso-max-comments-nested=\"5\"
+        data-isso-reveal-on-click=\"5\"
+        data-isso-avatar=\"true\"
+        data-isso-avatar-bg=\"#f0f0f0\"
+        data-isso-avatar-fg=\"#9abf88 #5698c4 #e279a3 #9163b6 ...\"
+        data-isso-vote=\"true\"
+        data-vote-levels=\"\"
+        src=\"http://example.com/isso/js/embed.min.js\"></script>
+<section id=\"isso-thread\"></section>
+"
+prompt -i "========================================================"
 
 
 
