@@ -1,0 +1,12 @@
+[Unit]
+Description=Bilibili直播
+After=network.target 
+
+[Service]
+ExecStart=changeme1
+Type=forking
+PrivateTmp=True
+User=changeme2
+
+[Install]
+WantedBy=multi-user.target
