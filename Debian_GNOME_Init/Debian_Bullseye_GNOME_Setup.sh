@@ -1072,19 +1072,32 @@ fi
 alias ll='ls -l'
 alias la='ls -A'
 alias l='ls -CF'
+
+# Systemd
+alias sss='sudo systemctl status'
+alias ssa='sudo systemctl start'
+alias ssd='sudo systemctl stop'
+# alias ssf='sudo systemctl restart'
+
 # Git相关偷懒操作
-# alias gitac='git add . -A && git commit -m \"update\"'
-# alias hcg='hexo clean && hexo g'
+# alias gitac='git add . -A && git commit -m \"update —— \`date\`\"'
 # alias gitam='git add . -A && git commit -m '
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
+# Git查历史文件
+# alias gitfindhistory='gitsearch(){git log --all --pretty=oneline -- \$1};gitsearch'
+
+# alias hcg='hexo clean && hexo g'
+
 # FFMPEG
 # 裁剪 开始、结尾、文件、输出文件
 alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$1 -to \$2 -i \$3 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
+
 # HTTP服务器
 alias apastart='sudo systemctl start apache2.service'
 alias apastop='sudo systemctl stop apache2.service'
 # alias ngxstop='sudo systemctl stop nginx.service'
 # alias ngxstop='sudo systemctl stop nginx.service'
+
 # 其他
 alias duls='du -sh ./*'
 alias dulsd='du -sh \`la\`'
