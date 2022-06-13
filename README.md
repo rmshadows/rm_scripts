@@ -1,6 +1,10 @@
 # rm_scripts
 我自己写的一些脚本以及网上收集的、网友贡献的脚本。注意看README文件，有一部分脚本已经不再维护！
 
+这里主要是系统搭建脚本，其他脚本见杂货铺:
+
+[Github](https://github.com/rmshadows/whatarethese)  |  [Gitee](https://gitee.com/rmshadows/shenmedongxi)
+
 ## 脚本文件夹
 
 - Debian_GNOME_Init——用于部署新的Debian系统
