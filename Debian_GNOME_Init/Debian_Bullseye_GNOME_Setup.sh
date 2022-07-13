@@ -329,6 +329,7 @@ APT_TO_INSTALL_INDEX_1="
 - silversearcher-ag——Ag快速搜索工具
 - slowhttptest——慢速HTTP链接测试
 - tcpdump——tcpdump
+- timeshift——系统备份
 - tree——树状显示文件夹
 - traceroute——路由跟踪
 - vim——VIM编辑器
@@ -476,6 +477,7 @@ APT_TO_INSTALL_INDEX_2="
 - synaptic——新立得包本地图形化管理器
 - tcpdump——tcpdump
 - tig——tig(类似github桌面)
+- timeshift——系统备份
 - tree——树状显示文件夹
 - traceroute——路由跟踪
 - vim——VIM编辑器
@@ -632,6 +634,7 @@ APT_TO_INSTALL_INDEX_3="
 - synaptic——新立得包本地图形化管理器
 - tcpdump——tcpdump
 - tig——tig(类似github桌面)
+- timeshift——系统备份
 - tree——树状显示文件夹
 - traceroute——路由跟踪
 - vim——VIM编辑器
