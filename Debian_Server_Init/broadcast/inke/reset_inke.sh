@@ -1,3 +1,3 @@
 #!/bin/bash
-cd changeme
+cd changeme1
 echo RMTP=\"\" > inke.txt

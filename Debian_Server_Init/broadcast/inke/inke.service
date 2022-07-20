@@ -1,0 +1,12 @@
+[Unit]
+Description=Inke直播
+After=network.target 
+
+[Service]
+ExecStart=changeme1_live.sh
+Type=forking
+PrivateTmp=True
+User=changeme2
+
+[Install]
+WantedBy=multi-user.target

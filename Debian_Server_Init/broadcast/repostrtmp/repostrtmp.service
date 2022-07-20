@@ -1,9 +1,9 @@
 [Unit]
-Description=Bilibili直播
+Description=RTMP转播
 After=network.target 
 
 [Service]
-ExecStart=changeme1
+ExecStart=changeme1_live.sh
 Type=forking
 PrivateTmp=True
 User=changeme2

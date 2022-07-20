@@ -1,0 +1,3 @@
+#!/bin/bash
+RTMP_S=""
+RTMP_D=""

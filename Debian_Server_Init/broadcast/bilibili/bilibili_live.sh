@@ -1,7 +1,6 @@
 #!/bin/bash
-cd changeme
+cd changeme1
 source bilibili.txt
-# source inke.txt
 echo Living
 echo "$RTMP"
 # 视频文件
