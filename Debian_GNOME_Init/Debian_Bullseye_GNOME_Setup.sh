@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.1.0
+Version：0.1.2
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -1093,7 +1093,7 @@ alias ssd='sudo systemctl stop'
 
 # FFMPEG
 # 裁剪 开始、结尾、文件、输出文件
-alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$1 -to \$2 -i \$3 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
+alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$2 -to \$3 -i \$1 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 
 # HTTP服务器
 alias apastart='sudo systemctl start apache2.service'

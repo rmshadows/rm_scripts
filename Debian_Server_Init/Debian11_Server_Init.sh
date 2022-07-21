@@ -413,7 +413,7 @@ alias l='ls -CF'
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
 # FFMPEG
 # 裁剪 开始、结尾、文件、输出文件
-# alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$1 -to \$2 -i \$3 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
+# alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$2 -to \$3 -i \$1 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 # HTTP服务器
 alias apastart='sudo systemctl start apache2.service'
 alias apastop='sudo systemctl stop apache2.service'
