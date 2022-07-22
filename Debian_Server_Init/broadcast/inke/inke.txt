@@ -1,1 +1,3 @@
 RTMP=""
+# 视频文件
+MP4_FILE="changeme_path/videos/xxx.mp4"

@@ -11,8 +11,9 @@ dincludes=`ls`
 for each in ${dincludes[@]}
 do
     if [ -d "$each" ];then
-        sed -i s#changeme1#$SET_BROADCAST_PATH$each#g $each/*
-        sed -i s/changeme2/$USER/g $each/*.service
+        sed -i s#changeme_path#$SET_BROADCAST_PATH#g $each/*
+        sed -i s#changeme_dir#$each#g $each/*
+        sed -i s/changeme_user/$USER/g $each/*.service
     fi
 done
 

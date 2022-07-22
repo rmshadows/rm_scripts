@@ -1,5 +1,5 @@
 #!/bin/bash
-cd changeme1
+cd changeme_path/changeme_dir
 conff="repost_live.txt"
 sed -i '2d' "$conff"
 sed -i '1a RTMP_S=""' "$conff"

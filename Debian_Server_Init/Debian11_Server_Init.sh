@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!About-说明
-Version：0.0.7
+Version：0.0.8
 ============================================
 0 for No.
 1 for Yes.
@@ -429,6 +429,10 @@ alias szsh='source '\$HOME'/.zshrc'
 alias systemctl='sudo systemctl'
 alias apt='sudo apt-get'
 alias upgrade='sudo apt update && sudo apt upgrade'
+alias ssa='sudo systemctl start'
+alias sss='sudo systemctl status'
+alias ssd='sudo systemctl stop'
+alias ssf='sudo systemctl restart'
 
 # unset _JAVA_OPTIONS
 

@@ -1,6 +1,6 @@
 # Debian11_Server_Init.sh
 
->Current Version: 0.0.7
+>Current Version: 0.0.8
 
 ## 使用方法
 
@@ -52,6 +52,8 @@
 
 >dev: Not available yet.
 
+- 2022.07.22——0.0.8
+  - 修复了直播文件夹中的小问题
 - 2022.04.14——0.0.7
   - 修复了语言配置、等问题(0.0.6)
   -  去除了GRUB网卡命名规则(0.0.6)

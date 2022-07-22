@@ -3,10 +3,10 @@ Description=Inke直播
 After=network.target 
 
 [Service]
-ExecStart=changeme1_live.sh
+ExecStart=changeme_path/changeme_dir/changeme_dir_live.sh
 Type=forking
 PrivateTmp=True
-User=changeme2
+User=changeme_user
 
 [Install]
 WantedBy=multi-user.target

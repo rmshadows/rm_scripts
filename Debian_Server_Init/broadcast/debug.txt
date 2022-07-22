@@ -1,4 +1,0 @@
-https://gist.github.com/israeljrs/1e70bfe05ad30b78143f78e209efff91
-
-ffmpeg -i rtmp://server/live/originalStream -c:a copy -c:v libx264 -vpre slow -f flv rtmp://server/live/h264Stream
-
