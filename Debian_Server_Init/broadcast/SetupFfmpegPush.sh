@@ -4,6 +4,10 @@
 # change1: $INSTALLL_PATH
 # change2: $USER
 # 安装文件夹路径 末尾不要 "/"
+
+sudo apt install ffmpeg
+sudo apt install gawk
+
 SET_BROADCAST_PATH="$HOME/Applications/broadcast/"
 
 dincludes=`ls`

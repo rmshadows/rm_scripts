@@ -15,13 +15,13 @@
             "audio_channel_layout": 3,
             "audio_channels": 2,
             "bit_rate": 0,
-            "avg_quality": 20
+            "avg_quality": 19
         }
     },
     "resource": {
         "lists": [
-            "../video/1.mp4",
-            "../video/2.mp4"
+            "../videos/1.mp4",
+            "../videos/2.mp4"
         ]
     },
     "output": {
