@@ -1,4 +1,4 @@
-RTMP_ADDR="rtmp://dasdsadsad.asdasdas.asdsad"
+RTMP_ADDR=""
 
 
 
