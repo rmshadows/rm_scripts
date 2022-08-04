@@ -25,7 +25,7 @@
         ]
     },
     "output": {
-        "reconnect_internal": -1,
+        "reconnect_internal": 5,
         "lists": [
             {
                 "path": "rtmp://127.0.0.1:1935/push"
