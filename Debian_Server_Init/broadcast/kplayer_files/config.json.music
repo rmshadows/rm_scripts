@@ -5,7 +5,8 @@
         "encode_model": "rtmp",
         "rpc": {
             "on": false,
-            "port": 4156,
+            "http_port": 4158,
+            "grpc_port": 4159,
             "address": "127.0.0.1"
         },
         "encode": {
