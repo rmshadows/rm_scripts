@@ -7,7 +7,7 @@ V_FILE="1.MP4"
 # 输出文件名
 OUTPUT_NAME="OUT1.MP4"
 
-ffmpeg -ss "$FROM" -to "$TO" -i "$V_FILE" -vcodec copy -acodec copy "$OUTPUT_NAME"
-
-
+ffmpeg -i "$V_FILE" -ss "$FROM" -to "$TO" -vcodec copy -acodec copy "$OUTPUT_NAME"
+# 如果上面那一句出错的话
+# ffmpeg -i "$V_FILE" -ss "$FROM" -t "$TO" -c copy "$OUTPUT_NAME"
 
