@@ -30,6 +30,10 @@ file '3.MP4'
 
 `ffmpeg -an -i input_video.MP4 -stream_loop -1 -i input_audio.mp3 -c:v copy -t 1:23:50 output.MP4`
 
+## GenerateCover
+
+生成视频封面
+
 # 我的视频处理流程
 
 1. `FfmpegCut.sh`裁剪视频(裁剪去不需要的内容)
@@ -39,6 +43,8 @@ file '3.MP4'
 
 # 更新日志
 
+- 20221107——0.0.2
+  - 新增封面工具
 - 20220902——0.0.1
   - 初版
 
