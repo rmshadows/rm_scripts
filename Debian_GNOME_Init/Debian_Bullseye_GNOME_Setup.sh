@@ -1640,11 +1640,17 @@ echo -e \"\e[1;33m Hello World \e[0m\"
         sudo echo "[Unit]
 Description=自定义的服务，用于开启启动/home/用户/.用户名/script下的shell脚本，配置完成请手动启用。注意，此脚本将以root身份运行！
 After=network.target 
+# 根据上面的配置，在 120 秒的时间间隔内，服务重启次数不能超过 3 次。如果服务崩溃超过五次，将不再允许它启动。
+# StartLimitIntervalSec=90
+# StartLimitBurst=3
 
 [Service]
 ExecStart=/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
 Type=forking
 PrivateTmp=True
+# Restart=on-failure
+# RestartSec=8s
+User=$CURRENT_USER
 
 [Install]
 WantedBy=multi-user.target

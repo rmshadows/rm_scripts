@@ -1,12 +1,17 @@
 [Unit]
 Description=Bilibili直播
 After=network.target 
+# 根据上面的配置，在 120 秒的时间间隔内，服务重启次数不能超过 3 次。如果服务崩溃超过五次，将不再允许它启动。
+StartLimitIntervalSec=90
+StartLimitBurst=3
 
 [Service]
 ExecStart=changeme_path/changeme_dir/changeme_dir_live.sh
 Type=forking
 PrivateTmp=True
 User=changeme_user
+Restart=on-failure
+RestartSec=8s
 
 [Install]
 WantedBy=multi-user.target
