@@ -1,2 +1,4 @@
 #!/bin/bash
-./kplayer play stop
+cd /home/$USER/Applications/broadcast/kplayer/
+source kconfig.sh
+./kplayer -c "$KCONF" play stop
