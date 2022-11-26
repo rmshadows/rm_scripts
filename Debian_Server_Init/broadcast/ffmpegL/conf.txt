@@ -1,0 +1,3 @@
+RTMP=""
+# 配置视频文件
+MP4_FILE="PARENT_DIR_PATH_CHANGEME/videos/xxx.mp4"

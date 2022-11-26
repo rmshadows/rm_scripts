@@ -1,0 +1,21 @@
+[Unit]
+Description=kplayer: STREAM_NAME_CHANGEME 的直播。
+After=network.target
+# 根据上面的配置，在 120 秒的时间间隔内，服务重启次数不能超过 3 次。如果服务崩溃超过五次，将不再允许它启动。
+StartLimitIntervalSec=90
+StartLimitBurst=3
+
+[Service]
+ExecStart=SET_BROADCAST_PATH_CHANGEME/start_kplayer.sh
+
+Type=forking
+# 独立的tmp目录
+# PrivateTmp=True
+# 是否在失败时重启
+Restart=on-failure
+RestartSec=8s
+# 用户
+User=SETUP_USER_CHANGEME
+
+[Install]
+WantedBy=multi-user.target

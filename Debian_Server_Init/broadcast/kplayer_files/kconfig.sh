@@ -1,2 +1,3 @@
 #!/bin/bash
-KCONF="config.json"
+# 需要使用的Kplayer的配置
+KCONF="STREAM_NAME_CHANGEME.json"
