@@ -1097,8 +1097,8 @@ alias ssd='sudo systemctl stop'
 alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$2 -to \$3 -i \$1 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 
 # HTTP服务器
-alias apastart='sudo systemctl start apache2.service'
-alias apastop='sudo systemctl stop apache2.service'
+# alias apastart='sudo systemctl start apache2.service'
+# alias apastop='sudo systemctl stop apache2.service'
 # alias ngxstop='sudo systemctl stop nginx.service'
 # alias ngxstop='sudo systemctl stop nginx.service'
 

@@ -415,11 +415,11 @@ alias l='ls -CF'
 # 裁剪 开始、结尾、文件、输出文件
 # alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$2 -to \$3 -i \$1 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 # HTTP服务器
-alias apastart='sudo systemctl start apache2.service'
-alias apastop='sudo systemctl stop apache2.service'
-alias ngxstart='sudo systemctl stop nginx.service'
-alias ngxstop='sudo systemctl stop nginx.service'
-alias ngxr='sudo systemctl restart nginx.service'
+# alias apastart='sudo systemctl start apache2.service'
+# alias apastop='sudo systemctl stop apache2.service'
+# alias ngxstart='sudo systemctl stop nginx.service'
+# alias ngxstop='sudo systemctl stop nginx.service'
+# alias ngxr='sudo systemctl restart nginx.service'
 # alias ngxhttps='sudo nano /etc/apache2/sites-available/https && sudo nginx -t'
 # 其他
 alias duls='du -sh ./*'
