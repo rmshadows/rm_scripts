@@ -33,6 +33,8 @@ def RandomMusic(MUSIC_DIR):
     with open(txt, "w", encoding="utf8") as f:
         f.write(cmd)
     cmd = "ffmpeg -f concat -i {} -c copy {}{}".format(txt, txt.replace(".txt", ""), extn)
+    # 下面是解决Unsafe file name的方法
+    # cmd = "ffmpeg -f concat -safe 0 -i {} -c copy {}{}".format(txt, txt.replace(".txt", ""), extn)
     print(cmd)
     os.popen(cmd)
 
