@@ -111,6 +111,15 @@
 - 需要Docker-compose
 - 需要手动配置防火墙、反向代理、域名参数等内容
 
+## Matterbridge
+
+文件：`matterbridge.sh`
+
+注意：
+
+- 需要自行配置nginx、媒体服务器等
+- 需要自行配置matterbridge [仓库](https://github.com/42wim/matterbridge) [手册](https://github.com/42wim/matterbridge/wiki)
+
 ## RSS Hub
 
 文件：`docker_rsshub.sh`
@@ -118,6 +127,7 @@
 ## Other
 
 - `generate_ssl_cert.sh`——生成SSL证书
+- `AboutV2ray/x-ui-install.sh`——搭建`x-ui`和`vmess`
 
 # Debian10_Server_Init.sh(2021年7月停止维护)
 
@@ -160,4 +170,4 @@
   - 修正了SSH配置
   - 修复了nginx配置的意外错误
 - v0.0.1
-  - 首次发布
+  - 首次发布	

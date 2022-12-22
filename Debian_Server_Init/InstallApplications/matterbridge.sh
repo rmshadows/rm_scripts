@@ -3,50 +3,105 @@
 # 要求非root用户
 # 要求sudo
 # 详情见readme
+# https://github.com/42wim/matterbridge
 
-# 指定运行端口(默认)
-RUN_PORT=
 # 服务名
-SRV_NAME=
-# 反向代理的端口
-REVERSE_PROXY_URL=/rsshub/
+SRV_NAME=matterbridge
+# 媒体域名 Include https:// no end : /
+DOMAIN_MEDIA="https://yourdomain"
 
-# Reverse Proxy 反向代理
-APACHE2_CONF="<VirtualHost *:$REVERSE_PROXY_PORT>
-    CustomLog $HOME/Logs/apache/$SRV_NAME-$RUN_PORT.log common
-    ServerName xxx_server
-    ProxyPass / http://127.0.0.1:$RUN_PORT/
-    ProxyPassReverse / http://127.0.0.1:$RUN_PORT/
-    SSLEngine on
-    SSLProxyEngine on
-    SSLCertificateFile /etc/ssl/xxx.pem
-    SSLCertificateKeyFile /etc/ssl/xxx.key
-</VirtualHost>
+# matterbridge.toml配置(IRC - Telegram为例)
+MB_CONFIG="[general]
+# 如果你有自己的媒体服务器
+# MediaDownloadPath=\"$HOME/nginx/matterbridge\"
+# MediaServerDownload=\"$DOMAIN_MEDIA/matterbridge\"
+LogFile=\"$HOME/Logs/matterbridge/matterbridge.log\"
+# ShowJoinPart=true
+
+[telegram.mytelegram]
+#See https://core.telegram.org/bots#6-botfather 你的Telegram机器人Token
+#and https://www.linkedin.com/pulse/telegram-bots-beginners-marco-frau
+Token=\"\"
+RemoteNickFormat=\"({PROTOCOL}) {NICK} \"
+MessageFormat=\"HTMLNick\"
+# QuoteLengthLimit=5000
+# DisableWebPagePreview=false
+# Don't bridge bot commands (as the responses will not be bridged)
+# IgnoreMessages=\"^/\"
+
+[irc.myirc]
+# 比如你是Libera IRC
+Server=\"irc.libera.chat:6697\"
+Nick=\"nickname6543\"
+UseTLS=true
+RemoteNickFormat=\"[{PROTOCOL}] <{NICK}> \"
+RejoinDelay=4
+ColorNicks=true
+# Flood control. Delay in milliseconds between each message send to the IRC server.
+MessageDelay=1500
+MessageSplit=true
+# MessageLength=5000
+# NickServNick=\"nickserv\"
+# NickServPassword=\"secret\"
+# NickServUsername=\"username\"
+# UseSASL=true
+# VerboseJoinPart=true
+Charset=\"utf-8\"
+MessageClipped=\"<Next Msg>\"
+# IgnoreMessages=\"^~~ badword\"
+# NoSendJoinPart=false
+# IgnoreNicks=\"ircspammer1 ircspammer2\"
+# JoinDelay=1000
+
+
+[[gateway]]
+name=\"gateway-irc-tg\"
+enable=true
+
+# IRC Gateway
+[[gateway.inout]]
+account=\"irc.myirc\"
+channel=\"#channel\"
+# options = { key=\"password\" }
+
+# Telegram Gateway
+[[gateway.inout]]
+account=\"telegram.mytelegram\"
+# 你的Telegram群组id(一个负值)
+channel=\"-1xxxxxxxxxxx\"
 "
 
-NGINX_CONF="location $REVERSE_PROXY_URL {
-    access_log $HOME/Logs/nginx/$SRV_NAME.log;
-    proxy_pass http://127.0.0.1:$RUN_PORT/;
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    expires 1d;
-  }
+NGINX_CONF="server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    
+    # Manual 你的根目录
+    root /var/www/html;    
+    index index.html index.htm index.nginx-debian.html;
+    server_name $DOMAIN_MEDIA;
+    # autoindex on;
 
-  or (Choose one) 
+    # 暴露出$SRV_NAME的媒体文件地址
+    location /$SRV_NAME {
+        autoindex on;
+    }
 
-server {
-  listen xxx_port;
-  server_name xxx_server;
-  
-  access_log $HOME/Logs/nginx/rsshub.log;
-  proxy_pass http://127.0.0.1:$RUN_PORT/;
-  proxy_set_header Host \$host;
-  proxy_set_header X-Real-IP \$remote_addr;
-  expires 1d;
+    ssl_certificate /etc/ssl/your.pem;
+    ssl_certificate_key /etc/ssl/your.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
 
-  # SSL setting
-  # ssl_certificate /etc/ssl/xxx.pem;
-  # ssl_certificate_key /etc/ssl/xxx.key;
+    # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
+    # ssl_dhparam /path/to/dhparam;
+
+    # intermediate configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+    add_header Strict-Transport-Security \"max-age=63072000\" always;
 }
 "
 
@@ -190,10 +245,10 @@ fi
 ##############################################################
 
 # 检查命令
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -e "Docker not found! Install docker first!"
-    quitThis
-fi
+#if ! [ -x "$(command -v python3)" ]; then
+#    prompt -e "Python3 not found! Install it first!"
+#    quitThis
+#fi
 
 # 检查文件夹
 if ! [ -d $HOME/Services ];then
@@ -209,10 +264,22 @@ if ! [ -d $HOME/Applications ];then
     mkdir $HOME/Applications
 fi
 
-# 安装
-if ! [ xxx ]; then
-    prompt -x "Stopping ..."
+if ! [ -d $HOME/Applications/matterbridge/ ];then
+    mkdir $HOME/Applications/matterbridge/
 fi
+
+if ! [ -d $HOME/Logs ];then
+    mkdir $HOME/Logs/
+fi
+
+if ! [ -d $HOME/Logs/matterbridge/ ];then
+    mkdir $HOME/Logs/matterbridge/
+fi
+
+# 安装
+wget -O matterbridge-linux https://github.com/42wim/matterbridge/releases/download/v1.25.2/matterbridge-1.25.2-linux-64bit
+# 配置文件
+echo "$MB_CONFIG" > $HOME/Applications/matterbridge/matterbridge.toml
 
 # mk srv
 prompt -x "Make Service..."
@@ -226,10 +293,6 @@ After=network.target
 
 [Service]
 ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
-User=$USER
-Type=forking
-PrivateTmp=True
 
 [Install]
 WantedBy=multi-user.target
@@ -239,26 +302,19 @@ prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
 
-prompt -x "Make start and stop script..."
-# Start and stop script
+prompt -x "Make start script..."
+# Start script
 echo "#!/bin/bash
-sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
+cd $HOME/Applications/matterbridge/
+./matterbridge-linux&
 " > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-echo "#!/bin/bash
-sudo docker stop rsshub
-" > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
-prompt -i "Check manully and setting up reverse proxy by yourself."
+prompt -i "Check manully and setting up nginx by yourself."
 prompt -i "========================================================"
 prompt -s "For Nginx:"
 echo "$NGINX_CONF"
 prompt -i "========================================================"
-prompt -s "For Apache2:"
-echo "$APACHE2_CONF"
-prompt -i "========================================================"
-
-
 
 
 

@@ -157,7 +157,7 @@ fi
 if ! [ -d $HOME/Services ];then
     mkdir $HOME/Services
     echo "#!/bin/bash
-cp *.service /lib/systemd/system/
+sudo cp *.service /lib/systemd/system/
 sudo systemctl daemon-reload
 " > $HOME/Services/Install_Servces.sh
     chmod +x $HOME/Services/Install_Servces.sh
