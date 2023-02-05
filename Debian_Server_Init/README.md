@@ -52,6 +52,8 @@
 
 >dev: Not available yet.
 
+- 2023.02.06——0.0.9
+  - 新增`php-fpm`等
 - 2022.07.22——0.0.8
   - 修复了直播文件夹中的小问题
 - 2022.04.14——0.0.7
@@ -119,6 +121,14 @@
 
 - 需要自行配置nginx、媒体服务器等
 - 需要自行配置matterbridge [仓库](https://github.com/42wim/matterbridge) [手册](https://github.com/42wim/matterbridge/wiki)
+
+## PHP-FPM
+
+文件：`php-fpm.sh`
+
+注意：
+
+- 仅用于第一次安装，如非首次安装，请自行修改监听端口号`/etc/php/7.4/fpm/pool.d/www.conf`（添加listen = 9000，记得注释其他listen）
 
 ## RSS Hub
 

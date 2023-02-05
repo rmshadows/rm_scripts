@@ -57,7 +57,8 @@ if [ "$UID" -eq 0 ]; then
 else
     prompt -w "\n——————————  Unit Ready  ——————————\n"
 fi
-
+# 是否临时加入sudoer
+TEMPORARILY_SUDOER=0
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$USER ALL=(ALL)NOPASSWD:ALL"
 # 检查是否在sudo组中 0 false 1 true
@@ -158,3 +159,4 @@ openssl x509 -req -in ssl.csr -CA ssl.pem -CAkey ssl.key -CAcreateserial -out ss
 
 # sudo mv ssl.key ssl.crt /etc/ssl/
 sudo mv ssl.key ssl.pem /etc/ssl/
+onExit

@@ -1,17 +1,22 @@
 #!/bin/bash
-# 注意。此脚本是全局安装！
+# 
 # 要求非root用户
 # 要求sudo
 # 详情见readme
 
 # 服务名
-SRV_NAME=jitsi-meet
-# 反向代理的端口
-REVERSE_PROXY_URL=/
-# 你的jitsi服务器公共IP
-JIP=""
-# 你的jitsi服务器域名
-JDOMAIN_NAME=""
+SRV_NAME=php-frp
+# php fpm监听端口（默认9000）
+LISTEN_PORT="9000"
+
+NGINX_CONF="
+    location / {
+        # proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        # proxy_set_header X-Real-IP \$remote_addr;
+        fastcgi_pass 127.0.0.1:9000;
+        include fastcgi_params;
+    }
+"
 
 ## 控制台颜色输出
 # 红色：警告、重点
@@ -152,51 +157,71 @@ if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ];then
 fi
 
 ##############################################################
-
-
-# 检查文件夹
-if ! [ -d $HOME/Services ];then
-    mkdir $HOME/Services
-    echo "#!/bin/bash
-sudo cp *.service /lib/systemd/system/
-sudo systemctl daemon-reload
-" > $HOME/Services/Install_Servces.sh
-    chmod +x $HOME/Services/Install_Servces.sh
+# 获取php-fpm版本
+# php-fpm:
+r=`whereis php-fpm` > /dev/null
+# echo $r
+PF_VERSION=${r#*\/php-fpm}
+# echo $PF_VERSION
+php-fpm$PF_VERSION -v  > /dev/null
+if [ "$?" -ne 0 ];then 
+    prompt -e "PHP-FPM not found!"
+    sudo apt install php-fpm
+    if [ "$?" -ne 0 ];then
+        prompt -e "APT: PHP-FPM install seems incorrect!"
+        quitThis
+    fi
 fi
 
-if ! [ -d $HOME/Applications ];then
-    mkdir $HOME/Applications
+r=`whereis php-fpm`
+# echo $r
+PF_VERSION=${r#*\/php-fpm}
+# echo $PF_VERSION
+php-fpm$PF_VERSION -v  > /dev/null
+if [ "$?" -ne 0 ];then
+    prompt -e "Check PHP-FPM installation!"
+    quitThis
 fi
 
-# 安装
-sudo apt update
-sudo apt install apt-transport-https
-prompt -x "Set hostname"
-sudo hostnamectl set-hostname "$DOMAIN_NAME"
-echo "$JIP $JDOMAIN_NAME" | sudo tee -a /etc/hosts
-prompt -x "Add repo.."
-echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list
-wget https://prosody.im/files/prosody-debian-packages.key -O- | sudo apt-key add -
-curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
-echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
-sudo apt update
-if [ -x "$(command -v ufw)" ]; then
-    prompt -w "Ufw detected."
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    sudo ufw allow 10000/udp
-    sudo ufw allow 22/tcp
-    sudo ufw allow 3478/udp
-    sudo ufw allow 5349/tcp
-    sudo ufw enable  
-fi
-prompt -x "Install jitsi-meeting"
-sudo apt install jitsi-meet
+# 检查命令
+# if ! [ -x "$(command -v php-fpm)" ]; then
+#    prompt -e "Python3 not found! Install it first!"
+#    quitThis
+# fi
 
-prompt -i "Check manully and setting up http server for jitsi-meeting by yourself."
+# 修改端口号
+PFW_CONF="/etc/php/$PF_VERSION/fpm/pool.d/www.conf"
+
+# listen = /run/php/php7.4-fpm.sock
+if [ -f "$PFW_CONF" ];then
+    prompt -m "检查该变量是否已经添加…… "
+    check_var="listen = /run/php/php$PF_VERSION-fpm.sock"
+    if cat "$PFW_CONF" | grep "^$check_var" > /dev/null
+    then
+        prompt -x "开始修改端口号"
+        pfwo=`cat "$PFW_CONF" | grep "^listen "`
+        # echo "$pfwo"
+        # 注释原来的
+        sudo sed -i "s?$pfwo?# $pfwo \nlisten = $LISTEN_PORT ?g" "$PFW_CONF"
+        sudo systemctl restart php$PF_VERSION-fpm.service
+    else
+        check_var="listen = $LISTEN_PORT"
+        if cat "$PFW_CONF" | grep "$check_var" > /dev/null
+        then
+            prompt -m "No change."
+        else
+            prompt -w "WARN: Manually edit $PFW_CONF yourself(Set “listen = $LISTEN_PORT” ). "
+        fi
+    fi
+else
+    prompt -e "$PFW_CONF not found!"
+    quitThis
+fi
+
+prompt -i "\n  Check manully and setting up nginx by yourself."
+prompt -i "========================================================"
+prompt -s "For Nginx:"
+echo "$NGINX_CONF"
+prompt -i "========================================================"
 onExit
-
-
-
-
 

@@ -1,17 +1,75 @@
 #!/bin/bash
-# 注意。此脚本是全局安装！
+# https://github.com/ZizzyDizzyMC/linx-server
 # 要求非root用户
-# 要求sudo
+# 要求sudo git
 # 详情见readme
 
-# 服务名
-SRV_NAME=jitsi-meet
-# 反向代理的端口
-REVERSE_PROXY_URL=/
-# 你的jitsi服务器公共IP
-JIP=""
-# 你的jitsi服务器域名
-JDOMAIN_NAME=""
+RUN_PORT=8087
+
+# LFSS仓库
+LFSS_REPO="https://github.com/ZizzyDizzyMC/linx-server"
+
+# 配置文件
+LFSS_CONFIG="bind = 127.0.0.1:$RUN_PORT
+sitename = File Sharing
+siteurl = YourServer.com
+selifpath = s
+maxsize = 4294967296
+maxexpiry = 86400
+allowhotlink = true
+remoteuploads = true
+nologs = true
+force-random-filename = false
+cleanup-every-minutes = 5
+extra-footer-text = "footer"
+realip = true
+fastcgi = true
+"
+
+SRV_RUN="#!/bin/bash
+cd linx-file-sharing/
+./linx-server -config linx-server.conf"
+
+SRV_UTIL-"[Unit]
+Description=Self-hosted file/code/media sharing website
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+ExecStart=linx-file-sharing/run.sh
+
+[Install]
+WantedBy=multi-user.target"
+
+NGINX_CONF="server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;   
+    root $HOME/linx-file-sharing;
+    index index.html index.htm index.nginx-debian.html;
+    server_name YourServerName.com;
+    client_max_body_size 4096M;
+    location / {
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP \$remote_addr;
+        fastcgi_pass 127.0.0.1:$RUN_PORT;
+        include fastcgi_params;
+    }
+    ssl_certificate /etc/ssl/xxx.pem;
+    ssl_certificate_key /etc/ssl/xxx.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
+    # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
+    # ssl_dhparam /path/to/dhparam;
+    # intermediate configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+    add_header Strict-Transport-Security \"max-age=63072000\" always;
+}
+"
 
 ## 控制台颜色输出
 # 红色：警告、重点
@@ -68,8 +126,10 @@ else
 fi
 
 sudo ls > /dev/null
+
 # 是否临时加入sudoer
 TEMPORARILY_SUDOER=0
+
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$USER ALL=(ALL)NOPASSWD:ALL"
 # 检查是否在sudo组中 0 false 1 true
@@ -153,6 +213,11 @@ fi
 
 ##############################################################
 
+# 检查命令
+if ! [ -x "$(command -v docker)" ]; then
+    prompt -e "Docker not found! Install docker first!"
+    quitThis
+fi
 
 # 检查文件夹
 if ! [ -d $HOME/Services ];then
@@ -169,33 +234,54 @@ if ! [ -d $HOME/Applications ];then
 fi
 
 # 安装
-sudo apt update
-sudo apt install apt-transport-https
-prompt -x "Set hostname"
-sudo hostnamectl set-hostname "$DOMAIN_NAME"
-echo "$JIP $JDOMAIN_NAME" | sudo tee -a /etc/hosts
-prompt -x "Add repo.."
-echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list
-wget https://prosody.im/files/prosody-debian-packages.key -O- | sudo apt-key add -
-curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
-echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
-sudo apt update
-if [ -x "$(command -v ufw)" ]; then
-    prompt -w "Ufw detected."
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    sudo ufw allow 10000/udp
-    sudo ufw allow 22/tcp
-    sudo ufw allow 3478/udp
-    sudo ufw allow 5349/tcp
-    sudo ufw enable  
+if ! [ xxx ]; then
+    prompt -x "Stopping ..."
 fi
-prompt -x "Install jitsi-meeting"
-sudo apt install jitsi-meet
 
-prompt -i "Check manully and setting up http server for jitsi-meeting by yourself."
+# mk srv
+prompt -x "Make Service..."
+if ! [ -d $HOME/Services/$SRV_NAME ];then
+    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
+    mkdir $HOME/Services/$SRV_NAME
+fi
+echo "[Unit]
+Description=自定义的服务，用于启动"$SRV_NAME"
+After=network.target 
+
+[Service]
+ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
+ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+User=$USER
+Type=forking
+PrivateTmp=True
+
+[Install]
+WantedBy=multi-user.target
+" > /home/$USER/Services/$SRV_NAME.service
+
+prompt -x "Install service..."
+cd $HOME/Services/
+sudo $HOME/Services/Install_Servces.sh
+
+prompt -x "Make start and stop script..."
+# Start and stop script
+echo "#!/bin/bash
+sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
+" > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
+echo "#!/bin/bash
+sudo docker stop rsshub
+" > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
+chmod +x /home/$USER/Services/$SRV_NAME/*.sh
+
+prompt -i "Check manully and setting up reverse proxy by yourself."
+prompt -i "========================================================"
+prompt -s "For Nginx:"
+echo "$NGINX_CONF"
+prompt -i "========================================================"
+prompt -s "For Apache2:"
+echo "$APACHE2_CONF"
+prompt -i "========================================================"
 onExit
-
 
 
 

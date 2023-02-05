@@ -162,7 +162,8 @@ else
 fi
 
 sudo ls > /dev/null
-
+# 是否临时加入sudoer
+TEMPORARILY_SUDOER=0
 # 临时加入sudoer所使用的语句
 TEMPORARILY_SUDOER_STRING="$USER ALL=(ALL)NOPASSWD:ALL"
 # 检查是否在sudo组中 0 false 1 true
@@ -317,6 +318,5 @@ prompt -i "========================================================"
 prompt -s "For Nginx:"
 echo "$NGINX_CONF"
 prompt -i "========================================================"
-
-
+onExit
 
