@@ -18,7 +18,7 @@ LFSS_REPO="https://github.com/ZizzyDizzyMC/linx-server"
 # 配置文件
 LFSS_CONFIG="bind = 127.0.0.1:$RUN_PORT
 sitename = File Sharing
-siteurl = YourServer.com
+siteurl = https://YourServer.com
 selifpath = s
 maxsize = 4294967296
 maxexpiry = 86400
