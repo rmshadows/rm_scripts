@@ -341,7 +341,7 @@ fi
 
 # 检查文件夹
 if ! [ -d "$TFM_ROOT" ];then
-    mkdir "$TFM_ROOT"
+    mkdir -p "$TFM_ROOT"
 fi
 
 if ! [ -d "$TFM_ROOT/files" ];then

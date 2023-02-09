@@ -52,6 +52,8 @@
 
 >dev: Not available yet.
 
+- 2023.02.10——0.1.0
+  - 新增`linxfilesharing`
 - 2023.02.06——0.0.9
   - 新增`php-fpm`等
 - 2022.07.22——0.0.8
@@ -83,9 +85,13 @@
 
 ## FRP
 
+>内网穿透
+
 文件:`frp.sh`
 
 ## Hackchat
+
+>匿名聊天
 
 文件：`hackchat.sh`
 
@@ -93,6 +99,8 @@
 - 需要自行打开UFW
 
 ## Jitsi-Meeting
+
+>在线会议
 
 ### Debian
 
@@ -113,7 +121,20 @@
 - 需要Docker-compose
 - 需要手动配置防火墙、反向代理、域名参数等内容
 
+## Linx-File-Sharing
+
+> 文件共享
+
+文件：`linxfilesharing.sh`
+
+注意：
+
+- 需要安装git、golang、acl
+- 主页自定义请修改`templates`
+
 ## Matterbridge
+
+>消息桥梁
 
 文件：`matterbridge.sh`
 
@@ -124,6 +145,8 @@
 
 ## PHP-FPM
 
+> 文件浏览、共享
+
 文件：`php-fpm.sh`
 
 注意：
@@ -131,6 +154,8 @@
 - 仅用于第一次安装，如非首次安装，请自行修改监听端口号`/etc/php/7.4/fpm/pool.d/www.conf`（添加listen = 9000，记得注释其他listen）
 
 ## RSS Hub
+
+>RSS服务
 
 文件：`docker_rsshub.sh`
 

@@ -1,10 +1,16 @@
 #!/bin/bash
 # https://github.com/ZizzyDizzyMC/linx-server
 # 要求非root用户
-# 要求sudo git
+# 自定义主页请修改./templates/文件夹
+# 要求sudo git go acl
 # 详情见readme
 
+# 运行端口
 RUN_PORT=8087
+# 运行的共享文件目录
+LFSS_ROOT="$HOME/lfss-file-share"
+# 服务名称
+SRV_NAME="linx-server"
 
 # LFSS仓库
 LFSS_REPO="https://github.com/ZizzyDizzyMC/linx-server"
@@ -21,31 +27,15 @@ remoteuploads = true
 nologs = true
 force-random-filename = false
 cleanup-every-minutes = 5
-extra-footer-text = "footer"
+extra-footer-text = \"footer\"
 realip = true
 fastcgi = true
 "
 
-SRV_RUN="#!/bin/bash
-cd linx-file-sharing/
-./linx-server -config linx-server.conf"
-
-SRV_UTIL-"[Unit]
-Description=Self-hosted file/code/media sharing website
-After=network.target
-
-[Service]
-User=www-data
-Group=www-data
-ExecStart=linx-file-sharing/run.sh
-
-[Install]
-WantedBy=multi-user.target"
-
 NGINX_CONF="server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;   
-    root $HOME/linx-file-sharing;
+    root "$LFSS_ROOT";
     index index.html index.htm index.nginx-debian.html;
     server_name YourServerName.com;
     client_max_body_size 4096M;
@@ -70,6 +60,7 @@ NGINX_CONF="server {
     add_header Strict-Transport-Security \"max-age=63072000\" always;
 }
 "
+
 
 ## 控制台颜色输出
 # 红色：警告、重点
@@ -214,9 +205,23 @@ fi
 ##############################################################
 
 # 检查命令
-if ! [ -x "$(command -v docker)" ]; then
-    prompt -e "Docker not found! Install docker first!"
+if ! [ -x "$(command -v git)" ]; then
+    prompt -e "git not found! Install git first!"
     quitThis
+fi
+
+if ! [ -x "$(command -v go)" ]; then
+    prompt -e "go not found! Install go(golang) first!"
+    quitThis
+fi
+
+if ! [ -x "$(command -v getfacl)" ]; then
+    prompt -e "ACL not found!"
+    sudo apt install acl
+    if [ "$?" -eq 0 ]; then
+        prompt -e "ACL install failed !"
+        quitThis
+    fi
 fi
 
 # 检查文件夹
@@ -232,11 +237,44 @@ fi
 if ! [ -d $HOME/Applications ];then
     mkdir $HOME/Applications
 fi
+# 建立ROOT文件夹
+if ! [ -d "$LFSS_ROOT" ];then
+    mkdir -p "$LFSS_ROOT"
+fi
 
 # 安装
-if ! [ xxx ]; then
-    prompt -x "Stopping ..."
-fi
+cd $HOME/Applications
+git clone "$LFSS_REPO" linx-file-share-repo
+cd linx-file-share-repo/
+
+# 编译
+# 主文件
+go build
+# 编译清理文件
+mv ./linx-cleanup/ ./linx-cleanup-export/
+cd ./linx-cleanup-export/
+go build
+cp ./linx-cleanup ./../
+cd ./../
+# 编译API Key文件
+mv ./linx-genkey/ ./linx-genkey-export/
+cd ./linx-genkey-export/
+go build
+cp ./linx-genkey ./../
+cd ./../
+# 设置可执行
+chmod +x ./linx-server
+chmod +x ./linx-genkey
+chmod +x ./linx-cleanup
+# 复制文件
+cp ./linx-server "$LFSS_ROOT"
+cp ./linx-genkey "$LFSS_ROOT"
+cp ./linx-cleanup "$LFSS_ROOT"
+# 复制文件夹
+cp -r ./templates/ "$LFSS_ROOT"
+# 生成配置文件
+cd "$LFSS_ROOT"
+echo "$LFSS_CONFIG" > ./linx-server.conf
 
 # mk srv
 prompt -x "Make Service..."
@@ -245,33 +283,35 @@ if ! [ -d $HOME/Services/$SRV_NAME ];then
     mkdir $HOME/Services/$SRV_NAME
 fi
 echo "[Unit]
-Description=自定义的服务，用于启动"$SRV_NAME"
-After=network.target 
+Description=自定义的服务，用于启动"$SRV_NAME" Self-hosted file/code/media sharing website
+After=network.target
 
 [Service]
+User=www-data
+Group=www-data
 ExecStart=/home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-ExecStop=/home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
-User=$USER
-Type=forking
-PrivateTmp=True
 
 [Install]
 WantedBy=multi-user.target
+
 " > /home/$USER/Services/$SRV_NAME.service
 
 prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
 
-prompt -x "Make start and stop script..."
+prompt -x "Make start script..."
 # Start and stop script
 echo "#!/bin/bash
-sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
+cd "$LFSS_ROOT"
+./linx-server -config linx-server.conf
 " > /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-echo "#!/bin/bash
-sudo docker stop rsshub
-" > /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
 chmod +x /home/$USER/Services/$SRV_NAME/*.sh
+
+sudo chown www-date "$LFSS_ROOT"
+sudo chown www-date "$LFSS_ROOT"/*
+sudo chgrp www-date "$LFSS_ROOT"
+sudo chgrp www-date "$LFSS_ROOT"/*
 
 prompt -i "Check manully and setting up reverse proxy by yourself."
 prompt -i "========================================================"
