@@ -34,6 +34,10 @@ file '3.MP4'
 
 生成视频封面
 
+## FFmpegAppendSRT
+
+添加字幕
+
 # 我的视频处理流程
 
 1. `FfmpegCut.sh`裁剪视频(裁剪去不需要的内容)
