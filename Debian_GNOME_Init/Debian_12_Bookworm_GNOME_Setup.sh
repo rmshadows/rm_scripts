@@ -36,8 +36,8 @@ SET_BASH_TO_ZSH=1
 SET_ZSHRC=1
 # 是否替换root用户的shell配置文件(如.bashrc)为用户配置文件 Preset:1
 SET_REPLACE_ROOT_RC_FILE=1
-# 添加/usr/sbin到环境变量 Preset=1
-SET_ADD_SBIN_ENV=1
+# 添加/usr/sbin到环境变量 Preset=0
+SET_ADD_SBIN_ENV=0
 # 是否安装bash-completion Preset=1
 SET_BASH_COMPLETION=1
 # 是否安装zsh-autosuggestions Preset=1
@@ -46,7 +46,7 @@ SET_ZSH_AUTOSUGGESTIONS=1
 ## 检查点三：
 # 是否自定义一个systemctl服务(customize-autorun) Preset=1
 SET_SYSTEMCTL_SERVICE=1
-# 是否配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹 Preset=1
+# 是否配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹 Preset=1
 SET_NAUTILUS_MENU=1
 # 配置启用NetworkManager、安装net-tools Preset=1
 SET_NETWORK_MANAGER=1
@@ -260,7 +260,6 @@ APT_TO_INSTALL_INDEX_1="
 - crunch——字典生成
 - cups——cups打印机驱动
 - curl——curl
-- dislocker——查看bitlocker分区
 - dos2unix——将Windows下的文本文档转为Linux下的文本文档
 - drawing——GNOME画图
 - dsniff——网络审计
@@ -307,7 +306,6 @@ APT_TO_INSTALL_INDEX_1="
 - hping3——hping3
 - htop——htop彩色任务管理器
 - httrack——网站克隆
-- hydra——hydra
 - inotify-tools——inotify文件监视
 - kompare——文件差异对比
 - konversation——IRC客户端
@@ -315,20 +313,17 @@ APT_TO_INSTALL_INDEX_1="
 - make——make
 - masscan——masscan
 - mdk3——mdk3
-- meld——文件差异合并
 - nautilus-extension-*——nautilus插件
+- neofetch——系统信息
 - net-tools——ifconfig等工具
 - nmap——nmap
 - nodejs——nodejs
 - npm——nodejs包管理器
-- ntpdate——NTP时间同步
 - obs-studio——OBS
 - openssh-server——SSH
 - pwgen——随机密码生成
-- python3-pip——pip3
 - qt5ct——QT界面显示配置
 - reaver——无线WPS测试
-- screenfetch——显示系统信息
 - sed——文本编辑工具
 - silversearcher-ag——Ag快速搜索工具
 - slowhttptest——慢速HTTP链接测试
@@ -342,7 +337,6 @@ APT_TO_INSTALL_INDEX_1="
 - websploit——Web渗透测试
 - wget——wget网络下载工具
 - xdotool——X自动化工具
-- xprobe——网页防火墙测试
 - xsel——剪贴板操作
 - zhcon——tty中文虚拟
 "
@@ -1632,7 +1626,7 @@ fi
 
 :<<检查点三
 配置自定义的systemtl服务
-配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
+配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
 配置启用NetworkManager、安装net-tools
 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
 配置GRUB网卡默认命名方式
@@ -1671,12 +1665,12 @@ WantedBy=multi-user.target
     fi
 fi
 
-# 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
+# 配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
 if [ "$SET_NAUTILUS_MENU" -eq 1 ];then
-    prompt -x "配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹"
+    prompt -x "配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹"
     addFolder /home/$CURRENT_USER/Data
     addFolder /home/$CURRENT_USER/Project
-    addFolder /home/$CURRENT_USER/Vbox-Tra
+    addFolder /home/$CURRENT_USER/VM_Share
     addFolder /home/$CURRENT_USER/Prog
     addFolder /home/$CURRENT_USER/Mounted
     addFolder /home/$CURRENT_USER/.$CURRENT_USER/
