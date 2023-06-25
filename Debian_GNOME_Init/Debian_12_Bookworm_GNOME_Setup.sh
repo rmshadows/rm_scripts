@@ -224,7 +224,7 @@ sleep-inactive-ac-type='nothing'"
 ###
 # 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
 SET_DISABLE_THIRD_PARTY_REPO=1
-# 是否启用 os-prober -> 自Debian 12 开始，GRUB检测其他系统的 os-prober 被禁用了。 Preset=0
+# 是否启用 os-prober -> 自Debian 12 开始，GRUB检测其他系统的 os-prober 被禁用了。0:不处理 1:启用 2:禁用 Preset=0
 SET_ENABLE_GRUB_OS_PROBER=0
 # 最后一步 设置用户目录所属 Preset=1
 SET_USER_HOME=1
@@ -2395,6 +2395,9 @@ fi
 
 # 设置 GRUB os-prober
 if [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 0 ];then
+    # 不做处理
+    prompt -m "GRUB os-prober 保持默认。"
+elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 2 ];then
     # Sample:查找字段整行替换
     # 启用 os-prober
     # 配置/etc/default/grub 参数：GRUB_DISABLE_OS_PROBER=false
