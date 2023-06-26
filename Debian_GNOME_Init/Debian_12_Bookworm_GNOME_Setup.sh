@@ -273,31 +273,20 @@ APT_TO_INSTALL_INDEX_1="
 - gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
 - gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
 - gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
 - gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
 - gnome-shell-extension-gamemode——GNOME扩展+游戏模式
 - gnome-shell-extension-hard-disk-led——GNOME扩展
 - gnome-shell-extension-hide-activities——GNOME扩展
-- gnome-shell-extension-hide-veth——GNOME扩展
 - gnome-shell-extension-impatience——GNOME扩展
 - gnome-shell-extension-kimpanel——GNOME扩展
-- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
 - gnome-shell-extension-no-annoyance——GNOME扩展
 - gnome-shell-extension-panel-osd——GNOME扩展
 - gnome-shell-extension-pixelsaver——GNOME扩展
 - gnome-shell-extension-prefs——GNOME扩展
-- gnome-shell-extension-redshift——GNOME扩展
-- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
 - gnome-shell-extensions——GNOME扩展
-- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
+- gnome-shell-extension-gpaste——GNOME扩展+GNOME剪辑板
 - gnome-shell-extension-shortcuts——GNOME扩展
-- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
-- gnome-shell-extension-tilix-shortcut——GNOME扩展
 - gnome-shell-extension-top-icons-plus——GNOME扩展
-- gnome-shell-extension-volume-mixer——GNOME扩展
 - gnome-shell-extension-weather——GNOME扩展+天气
 - gnucash——GNU账本
 - grub-customizer——GRUB或BURG定制器
@@ -385,35 +374,24 @@ APT_TO_INSTALL_INDEX_2="
 - gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
 - gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
 - gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
 - gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
 - gnome-shell-extension-gamemode——GNOME扩展+游戏模式
 - gnome-shell-extension-hamster——GNOME扩展+时间追踪器
 - gnome-shell-extension-hard-disk-led——GNOME扩展
 - gnome-shell-extension-hide-activities——GNOME扩展
-- gnome-shell-extension-hide-veth——GNOME扩展
 - gnome-shell-extension-impatience——GNOME扩展
 - gnome-shell-extension-kimpanel——GNOME扩展
-- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
 - gnome-shell-extension-no-annoyance——GNOME扩展+关闭应用准备就绪对话框
 - gnome-shell-extension-panel-osd——GNOME扩展
 - gnome-shell-extension-pixelsaver——GNOME扩展
 - gnome-shell-extension-prefs——GNOME扩展
-- gnome-shell-extension-redshift——GNOME扩展
-- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
 - gnome-shell-extensions——GNOME扩展
-- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
+- gnome-shell-extension-gpaste——GNOME扩展+GNOME剪辑板
 - gnome-shell-extension-shortcuts——GNOME扩展
-- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
 - gnome-shell-extension-system-monitor——GNOME扩展+顶栏资源监视器
 - gnome-shell-extension-tilix-dropdown——GNOME扩展
-- gnome-shell-extension-tilix-shortcut——GNOME扩展
 - gnome-shell-extension-top-icons-plus——GNOME扩展
 - gnome-shell-extension-trash——GNOME扩展
-- gnome-shell-extension-volume-mixer——GNOME扩展
 - gnome-shell-extension-weather——GNOME扩展+天气
 - gnome-software-plugin-flatpak——GNOME Flatpak插件
 - gnucash——GNU账本
@@ -539,35 +517,24 @@ APT_TO_INSTALL_INDEX_3="
 - gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
 - gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
 - gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-- gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-- gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-- gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
 - gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
 - gnome-shell-extension-gamemode——GNOME扩展+游戏模式
 - gnome-shell-extension-hamster——GNOME扩展+时间追踪器
 - gnome-shell-extension-hard-disk-led——GNOME扩展
 - gnome-shell-extension-hide-activities——GNOME扩展
-- gnome-shell-extension-hide-veth——GNOME扩展
 - gnome-shell-extension-impatience——GNOME扩展
 - gnome-shell-extension-kimpanel——GNOME扩展
-- gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-- gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
 - gnome-shell-extension-no-annoyance——GNOME扩展+关闭应用准备就绪对话框
 - gnome-shell-extension-panel-osd——GNOME扩展
 - gnome-shell-extension-pixelsaver——GNOME扩展
 - gnome-shell-extension-prefs——GNOME扩展
-- gnome-shell-extension-redshift——GNOME扩展
-- gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
 - gnome-shell-extensions——GNOME扩展
-- gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
+- gnome-shell-extension-gpaste——GNOME扩展+GNOME剪辑板
 - gnome-shell-extension-shortcuts——GNOME扩展
-- gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
 - gnome-shell-extension-system-monitor——GNOME扩展+顶栏资源监视器
 - gnome-shell-extension-tilix-dropdown——GNOME扩展
-- gnome-shell-extension-tilix-shortcut——GNOME扩展
 - gnome-shell-extension-top-icons-plus——GNOME扩展
 - gnome-shell-extension-trash——GNOME扩展
-- gnome-shell-extension-volume-mixer——GNOME扩展
 - gnome-shell-extension-weather——GNOME扩展+天气
 - gnome-software-plugin-flatpak——GNOME Flatpak插件
 - gnucash——GNU账本
@@ -1902,7 +1869,7 @@ if [ "$SET_INSTALL_NPM" -eq 1 ];then
     if [ "$SET_INSTALL_CNPM" -eq 1 ];then
         if ! [ -x "$(command -v cnpm)" ]; then
             prompt -x "安装CNPM"
-            npm install cnpm -g --registry=https://r.npm.taobao.org
+            sudo npm install cnpm -g --registry=https://r.npm.taobao.org
         fi
         if [ "$SET_INSTALL_HEXO" -eq 1 ];then
             if ! [ -x "$(command -v hexo)" ]; then
