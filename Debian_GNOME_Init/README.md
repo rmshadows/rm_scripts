@@ -1,6 +1,6 @@
 # Debian12_GNOME.sh
 
->Current Version: 0.1.0
+>Current Version: 0.0.2
 
 ## 使用方法
 
@@ -162,17 +162,18 @@
     - xsel——剪贴板操作
     - zhcon——tty中文虚拟
     ```
-    
+  
 - 脚本最后再安装的应用(滞后)
   
   ```
     - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
     - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
-    ```
+  ```
   
 - 安装Python3
   
   - 配置Python3源为清华大学镜像
+  - 配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
   
 - 安装配置Apache2
   
@@ -438,6 +439,10 @@
 
 ## 更新日志
 
+- 2023年6月29日——0.0.2
+  - 修复`zsh-autosuggestions`安装的bug
+  - 新增Python虚拟环境搭建
+  - 增加截屏等组件的失效警告
 - 2023年6月23日——0.0.1
   - 从Debian 11迁移到Debian 12
   - 新增步骤GRUB OS_PROBER启用（自Debian 12 开始，GRUB检测其他系统的 os-prober 被禁用了）。

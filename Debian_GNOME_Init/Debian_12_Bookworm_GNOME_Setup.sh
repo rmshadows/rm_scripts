@@ -3,7 +3,7 @@
 # https://www.debian.org/releases/stable/amd64/release-notes/ch-information.zh-cn.html
 
 :<<!说明
-Version：0.0.1
+Version：0.0.2
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -69,11 +69,13 @@ SET_APT_INSTALL=1
 Preset=1
 注释
 SET_APT_INSTALL_LIST_INDEX=1
-# 警告：Debian 12中 pip install可能破坏系统稳定性！本脚本暂时未处理，谨慎使用Python相关功能
-# 安装Python3 Preset=0
-SET_PYTHON3_INSTALL=0
-# 配置Python3源为清华大学镜像 Preset=0
-SET_PYTHON3_MIRROR=0
+# 警告：Debian 12中 pip install可能破坏系统稳定性！谨慎使用
+# 安装Python3 Preset=1
+SET_PYTHON3_INSTALL=1
+# 配置Python3源为清华大学镜像 Preset=1
+SET_PYTHON3_MIRROR=1
+# 配置Python3全局虚拟环境（Debian12中无法直接使用pip了） Preset=1
+SET_PYTHON3_VENV=1
 # 安装配置Apache2 Preset=1
 SET_INSTALL_APACHE2=1
 # 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
@@ -198,7 +200,7 @@ command='gnome-system-monitor'
 name='gnome-system-monitor'
 
 [custom3]
-binding='<Alt>t'
+binding='<Alt>y'
 command='virtualbox'
 name='virtualbox'
 
@@ -206,7 +208,7 @@ name='virtualbox'
 binding='<Alt>r'
 command='firefox-esr'
 name='firefox-esr'"
-# 导入GNOME 选区截屏配置 Preset=0
+# 导入GNOME 选区截屏配置 注意：Debian 12似乎已失效 Preset=0 
 SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
 GNOME_AREASCREENSHOT_KEYBINDINGS="['<Shift><Alt>s']"
 GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP="['<Primary><Shift>s']"
@@ -215,7 +217,7 @@ SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
 GNOME_MAGNIFIER_KEYBINDINGS="['<Alt>0']"
 GNOME_MAGNIFIER_KEYBINDINGS_IN="['<Alt>equal']"
 GNOME_MAGNIFIER_KEYBINDINGS_OUT="['<Alt>minus']"
-# 导入GNOME 电源配置 Preset=0
+# 导入GNOME 电源配置 注意：Debian 12似乎已失效 Preset=0
 SET_IMPORT_GNOME_POWER_DCONF=0
 GNOME_POWER_DCONF="[/]
 sleep-inactive-ac-timeout=3600
@@ -732,7 +734,7 @@ $1
 }
 
 # For debug code hightlight (需要代码高亮的时候取消注释,使用的时候注释掉)
-# !>/dev/null 2>&1
+!>/dev/null 2>&1
 
 # 检查root密码是否正确
 checkRootPasswd () {
@@ -1045,7 +1047,7 @@ alias l='ls -CF'
 alias sss='sudo systemctl status'
 alias ssa='sudo systemctl start'
 alias ssd='sudo systemctl stop'
-# alias ssf='sudo systemctl restart'
+alias ssf='sudo systemctl restart'
 
 # Git相关偷懒操作
 # alias gitac='git add . -A && git commit -m \"update —— \`date\`\"'
@@ -1083,6 +1085,16 @@ if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     # change suggestion color
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#999'
 fi
+
+# Python3自定义的全局环境激活
+alias acpy='activatePythonVenv'
+function activatePythonVenv(){
+    # 如果存在Python虚拟环境激活文件
+    if [ -f \"/home/$CURRENT_USER/.python_venv_activate\" ];then
+        source /home/$CURRENT_USER/.python_venv_activate
+    fi
+}
+
 "
 
 # 中州韵输入法词库配置头文件 luna_pinyin_simp.custom.yaml
@@ -1582,9 +1594,10 @@ if [ "$SET_BASH_COMPLETION" -eq 1 ];then
 fi
 
 # 安装zsh-autosuggestions
-if [ "$SET_BASH_COMPLETION" -eq 1 ];then
+if [ "$SET_ZSH_AUTOSUGGESTIONS" -eq 1 ];then
     if [ "$shell_conf" == ".zshrc" ];then
         prompt -x "安装zsh-autosuggestions"
+        doApt install zsh-syntax-highlighting
         doApt install zsh-autosuggestions
     else
         prompt -e "非ZSH，不安装zsh-autosuggestions"
@@ -1716,6 +1729,7 @@ fi
 从APT仓库安装常用软件包
 安装Python3
 配置Python3源为清华大学镜像
+配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
 安装配置Apache2
 安装配置Git(配置User Email)
 安装配置SSH
@@ -1810,6 +1824,62 @@ if [ "$SET_PYTHON3_MIRROR" -eq 1 ];then
     pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
     pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
     pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+fi
+
+# 配置Python3全局虚拟环境（Debian 12中不能直接使用pip）
+if [ "$SET_PYTHON3_VENV" -eq 1 ];then
+    prompt -x "配置Python3全局虚拟环境"
+    doApt install python3-venv
+    # pipx用于安装独立的全局python程序，如you-get
+    doApt install pipx
+    # 在这里修改Python虚拟环境参数
+    venv_libs_dir="/home/$CURRENT_USER/.PythonVenv"
+:<<!说明
+请保证与zshrc中的配置对应
+如： 
+if [ -f "/home/$CURRENT_USER/.python_venv_activate" ];then
+    source /home/$CURRENT_USER/.python_venv_activate
+fi
+或者
+alias acpy='activatePythonVenv'
+function activatePythonVenv(){
+    # 如果存在Python虚拟环境激活文件
+    if [ -f "/home/$CURRENT_USER/.python_venv_activate" ];then
+        source /home/$CURRENT_USER/.python_venv_activate
+    fi
+}
+!说明
+    act="/home/$CURRENT_USER/.python_venv_activate"
+    prompt -x "新建虚拟环境文件夹 $venv_libs_dir"
+    addFolder "$venv_libs_dir"
+    # 首先检查有没有venv文件夹
+    if [ -d "$venv_libs_dir" ];then
+        if ! [ -f "$venv_libs_dir/bin/activate" ];then
+            prompt -e "$venv_libs_dir 文件夹已存在，但似乎不是Python虚拟环境！"
+        fi
+        if ! [ -f "$venv_libs_dir/bin/activate.csh" ];then
+            prompt -e "$venv_libs_dir文件夹已存在，但似乎不是Python虚拟环境！"
+        fi
+        prompt -s "$venv_libs_dir 文件夹已存在，进入Python虚拟环境....请运行 source $act "
+        if ! [ -f "$act" ];then
+            prompt -s "正在生成 $act 文件...."
+            echo "# Python 全局虚拟环境
+source $venv_libs_dir/bin/activate" > $act
+        else
+            prompt -e "已经存在名为$act的文件....请自行验证文件正确性(source $venv_libs_dir/bin/activate)，退出!"
+        fi
+    else
+        prompt -w "$venv_libs_dir文件夹不存在，开始创建Python虚拟环境！"
+        python3 -m venv "$venv_libs_dir"
+        prompt -s "进入Python虚拟环境....请运行 source $act "
+        if ! [ -f "$act" ];then
+            prompt -s "正在生成 $act 文件...."
+            echo "# Python 全局虚拟环境
+source $venv_libs_dir/bin/activate" > $act
+        else
+            prompt -e "已经存在名为$act的文件....请自行验证文件正确性(source $venv_libs_dir/bin/activate)，退出!"
+        fi
+    fi
 fi
 
 # 安装配置Apache2
