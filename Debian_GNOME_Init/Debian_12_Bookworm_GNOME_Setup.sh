@@ -3,7 +3,7 @@
 # https://www.debian.org/releases/stable/amd64/release-notes/ch-information.zh-cn.html
 
 :<<!说明
-Version：0.0.2
+Version：0.0.3
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -1076,6 +1076,7 @@ alias szsh='source '\$HOME'/.zshrc'
 alias systemctl='sudo systemctl'
 alias apt='sudo apt-get'
 alias upgrade='sudo apt update && sudo apt upgrade'
+alias ssh-key-install='ssh-copy-id -i /home/$CURRENT_USER/.ssh/id_rsa.pub'
 
 # unset _JAVA_OPTIONS
 
@@ -1094,6 +1095,9 @@ function activatePythonVenv(){
         source /home/$CURRENT_USER/.python_venv_activate
     fi
 }
+
+# 默认运行，取消请注释
+activatePythonVenv
 
 "
 
@@ -1988,7 +1992,8 @@ export XMODIFIERS=@im=fcitx
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
     fi
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        prompt -x "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+        prompt -x "生成.xprofile文件"
+        echo "export QT_IM_MODULE=fcitx" > "/home/$CURRENT_USER/.xprofile"
     else
         prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
     fi
@@ -2009,7 +2014,8 @@ elif [ "$SET_INSTALL_RIME" -eq 2 ];then
     doApt install ibus
     doApt install ibus-rime
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        prompt -x "export GTK_IM_MODULE=ibus
+        prompt -x "生成.xprofile文件"
+        echo "export GTK_IM_MODULE=ibus
 export XMODIFIERS=@im=ibus
 export QT_IM_MODULE=ibus
 ibus-daemon -d -x
@@ -2040,16 +2046,24 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ];then
     fcitx5&
     sleep 3
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
-        prompt -x "GTK_IM_MODULE DEFAULT=fcitx
-QT_IM_MODULE  DEFAULT=fcitx
-XMODIFIERS    DEFAULT=\@im=fcitx
-SDL_IM_MODULE DEFAULT=fcitx
+        prompt -x "生成/etc/environment文件"
+        echo "GTK_IM_MODULE=fcitx5
+QT_IM_MODULE=fcitx5
+XMODIFIERS=@im=fcitx5
+SDL_IM_MODULE=fcitx5
+GLFW_IM_MODULE=ibus" | sudo tee /etc/environment
+        prompt -x "生成.pam_environment文件"
+        echo "GTK_IM_MODULE DEFAULT=fcitx5
+QT_IM_MODULE  DEFAULT=fcitx5
+XMODIFIERS    DEFAULT=\@im=fcitx5
+SDL_IM_MODULE DEFAULT=fcitx5
 " > "/home/$CURRENT_USER/.pam_environment"
     else
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
     fi
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        prompt -x "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+        prompt -x "生成.xprofile文件"
+        echo "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
     else
         prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
     fi

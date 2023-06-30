@@ -1,6 +1,6 @@
 # Debian12_GNOME.sh
 
->Current Version: 0.0.2
+>Current Version: 0.0.3
 
 ## 使用方法
 
@@ -439,6 +439,8 @@
 
 ## 更新日志
 
+- 2023年6月29日——0.0.3
+  - 修复输入法安装bug
 - 2023年6月29日——0.0.2
   - 修复`zsh-autosuggestions`安装的bug
   - 新增Python虚拟环境搭建
