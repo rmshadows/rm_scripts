@@ -217,6 +217,13 @@ SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
 GNOME_MAGNIFIER_KEYBINDINGS="['<Alt>0']"
 GNOME_MAGNIFIER_KEYBINDINGS_IN="['<Alt>equal']"
 GNOME_MAGNIFIER_KEYBINDINGS_OUT="['<Alt>minus']"
+# 导入切换窗口配置（将会禁用切换应用程序快捷键）
+SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS=0
+GNOME_SWITCH_WINDOWS_KEYBINDINGS="['<Alt>Tab']"
+GNOME_SWITCH_APPLICATIONS_KEYBINDINGS="[]"
+# 导入显示桌面快捷键
+SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=0
+GNOME_SHOW_DESKTOP_KEYBINDINGS="['<Super>d']"
 # 导入GNOME 电源配置 注意：Debian 12似乎已失效 Preset=0
 SET_IMPORT_GNOME_POWER_DCONF=0
 GNOME_POWER_DCONF="[/]
@@ -2143,6 +2150,8 @@ fi
 导入GNOME 自定义快捷键的dconf配置
 导入GNOME 选区截屏配置
 导入GNOME 屏幕放大镜配置
+导入切换窗口配置（将会禁用切换应用程序快捷键）
+导入显示桌面快捷键
 导入GNOME 电源配置
 检查点七
 # 导入GNOME Terminal的dconf配置
@@ -2191,6 +2200,20 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         dconf write /org/gnome/settings-daemon/plugins/media-keys/magnifier $GNOME_MAGNIFIER_KEYBINDINGS
         dconf write /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-in $GNOME_MAGNIFIER_KEYBINDINGS_IN
         dconf write /org/gnome/settings-daemon/plugins/media-keys/magnifier-zoom-out $GNOME_MAGNIFIER_KEYBINDINGS_OUT
+    fi
+    # 导入切换窗口配置（将会禁用切换应用程序快捷键）
+    if [ "$SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS" != 0 ];then
+        dconf read /org/gnome/desktop/wm/keybindings/switch-applications > old-dconf-settings-switch-applications.backup
+        dconf read /org/gnome/desktop/wm/keybindings/switch-windows > old-dconf-settings-switch-windows.backup
+        prompt -x "导入切换窗口配置（将会禁用切换应用程序快捷键）"
+        dconf write /org/gnome/desktop/wm/keybindings/switch-applications $GNOME_SWITCH_APPLICATIONS_KEYBINDINGS
+        dconf write /org/gnome/desktop/wm/keybindings/switch-windows $GNOME_SWITCH_WINDOWS_KEYBINDINGS
+    fi
+    # 导入显示桌面快捷键
+    if [ "$SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS" != 0 ];then
+        dconf read /org/gnome/desktop/wm/keybindings/show-desktop > old-dconf-settings-show-desktop.backup
+        prompt -x "导入显示桌面快捷键"
+        dconf write /org/gnome/desktop/wm/keybindings/show-desktop $GNOME_SHOW_DESKTOP_KEYBINDINGS
     fi
     # 导入GNOME 电源的dconf配置
     if [ "$SET_IMPORT_GNOME_POWER_DCONF" != 0 ];then
