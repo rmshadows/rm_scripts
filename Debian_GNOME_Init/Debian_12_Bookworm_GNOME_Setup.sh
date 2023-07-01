@@ -1901,6 +1901,8 @@ if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
     addFolder /home/HTML
     prompt -x "设置/home/HTML读写权限为755"
     sudo chmod 755 /home/HTML
+    sudo chown "$CURRENT_USER" /home/HTML
+    sudo chgrp "$CURRENT_USER" /home/HTML
     if [ $? -eq 0 ];then
         backupFile /etc/apache2/apache2.conf
         prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
