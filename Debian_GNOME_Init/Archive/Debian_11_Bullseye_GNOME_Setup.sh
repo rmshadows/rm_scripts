@@ -1944,7 +1944,7 @@ export XMODIFIERS=@im=fcitx
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
     fi
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        echo "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+        echo "export QT_IM_MODULE=fcitx" > "/home/$CURRENT_USER/.xprofile"
     else
         prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
     fi
@@ -1993,10 +1993,10 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ];then
     fcitx5&
     sleep 3
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
-        prompt -x "GTK_IM_MODULE DEFAULT=fcitx
-QT_IM_MODULE  DEFAULT=fcitx
-XMODIFIERS    DEFAULT=\@im=fcitx
-SDL_IM_MODULE DEFAULT=fcitx
+        prompt -x "GTK_IM_MODULE DEFAULT=fcitx5
+QT_IM_MODULE  DEFAULT=fcitx5
+XMODIFIERS    DEFAULT=\@im=fcitx5
+SDL_IM_MODULE DEFAULT=fcitx5
 " > "/home/$CURRENT_USER/.pam_environment"
     else
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
