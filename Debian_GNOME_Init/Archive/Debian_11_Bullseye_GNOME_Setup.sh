@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!说明
-Version：0.1.2
+Version：0.1.3
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then
@@ -195,7 +195,7 @@ command='gnome-system-monitor'
 name='gnome-system-monitor'
 
 [custom3]
-binding='<Alt>t'
+binding='<Alt>y'
 command='virtualbox'
 name='virtualbox'
 
@@ -1612,6 +1612,7 @@ if [ "$SET_BASH_COMPLETION" -eq 1 ];then
     if [ "$shell_conf" == ".zshrc" ];then
         prompt -x "安装zsh-autosuggestions"
         doApt install zsh-autosuggestions
+        doApt install zsh-syntax-highlighting
     else
         prompt -e "非ZSH，不安装zsh-autosuggestions"
     fi
@@ -1897,7 +1898,7 @@ if [ "$SET_INSTALL_NPM" -eq 1 ];then
     if [ "$SET_INSTALL_CNPM" -eq 1 ];then
         if ! [ -x "$(command -v cnpm)" ]; then
             prompt -x "安装CNPM"
-            npm install cnpm -g --registry=https://r.npm.taobao.org
+            sudo npm install cnpm -g --registry=https://r.npm.taobao.org
         fi
         if [ "$SET_INSTALL_HEXO" -eq 1 ];then
             if ! [ -x "$(command -v hexo)" ]; then
