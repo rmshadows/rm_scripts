@@ -1846,6 +1846,8 @@ if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
     addFolder /home/HTML
     prompt -x "设置/home/HTML读写权限为755"
     sudo chmod 755 /home/HTML
+    sudo chown "$CURRENT_USER" /home/HTML
+    sudo chgrp "$CURRENT_USER" /home/HTML
     if [ $? -eq 0 ];then
         backupFile /etc/apache2/apache2.conf
         prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
@@ -1941,7 +1943,7 @@ export XMODIFIERS=@im=fcitx
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
     fi
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        prompt -x "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+        echo "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
     else
         prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
     fi
@@ -1962,7 +1964,7 @@ elif [ "$SET_INSTALL_RIME" -eq 2 ];then
     doApt install ibus
     doApt install ibus-rime
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        prompt -x "export GTK_IM_MODULE=ibus
+        echo "export GTK_IM_MODULE=ibus
 export XMODIFIERS=@im=ibus
 export QT_IM_MODULE=ibus
 ibus-daemon -d -x
@@ -1999,7 +2001,7 @@ SDL_IM_MODULE DEFAULT=fcitx
         prompt -w "如果是Wayland，请自行设置~/.pam_environment(如果Fcitx不运行的话)"
     fi
     if ! [ -f "/home/$CURRENT_USER/.xprofile" ];then
-        prompt -x "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
+        echo "export QT_IM_MODULE=fcitx5" > "/home/$CURRENT_USER/.xprofile"
     else
         prompt -w "如果是WPS等应用无法使用fcitx，请自行设置~/.xprofile"
     fi
