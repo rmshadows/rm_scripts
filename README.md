@@ -29,6 +29,9 @@
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2023年9月13日
+  - `Debian 12`中raspi-firmware可能导致系统升级失败，建议`sudo apt purge raspi-firmware`
+
 - 2022年9月23日
   - 添加了FFmpeg、RAR辅助工具
 - 2022年3月29日
