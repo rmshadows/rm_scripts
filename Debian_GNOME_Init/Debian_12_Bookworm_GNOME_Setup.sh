@@ -117,8 +117,8 @@ SET_INSTALL_TEAMVIEWER=0
 SET_ENABLE_TEAMVIEWER=0
 # 是否安装WPS (APT安装慢) Preset=1
 SET_INSTALL_WPS_OFFICE=1
-# 拷贝字体到wps文件夹下，如果需要，请将该变量设置为存放字体的文件夹路径(e.g.: WPS_FONTS). Preset=0
-SET_WPS_FONTS_SRC=0
+# 拷贝字体到~/.fonts文件夹下，如果需要，请将该变量设置为存放字体的文件夹路径(e.g.: FONTS). Preset=0
+SET_FONTS=0
 # 是否安装Skype Preset=1
 SET_INSTALL_SKYPE=0
 # 是否安装Docker-ce Preset=0
@@ -195,17 +195,17 @@ command='nautilus'
 name='nautilus'
 
 [custom2]
-binding='<Alt>w'
+binding='<Shift><Alt>w'
 command='gnome-system-monitor'
 name='gnome-system-monitor'
 
 [custom3]
-binding='<Alt>y'
+binding='<Shift><Alt>y'
 command='virtualbox'
 name='virtualbox'
 
 [custom4]
-binding='<Alt>r'
+binding='<Shift><Alt>r'
 command='firefox-esr'
 name='firefox-esr'"
 # 导入GNOME 选区截屏配置 注意：Debian 12似乎已失效 Preset=0 
@@ -2078,12 +2078,14 @@ SDL_IM_MODULE DEFAULT=fcitx5
     fi
     prompt -m "检查中州韵输入法安装情况……"
     if ! [ -d "/home/$CURRENT_USER/.local/share/fcitx5" ];then
-        prompt -e "找不到ibus的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5"
-        quitThis
+        prompt -e "找不到fcitx5的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5"
+        addFolder /home/$CURRENT_USER/.local/share/fcitx5
+        # 这里就不退出了，新建文件夹就是
+        # quitThis 
     fi
     if ! [ -d "/home/$CURRENT_USER/.local/share/fcitx5/rime" ];then
-        prompt -e "找不到ibus-rime的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5/rime"
-        addFolder/home/$CURRENT_USER/.config/fcitx5/rime
+        prompt -e "找不到fcitx5-rime的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5/rime"
+        addFolder /home/$CURRENT_USER/.config/fcitx5/rime
     fi
     rime_config_dir="/home/$CURRENT_USER/.local/share/fcitx5/rime"
     im-config -n fcitx5
@@ -2430,6 +2432,14 @@ if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
     else
         prompt -m "您可能已经安装了WPS"
     fi
+fi
+
+# 添加字体到Home
+if [ "$SET_FONTS" -ne 0 ];then
+    if [ -d "/home/$CURRENT_USER/.fonts" ];then
+        addFolder /home/$CURRENT_USER/.fonts
+    fi
+    cp "$SET_FONTS"/* /home/$CURRENT_USER/.fonts/
 fi
 
 # 安装网易云音乐
