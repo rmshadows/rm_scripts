@@ -52,7 +52,7 @@ SET_SYSTEMCTL_SERVICE=1
 SET_NAUTILUS_MENU=1
 # 配置启用NetworkManager、安装net-tools Preset=1
 SET_NETWORK_MANAGER=1
-# 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
+# 设置网卡xxxx如:eth0为热拔插模式以缩短开机时间。如果没有xxx网卡，发出警告、跳过 Preset=0 如果有，直接填写网卡名称
 SET_ETH0_ALLOW_HOTPLUG=0
 # 配置GRUB网卡默认命名方式 Preset=1
 SET_GRUB_NETCARD_NAMING=1
@@ -860,7 +860,7 @@ addFolder () {
 这里是配置文件
 配置文件
 
-# zshrc 配置文件。修改：所有的“$”“\”“`”“"”全都加\转义
+# zshrc 配置文件。修改：所有的“$”“\”“`”“"”全都加\转义 (注意：这里用不了变量)
 ZSHRC_CONFIG="# ~/.zshrc file for zsh non-login shells.
 # see /usr/share/doc/zsh/examples/zshrc for examples
 
@@ -1085,7 +1085,7 @@ alias szsh='source '\$HOME'/.zshrc'
 alias systemctl='sudo systemctl'
 alias apt='sudo apt-get'
 alias upgrade='sudo apt update && sudo apt upgrade'
-alias ssh-key-install='ssh-copy-id -i /home/$CURRENT_USER/.ssh/id_rsa.pub'
+alias ssh-key-install='ssh-copy-id -i '\$HOME'/.ssh/id_rsa.pub'
 
 # unset _JAVA_OPTIONS
 
@@ -1100,8 +1100,8 @@ fi
 alias acpy='activatePythonVenv'
 function activatePythonVenv(){
     # 如果存在Python虚拟环境激活文件
-    if [ -f \"/home/$CURRENT_USER/.python_venv_activate\" ];then
-        source /home/$CURRENT_USER/.python_venv_activate
+    if [ -f \"'\$HOME'/.python_venv_activate\" ];then
+        source '\$HOME'/.python_venv_activate
     fi
 }
 
@@ -1337,7 +1337,7 @@ fi
 检查是否GNOME
 如果不是sudo组，加入sudo组、设置免密码
 !预先检查
-# 获取当前用户名
+# 获取当前用户名（从这里开始才能使用此变量）
 CURRENT_USER=$USER
 HOSTNAME=$HOST
 
@@ -1695,27 +1695,38 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
 fi
 
 # 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
-if [ "$SET_ETH0_ALLOW_HOTPLUG" -eq 1 ];then
-    prompt -m "设置网卡eth0为热拔插模式以缩短开机时间。"
+if [ "$SET_ETH0_ALLOW_HOTPLUG" -ne 0 ];then
+    prompt -m "设置网卡 $SET_ETH0_ALLOW_HOTPLUG 为热拔插模式以缩短开机时间。"
     # Not /etc/network/interfaces !
-    prompt -m "检查 /etc/network/interfaces.d/setup 中eth0设备是否设置为热拔插..."
-    backupFile /etc/network/interfaces.d/setup
-    check_var="allow-hotplug eth0"
-    if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
-    then
-        echo -e "\e[1;34m请检查文件内容：
-===============================================================\e[0m"
-        sudo cat /etc/network/interfaces.d/setup
-        prompt -w "您的 eth0 设备似乎已经允许热拔插（如上所列），不做处理。"
+    # 如果不存在/etc/network/interfaces.d/setup这个文件就新建
+    if ! [ -f "/etc/network/interfaces.d/setup" ]then;
+        prompt -x "没有找到 /etc/network/interfaces.d/setup 文件，新建文件中..."
+        echo "# tee by rm_scripts.
+allow-hotplug $SET_ETH0_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/setup
     else
-        prompt -m "检查 /etc/network/interfaces.d/setup 中是否有eth0设备..."
-        check_var="^auto eth0"
+        # 如果存在/etc/network/interfaces.d/setup文件
+        prompt -m "检查 /etc/network/interfaces.d/setup 中 $SET_ETH0_ALLOW_HOTPLUG 设备是否设置为热拔插..."
+        backupFile /etc/network/interfaces.d/setup
+        check_var="allow-hotplug $SET_ETH0_ALLOW_HOTPLUG"
+        # 检查是否已经设置热拔插
         if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
         then
-            prompt -x "添加 allow-hotplug eth0 到 /etc/network/interfaces.d/setup 中"
-            sudo sed -i 's/auto eth0/# auto eth0\nallow-hotplug eth0/g' /etc/network/interfaces.d/setup
+            echo -e "\e[1;34m请检查文件内容：
+===============================================================\e[0m"
+            sudo cat /etc/network/interfaces.d/setup
+            prompt -w "您的 $SET_ETH0_ALLOW_HOTPLUG 设备似乎已经允许热拔插（如上所列），不做处理。"
         else
-            prompt -e "似乎没有eth0这个设备或者eth0已被手动配置！"
+            prompt -m "检查 /etc/network/interfaces.d/setup 中是否有$SET_ETH0_ALLOW_HOTPLUG 设备..."
+            check_var="^auto $SET_ETH0_ALLOW_HOTPLUG"
+            if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
+            then
+                # TODO: 修改为$SET_ETH0_ALLOW_HOTPLUG
+                # sudo sed -i 's/auto eth0/# auto eth0\nallow-hotplug eth0/g' /etc/network/interfaces.d/setup
+                prompt -x "添加 allow-hotplug $SET_ETH0_ALLOW_HOTPLUG 到 /etc/network/interfaces.d/setup 中"
+                sudo sed -i 's/auto '$SET_ETH0_ALLOW_HOTPLUG'/# auto '$SET_ETH0_ALLOW_HOTPLUG'\nallow-hotplug '$SET_ETH0_ALLOW_HOTPLUG'/g' /etc/network/interfaces.d/setup
+            else
+                prompt -e "似乎没有$SET_ETH0_ALLOW_HOTPLUG 这个设备或者$SET_ETH0_ALLOW_HOTPLUG 已被手动配置！"
+            fi
         fi
     fi
 fi
@@ -2055,7 +2066,7 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ];then
     doApt install fcitx5-rime
     doApt install fcitx5-module-cloudpinyin
     fcitx5&
-    sleep 3
+    sleep 5
     if ! [ -f "/home/$CURRENT_USER/.pam_environment" ];then
         prompt -x "生成/etc/environment文件"
         echo "GTK_IM_MODULE=fcitx5
