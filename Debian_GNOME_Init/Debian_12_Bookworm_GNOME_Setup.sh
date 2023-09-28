@@ -1856,11 +1856,9 @@ if [ "$SET_PYTHON3_VENV" -eq 1 ];then
     doApt install python3-venv
     # pipx用于安装独立的全局python程序，如you-get
     doApt install pipx
-    # 在这里修改Python虚拟环境参数
-    venv_libs_dir="/home/$CURRENT_USER/.PythonVenv"
 :<<!说明
 请保证与zshrc中的配置对应
-如： 
+如： 注意：.zshrc中不能使用 CURRENT_USER变量!!!!
 if [ -f "/home/$CURRENT_USER/.python_venv_activate" ];then
     source /home/$CURRENT_USER/.python_venv_activate
 fi
@@ -1873,16 +1871,16 @@ function activatePythonVenv(){
     fi
 }
 !说明
+    # 在这里修改Python虚拟环境参数
+    venv_libs_dir="/home/$CURRENT_USER/.PythonVenv"
     act="/home/$CURRENT_USER/.python_venv_activate"
-    prompt -x "新建虚拟环境文件夹 $venv_libs_dir"
-    addFolder "$venv_libs_dir"
     # 首先检查有没有venv文件夹
     if [ -d "$venv_libs_dir" ];then
         if ! [ -f "$venv_libs_dir/bin/activate" ];then
             prompt -e "$venv_libs_dir 文件夹已存在，但似乎不是Python虚拟环境！"
         fi
         if ! [ -f "$venv_libs_dir/bin/activate.csh" ];then
-            prompt -e "$venv_libs_dir文件夹已存在，但似乎不是Python虚拟环境！"
+            prompt -e "$venv_libs_dir 文件夹已存在，但似乎不是Python虚拟环境！"
         fi
         prompt -s "$venv_libs_dir 文件夹已存在，进入Python虚拟环境....请运行 source $act "
         if ! [ -f "$act" ];then
@@ -1894,6 +1892,8 @@ source $venv_libs_dir/bin/activate" > $act
         fi
     else
         prompt -w "$venv_libs_dir文件夹不存在，开始创建Python虚拟环境！"
+        prompt -x "新建虚拟环境文件夹 $venv_libs_dir"
+        addFolder "$venv_libs_dir"
         python3 -m venv "$venv_libs_dir"
         prompt -s "进入Python虚拟环境....请运行 source $act "
         if ! [ -f "$act" ];then
