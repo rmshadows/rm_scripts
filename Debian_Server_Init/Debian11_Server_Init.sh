@@ -2049,7 +2049,7 @@ if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ];then
     htpasswd -bc "$HOME_INDEX"/nginx_res_login $SET_NGINX_RES_USER $SET_NGINX_RES_PASSWD
     if [ $? -eq 0 ];then
         backupFile /etc/nginx/nginx.conf
-        backupFile /etc/nginx/sites-available/default.conf
+        backupFile /etc/nginx/sites-available/default
         prompt -i "Set up a new nginx.conf"
         echo "$NGINX_GLOBAL_CONF" > /etc/nginx/nginx.conf
         echo "$NGINX_BLOCK_IP" > /etc/nginx/block_ip.conf
