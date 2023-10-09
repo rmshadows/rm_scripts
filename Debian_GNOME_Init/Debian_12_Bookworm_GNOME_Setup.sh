@@ -52,8 +52,8 @@ SET_SYSTEMCTL_SERVICE=1
 SET_NAUTILUS_MENU=1
 # 配置启用NetworkManager、安装net-tools Preset=1
 SET_NETWORK_MANAGER=1
-# 设置网卡xxxx如:eth0为热拔插模式以缩短开机时间。如果没有xxx网卡，发出警告、跳过 Preset=0 如果有，直接填写网卡名称
-SET_ETH0_ALLOW_HOTPLUG=0
+# 设置有线网卡xxxx如:eth0为热拔插模式以缩短开机时间。如果没有xxx网卡，发出警告、跳过 Preset=0 如果有，直接填写网卡名称
+SET_WIRED_ALLOW_HOTPLUG=0
 # 配置GRUB网卡默认命名方式 Preset=1
 SET_GRUB_NETCARD_NAMING=1
 
@@ -78,10 +78,20 @@ SET_PYTHON3_INSTALL=1
 SET_PYTHON3_MIRROR=1
 # 配置Python3全局虚拟环境（Debian12中无法直接使用pip了） Preset=1
 SET_PYTHON3_VENV=1
-# 安装配置Apache2 Preset=1
-SET_INSTALL_APACHE2=1
+# 安装配置Apache2 Preset=0 (新版本默认安装Nginx，并配置PHP)
+SET_INSTALL_APACHE2=0
 # 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_APACHE2=0
+# TODO
+# 是否安装Nginx Preset=1
+SET_INSTALL_NGINX=1
+# 是否设置Nginx开机自启动(注意，0为禁用，1为启用) Preset=0
+SET_ENABLE_NGINX=0
+# If NGINX: set ~/nginx/res passwd (如果是nginx，配置~/nginx/res的访问用户、密码) Preset:default nginxLogin 
+SET_NGINX_RES_USER=default
+SET_NGINX_RES_PASSWD=nginxLogin
+# 是否为Nginx配置PHP服务
+SET_INSTALL_PHP=0
 # 安装配置git Preset=1
 SET_INSTALL_GIT=1
 # Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
@@ -690,7 +700,7 @@ trap "onSigint" SIGINT
 # 程序中断处理方法,包含正常退出该执行的代码
 onSigint () {
     prompt -w "捕获到中断信号..."
-    onExit # TODO
+    onExit # TODO:中断后恢复正常退出的方法
     exit 1
 }
 
@@ -1694,38 +1704,40 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
     doApt install net-tools
 fi
 
-# 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
-if [ "$SET_ETH0_ALLOW_HOTPLUG" -ne 0 ];then
-    prompt -m "设置网卡 $SET_ETH0_ALLOW_HOTPLUG 为热拔插模式以缩短开机时间。"
+# 设置网卡eth0为热拔插模式以缩短开机时间 Preset=0
+if [ "$SET_WIRED_ALLOW_HOTPLUG" -ne 0 ];then
+    prompt -m "设置网卡 $SET_WIRED_ALLOW_HOTPLUG 为热拔插模式以缩短开机时间。"
     # Not /etc/network/interfaces !
     # 如果不存在/etc/network/interfaces.d/setup这个文件就新建
     if ! [ -f "/etc/network/interfaces.d/setup" ]then;
         prompt -x "没有找到 /etc/network/interfaces.d/setup 文件，新建文件中..."
         echo "# tee by rm_scripts.
-allow-hotplug $SET_ETH0_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/setup
+allow-hotplug $SET_WIRED_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/setup
     else
-        # 如果存在/etc/network/interfaces.d/setup文件
-        prompt -m "检查 /etc/network/interfaces.d/setup 中 $SET_ETH0_ALLOW_HOTPLUG 设备是否设置为热拔插..."
+        # 如果存在/etc/network/interfaces.d/setup文件 就检查
+        prompt -m "检查 /etc/network/interfaces.d/setup 中 $SET_WIRED_ALLOW_HOTPLUG 设备是否设置为热拔插..."
         backupFile /etc/network/interfaces.d/setup
-        check_var="allow-hotplug $SET_ETH0_ALLOW_HOTPLUG"
+        check_var="allow-hotplug $SET_WIRED_ALLOW_HOTPLUG"
         # 检查是否已经设置热拔插
         if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
         then
             echo -e "\e[1;34m请检查文件内容：
 ===============================================================\e[0m"
             sudo cat /etc/network/interfaces.d/setup
-            prompt -w "您的 $SET_ETH0_ALLOW_HOTPLUG 设备似乎已经允许热拔插（如上所列），不做处理。"
+            prompt -w "您的 $SET_WIRED_ALLOW_HOTPLUG 设备似乎已经允许热拔插（如上所列），不做处理。"
         else
-            prompt -m "检查 /etc/network/interfaces.d/setup 中是否有$SET_ETH0_ALLOW_HOTPLUG 设备..."
-            check_var="^auto $SET_ETH0_ALLOW_HOTPLUG"
+            # 没有检查到是否允许热拔插则检查是否有此网卡，没有此网卡会跳过
+            prompt -m "检查 /etc/network/interfaces.d/setup 中是否有$SET_WIRED_ALLOW_HOTPLUG 设备..."
+            # auto开头加网卡名称
+            check_var="^auto $SET_WIRED_ALLOW_HOTPLUG"
             if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
             then
-                # TODO: 修改为$SET_ETH0_ALLOW_HOTPLUG
+                # 如果有auto xxxx 改为 allow-hotplug xxxx
                 # sudo sed -i 's/auto eth0/# auto eth0\nallow-hotplug eth0/g' /etc/network/interfaces.d/setup
-                prompt -x "添加 allow-hotplug $SET_ETH0_ALLOW_HOTPLUG 到 /etc/network/interfaces.d/setup 中"
-                sudo sed -i 's/auto '$SET_ETH0_ALLOW_HOTPLUG'/# auto '$SET_ETH0_ALLOW_HOTPLUG'\nallow-hotplug '$SET_ETH0_ALLOW_HOTPLUG'/g' /etc/network/interfaces.d/setup
+                prompt -x "添加 allow-hotplug $SET_WIRED_ALLOW_HOTPLUG 到 /etc/network/interfaces.d/setup 中"
+                sudo sed -i 's/auto '$SET_WIRED_ALLOW_HOTPLUG'/# auto '$SET_WIRED_ALLOW_HOTPLUG'\nallow-hotplug '$SET_WIRED_ALLOW_HOTPLUG'/g' /etc/network/interfaces.d/setup
             else
-                prompt -e "似乎没有$SET_ETH0_ALLOW_HOTPLUG 这个设备或者$SET_ETH0_ALLOW_HOTPLUG 已被手动配置！"
+                prompt -e "似乎没有$SET_WIRED_ALLOW_HOTPLUG 这个设备或者$SET_WIRED_ALLOW_HOTPLUG 已被手动配置！"
             fi
         fi
     fi
@@ -1930,6 +1942,95 @@ if [ "$SET_INSTALL_APACHE2" -eq 1 ];then
         fi
     else
         prompt -e "Apache2似乎安装失败了。"
+        quitThis
+    fi
+fi
+
+# TODO
+# 安装配置Nginx
+if [ "$SET_INSTALL_NGINX" -eq 1 ];then
+    # 首先停止Apache2
+    if [ -x "$(command -v apache2ctl)" ]; then
+        prompt -x 'Stop apache2...' >&2
+        systemctl stop apache2.service
+        systemctl disable apache2.service
+    fi
+    prompt -x "Install nginx..."
+    doApt install nginx
+    prompt -m "配置Nginx 共享目录为 /home/HTML"
+    addFolder /home/HTML
+    prompt -x "设置/home/HTML读写权限为755"
+    sudo chmod 755 /home/HTML
+    sudo chown "$CURRENT_USER" /home/HTML
+    sudo chgrp "$CURRENT_USER" /home/HTML
+
+    if [ $? -eq 0 ];then
+        backupFile /etc/apache2/apache2.conf
+        prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
+        sudo sed -i 's/\/var\/www\//\/home\/HTML\//g' /etc/apache2/apache2.conf
+        sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/home\/HTML/g' /etc/apache2/sites-available/000-default.conf
+        if [ "$SET_ENABLE_APACHE2" -eq 0 ];then
+            prompt -x "禁用Apache2服务开机自启"
+            sudo systemctl disable apache2.service
+        elif [ "$SET_ENABLE_APACHE2" -eq 1 ];then
+            prompt -x "配置Apache2服务开机自启"
+            sudo systemctl enable apache2.service
+        fi
+    else
+        prompt -e "Apache2似乎安装失败了。"
+        quitThis
+    fi
+
+    prompt -m "Set nginx share directory $HOME_INDEX/nginx "
+    addFolder $HOME_INDEX/nginx
+    addFolder $HOME_INDEX/nginx/home_page
+    addFolder $HOME_INDEX/nginx/nres
+    addFolder $HOME_INDEX/nginx/res
+    prompt -x "Set $HOME_INDEX/nginx mode 755"
+    chmod 755 $HOME_INDEX/nginx
+    chmod 755 $HOME_INDEX/nginx/home_page
+    chmod 755 $HOME_INDEX/nginx/nres
+    chmod 755 $HOME_INDEX/nginx/res
+    prompt -x "Set $HOME_INDEX/nginx own by $CURRENT_USER_SET"
+    chown $CURRENT_USER_SET $HOME_INDEX/nginx
+    chown $CURRENT_USER_SET $HOME_INDEX/nginx/home_page
+    chown $CURRENT_USER_SET $HOME_INDEX/nginx/nres
+    chown $CURRENT_USER_SET $HOME_INDEX/nginx/res
+    if ! [ -x "$(command -v htpasswd)" ]; then
+        prompt -x 'Install apache2-utils...'
+        doApt install apache2-utils
+    fi
+    prompt -x "Generate a passwd file at user home."
+    htpasswd -bc "$HOME_INDEX"/nginx_res_login $SET_NGINX_RES_USER $SET_NGINX_RES_PASSWD
+    if [ $? -eq 0 ];then
+        backupFile /etc/nginx/nginx.conf
+        backupFile /etc/nginx/sites-available/default.conf
+        prompt -i "Set up a new nginx.conf"
+        echo "$NGINX_GLOBAL_CONF" > /etc/nginx/nginx.conf
+        echo "$NGINX_BLOCK_IP" > /etc/nginx/block_ip.conf
+        prompt -i "Genarate a http website and a https website."
+        echo "$NGINX_HTTP_SITE" > /etc/nginx/sites-available/http
+        echo "$NGINX_HTTPS_SITE" > /etc/nginx/sites-available/https
+        if [ "$SET_ENABLE_HTTPS_SITE" -eq 1 ];then
+            prompt -x "Disable default site and Enable nginx https site."
+            if [ -f /etc/nginx/sites-enabled/default ];then
+                rm /etc/nginx/sites-enabled/default
+            fi
+            if ! [ -f /etc/nginx/sites-enabled/https ];then
+                # 请使用绝对路径
+                ln -s /etc/nginx/sites-available/https /etc/nginx/sites-enabled/https
+            fi
+        fi
+        # 配置是否开机启动
+        if [ "$SET_ENABLE_NGINX" -eq 0 ];then
+            prompt -x "Disable Nginx service."
+            systemctl disable nginx.service
+        elif [ "$SET_ENABLE_NGINX" -eq 1 ];then
+            prompt -x "Enable Nginx service."
+            systemctl enable nginx.service
+        fi
+    else
+        prompt -e "Nginx's installation seems failed."
         quitThis
     fi
 fi
