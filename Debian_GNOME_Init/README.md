@@ -1,6 +1,6 @@
 # Debian12_GNOME.sh
 
->Current Version: 0.0.3
+>Current Version: 0.0.5
 
 ## 使用方法
 
@@ -438,6 +438,9 @@
 - zsh-autosuggestions——zsh插件
 
 ## 更新日志
+
+- 2023年10月10日——0.0.5
+  - 新增Nginx安装（Apache2就不要了）
 
 - 2023年6月29日——0.0.3
   - 修复输入法安装bug

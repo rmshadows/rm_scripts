@@ -16,6 +16,7 @@
   - rsshub_docker.sh——简单粗暴删除RSSHUB后重装启动
 - FFmpeg——命令行调用FFmpeg工具处理视频
   - 详情见文件夹README
+- fmgr文件传输——Nginx+Php fpm的文件共享（可上传），用于Linux主机临时局域网共享文件（直接丢进nginx根目录）
 - RAR——RAR相关脚本
   - 详情见文件夹README
 - Windows——一些Windows的脚本(基本都是没用的东西)
@@ -28,6 +29,9 @@
 ## 大事件记录
 
 >各脚本更新日志请分别查看文件夹中的README
+
+- 2023年10月10日
+  - 新增`fmgr`文件共享
 
 - 2023年9月13日
   - `Debian 12`中raspi-firmware可能导致系统升级失败，建议`sudo apt purge raspi-firmware`

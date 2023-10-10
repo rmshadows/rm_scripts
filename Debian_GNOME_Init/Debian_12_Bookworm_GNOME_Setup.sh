@@ -3,7 +3,7 @@
 # https://www.debian.org/releases/stable/amd64/release-notes/ch-information.zh-cn.html
 
 :<<!说明
-Version：0.0.4
+Version：0.0.5
 ！！！！关于Debian 12: 建议使用前卸载raspi-firmware，否则可能apt升级出错，请使用purge ！
 sudo apt purge raspi-firmware
 预设参数（在这里修改预设参数, 谢谢）
@@ -86,7 +86,6 @@ SET_ENABLE_APACHE2=0
 SET_INSTALL_NGINX=1
 # 是否设置Nginx开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_NGINX=0
-# TODO
 # 是否安装PHP（包括php fpm） Preset=1
 SET_INSTALL_PHP=1
 # 是否设置php fpm开机自启,默认禁用 Preset=0
@@ -1080,21 +1079,24 @@ alias ssf='sudo systemctl restart'
 # 裁剪 开始、结尾、文件、输出文件
 alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$2 -to \$3 -i \$1 -vcodec copy -acodec copy \$4};ffmpegCutVideo'
 
-# HTTP服务器
-# alias apastart='sudo systemctl start apache2.service'
-# alias apastop='sudo systemctl stop apache2.service'
-# alias ngxstop='sudo systemctl stop nginx.service'
-# alias ngxstop='sudo systemctl stop nginx.service'
-
-# 其他
+# 系统
+alias ssa='sudo systemctl start'
+alias sss='sudo systemctl status'
+alias ssd='sudo systemctl stop'
+alias ssf='sudo systemctl restart'
 alias duls='du -sh ./*'
 alias dulsd='du -sh \`la\`'
 alias zshrc='vim '\$HOME'/.zshrc'
 alias szsh='source '\$HOME'/.zshrc'
-alias systemctl='sudo systemctl'
-alias apt='sudo apt-get'
+
+# 代理
+# alias proxyAll='export ALL_PROXY=socks5://127.0.0.1:20170'
+
+# 其他
+# alias apt='sudo apt-get'
 alias upgrade='sudo apt update && sudo apt upgrade'
 alias ssh-key-install='ssh-copy-id -i '\$HOME'/.ssh/id_rsa.pub'
+alias sshpwdconnect='pwdconnect(){sshpass -p \"\$1\" ssh};pwdconnect'
 
 # unset _JAVA_OPTIONS
 
@@ -2294,7 +2296,6 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ];then
         quitThis
     fi
 fi
-TODO:PHP & php-fpm
 
 # 配置PHP FPM 
 if [ "$SET_INSTALL_PHP" -eq 1 ];then
@@ -2307,28 +2308,49 @@ if [ "$SET_INSTALL_PHP" -eq 1 ];then
         # 配置php fpm中
         fromp=`pwd`
         cd /etc/php/*/fpm/pool.d/
-        if [ -f "www.conf" ];then
-            # 存在配置文件就修改端口号 (在这里修改php fpm端口号) 
-            prompt -x "修改php fpm端口号为9000 "
-            www.conf 
-            prompt -m "检查端口…… "
-            check_var="listen = /run/php/php8.2-fpm.sock"
-            if cat /etc/default/grub | grep "$check_var" > /dev/null
+        phpconff=""www.conf""
+        if [ -f "$phpconff" ];then
+            check_var="^listen = 9000"
+            if cat "$phpconff" | grep "$check_var" > /dev/null
             then
-                prompt -w "您似乎已经配置过了，本次不执行添加。"
+                prompt -w "端口号似乎已经配置了!"  
             else
-                backupFile /etc/default/grub
-                prompt -x "添加 GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" 到 /etc/default/grub文件中"
-                sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
-                prompt -x "更新GRUB"
-                sudo grub-mkconfig -o /boot/grub/grub.cfg
+                # 存在配置文件就修改端口号 (在这里修改php fpm端口号) 
+                prompt -x "修改php fpm端口号为9000 ..."
+                check_var="^listen = /run/php/php8.2-fpm.sock"
+                if cat "$phpconff" | grep "$check_var" > /dev/null
+                then
+                    # 开始配置
+                    backupFile "$phpconff"
+                    prompt -x "注释掉listen = /run/php/php8.2-fpm.sock，改为listen=9000"
+                    # 去除开头的^后:
+                    tempCheckVar=${check_var#?}
+                    sudo sed -i s@"$check_var"@\;\ "$tempCheckVar"\\nlisten=9000@g "$phpconff"
+                else
+                    # 如果没找到那句话就搜索有无listen开头的参数
+                    check_var="^listen = "
+                    idx=`cat "$phpconff" | grep -n "$check_var" | gawk '{print $1}' FS=":"`
+                    idxl=($idx)
+                    idxlen=${#idxl[@]}  
+                    # 解析行号
+                    if [ $idxlen -eq 1 ];then
+                        backupFile "$phpconff"
+                        sudo sed -i "$idx d" "$phpconff"
+                        sudo sed -i "$idx i listen = 9000" "$phpconff"
+                        sudo systemctl restart php"$phpfpmVersion"-fpm.service
+                    elif [ $idxlen -eq 0 ];then
+                        prompt -e "在php fpm配置文件中没有找到listen参数,请自行检查配置文件!!"
+                    else
+                        prompt -e "Find duplicate user setting in $phpconff ! Check manually!"
+                    fi
+                fi
             fi
             # 配置php fpm是否开机启动
-            if [ "$SET_ENABLE_NGINX" -eq 0 ];then
+            if [ "$SET_PHP_FPM_ENABLE" -eq 0 ];then
                 # php8.2-fpm.service
                 prompt -x "Disable php-fpm service."
                 sudo systemctl disable php"$phpfpmVersion"-fpm.service
-            elif [ "$SET_ENABLE_NGINX" -eq 1 ];then
+            elif [ "$SET_PHP_FPM_ENABLE" -eq 1 ];then
                 prompt -x "Enable php-fpm service."
                 sudo systemctl enable php"$phpfpmVersion"-fpm.service
             fi
@@ -2339,7 +2361,6 @@ if [ "$SET_INSTALL_PHP" -eq 1 ];then
         fi
         # 回到原来的目录
         cd "$fromp"
-        fpmserver=`sudo systemctl list-unit-files | grep "\-"fpm | grep ^php`
     else
         prompt -e "Php似乎安装失败了。"
         quitThis
