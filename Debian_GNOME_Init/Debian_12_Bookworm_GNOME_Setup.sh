@@ -87,8 +87,10 @@ SET_INSTALL_NGINX=1
 # 是否设置Nginx开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_NGINX=0
 # TODO
-# 是否为Nginx配置PHP服务
-SET_INSTALL_PHP=0
+# 是否安装PHP（包括php fpm） Preset=1
+SET_INSTALL_PHP=1
+# 是否设置php fpm开机自启,默认禁用 Preset=0
+SET_PHP_FPM_ENABLE=0
 # 安装配置git Preset=1
 SET_INSTALL_GIT=1
 # Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
@@ -2249,8 +2251,8 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ];then
     # 首先停止Apache2
     if [ -x "$(command -v apache2ctl)" ]; then
         prompt -x 'Stop apache2...' >&2
-        systemctl stop apache2.service
-        systemctl disable apache2.service
+        sudo systemctl stop apache2.service
+        sudo systemctl disable apache2.service
     fi
     prompt -x "Install nginx..."
     doApt install nginx
@@ -2273,26 +2275,77 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ];then
         # 禁用默认的配置文件，启用新的
         prompt -x "Disable default site and Enable nginx https site."
         if [ -f /etc/nginx/sites-enabled/default ];then
-            rm /etc/nginx/sites-enabled/default
+            sudo rm /etc/nginx/sites-enabled/default
         fi
         if ! [ -f /etc/nginx/sites-enabled/http ];then
             # 请使用绝对路径
-            ln -s /etc/nginx/sites-available/http /etc/nginx/sites-enabled/http
+            sudo ln -s /etc/nginx/sites-available/http /etc/nginx/sites-enabled/http
         fi
         # 配置是否开机启动
         if [ "$SET_ENABLE_NGINX" -eq 0 ];then
             prompt -x "Disable Nginx service."
-            systemctl disable nginx.service
+            sudo systemctl disable nginx.service
         elif [ "$SET_ENABLE_NGINX" -eq 1 ];then
             prompt -x "Enable Nginx service."
-            systemctl enable nginx.service
+            sudo systemctl enable nginx.service
         fi
     else
         prompt -e "Nginx's installation seems failed."
         quitThis
     fi
 fi
-TODO:PHP
+TODO:PHP & php-fpm
+
+# 配置PHP FPM 
+if [ "$SET_INSTALL_PHP" -eq 1 ];then
+    prompt -x "安装Php和php-fpm"
+    doApt install php
+    doApt install php-fpm
+    # 获取版本号
+    phpfpmVersion=`sudo systemctl list-unit-files | grep "\-"fpm | grep ^php | sed 's/.fpm.*//' | sed 's/php//g'`
+    if [ $? -eq 0 ];then
+        # 配置php fpm中
+        fromp=`pwd`
+        cd /etc/php/*/fpm/pool.d/
+        if [ -f "www.conf" ];then
+            # 存在配置文件就修改端口号 (在这里修改php fpm端口号) 
+            prompt -x "修改php fpm端口号为9000 "
+            www.conf 
+            prompt -m "检查端口…… "
+            check_var="listen = /run/php/php8.2-fpm.sock"
+            if cat /etc/default/grub | grep "$check_var" > /dev/null
+            then
+                prompt -w "您似乎已经配置过了，本次不执行添加。"
+            else
+                backupFile /etc/default/grub
+                prompt -x "添加 GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" 到 /etc/default/grub文件中"
+                sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
+                prompt -x "更新GRUB"
+                sudo grub-mkconfig -o /boot/grub/grub.cfg
+            fi
+            # 配置php fpm是否开机启动
+            if [ "$SET_ENABLE_NGINX" -eq 0 ];then
+                # php8.2-fpm.service
+                prompt -x "Disable php-fpm service."
+                sudo systemctl disable php"$phpfpmVersion"-fpm.service
+            elif [ "$SET_ENABLE_NGINX" -eq 1 ];then
+                prompt -x "Enable php-fpm service."
+                sudo systemctl enable php"$phpfpmVersion"-fpm.service
+            fi
+        else
+            prompt -e "phpfpm没有/etc/php/*/fpm/pool.d/www.conf 文件!"
+            # 这里不退出
+            # quitThis
+        fi
+        # 回到原来的目录
+        cd "$fromp"
+        fpmserver=`sudo systemctl list-unit-files | grep "\-"fpm | grep ^php`
+    else
+        prompt -e "Php似乎安装失败了。"
+        quitThis
+    fi
+fi
+
 
 # 安装配置Git(配置User Email)
 if [ "$SET_INSTALL_GIT" -eq 1 ];then
