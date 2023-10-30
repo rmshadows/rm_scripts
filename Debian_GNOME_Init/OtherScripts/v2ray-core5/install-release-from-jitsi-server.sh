@@ -291,11 +291,13 @@ get_version() {
 }
 
 download_v2ray() {
-  # TODO: Manual这里修改地址
+  # TODO: Manual这里修改地址(注意：这里默认安装最新版本，但可能没有)
   # DOWNLOAD_LINK="https://github.com/v2fly/v2ray-core/releases/download/$RELEASE_VERSION/v2ray-linux-$MACHINE.zip"
   # https://github.com/v2fly/v2ray-core/releases/download/v5.7.0/v2ray-linux-64.zip
   # 修改后的地址：https://jitsi.civiccccc.ltd:2053/res/free/Linux/v2ray/v5.7.0/v2ray-linux-64.zip
   DOWNLOAD_LINK="https://jitsi.civiccccc.ltd:2053/res/free/Linux/v2ray/$RELEASE_VERSION/v2ray-linux-$MACHINE.zip"
+  # 如果jitsi服务器没有最新版本，请使用旧版本，如下：
+  # DOWNLOAD_LINK="https://jitsi.civiccccc.ltd:2053/res/free/Linux/v2ray/v5.9.0/v2ray-linux-$MACHINE.zip"
   echo "Downloading V2Ray archive: $DOWNLOAD_LINK"
   if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "$ZIP_FILE" "$DOWNLOAD_LINK"; then
     echo 'error: Download failed! Please check your network or try again.'
