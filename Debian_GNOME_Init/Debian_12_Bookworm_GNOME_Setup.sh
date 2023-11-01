@@ -4,7 +4,7 @@
 
 :<<!说明
 Version：0.0.5
-！！！！关于Debian 12: 建议使用前卸载raspi-firmware，否则可能apt升级出错，请使用purge ！
+！！！！关于Debian 12.0.0: 建议使用前卸载raspi-firmware，否则可能apt升级出错，请使用purge ！
 sudo apt purge raspi-firmware
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
@@ -230,7 +230,8 @@ GNOME_MAGNIFIER_KEYBINDINGS_OUT="['<Alt>minus']"
 # 导入切换窗口配置（将会禁用切换应用程序快捷键）
 SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS=0
 GNOME_SWITCH_WINDOWS_KEYBINDINGS="['<Alt>Tab']"
-GNOME_SWITCH_APPLICATIONS_KEYBINDINGS="[]"
+GNOME_SWITCH_APPLICATIONS_KEYBINDINGS="['<Super>Tab']"
+GNOME_SWITCH_APPLICATIONS_BACKWARD_KEYBINDINGS="['<Shift><Super>Tab']"
 # 导入显示桌面快捷键
 SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=0
 GNOME_SHOW_DESKTOP_KEYBINDINGS="['<Super>d']"
@@ -2654,11 +2655,14 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
     fi
     # 导入切换窗口配置（将会禁用切换应用程序快捷键）
     if [ "$SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS" != 0 ];then
+        # 禁用switch-applications 启用switch-windows
         dconf read /org/gnome/desktop/wm/keybindings/switch-applications > old-dconf-settings-switch-applications.backup
+        dconf read /org/gnome/desktop/wm/keybindings/switch-applications-backward > old-dconf-settings-switch-applications-backward.backup
         dconf read /org/gnome/desktop/wm/keybindings/switch-windows > old-dconf-settings-switch-windows.backup
         prompt -x "导入切换窗口配置（将会禁用切换应用程序快捷键）"
         dconf write /org/gnome/desktop/wm/keybindings/switch-applications $GNOME_SWITCH_APPLICATIONS_KEYBINDINGS
         dconf write /org/gnome/desktop/wm/keybindings/switch-windows $GNOME_SWITCH_WINDOWS_KEYBINDINGS
+        dconf write /org/gnome/desktop/wm/keybindings/switch-applications-backward $GNOME_SWITCH_APPLICATIONS_BACKWARD_KEYBINDINGS
     fi
     # 导入显示桌面快捷键
     if [ "$SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS" != 0 ];then
