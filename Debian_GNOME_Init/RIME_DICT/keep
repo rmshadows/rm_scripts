@@ -1,7 +1,0 @@
-luna_pinyin.extended.dict.yaml内可以添加你自己的字典文件索引（添加字典）
-luna_pinyin.udict.dict.yaml是用户自定义的字典（添加字词）
-luna_pinyin.poetry.dict.yaml
-luna_pinyin.cn_en.dict.yaml
-luna_pinyin_simp.custom.yaml
-luna_pinyin.hanyu.dict.yaml
-
