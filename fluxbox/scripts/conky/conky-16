@@ -1,0 +1,4 @@
+#!/bin/sh
+cat ~/.fluxbox/configs/conky/conkyrc-16 > ~/.conkyrc
+
+

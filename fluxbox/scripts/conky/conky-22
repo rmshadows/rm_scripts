@@ -1,0 +1,2 @@
+#!/bin/sh
+cat ~/.fluxbox/configs/conky/conkyrc-22 > ~/.conkyrc

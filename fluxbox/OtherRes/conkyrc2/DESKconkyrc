@@ -1,0 +1,174 @@
+# Set to yes if you want Conky to be forked in the background
+background yes
+
+# Use Xft?
+use_xft yes
+
+# Xft font when Xft is enabled
+xftfont Bitstream Monospace:size=9
+
+# Text alpha when using Xft
+xftalpha 0.1
+
+# Update interval in seconds
+update_interval 1.0
+
+# This is the number of times Conky will update before quitting.
+# Set to zero to run forever.
+total_run_times 0
+
+# Create own window instead of using desktop (required in nautilus)
+own_window yes
+own_window_type desktop
+own_window_transparent yes
+own_window_hints undecorated,below,sticky,skip_taskbar,skip_pager
+
+# Use double buffering (reduces flicker, may not work for everyone)
+double_buffer yes
+
+# Minimum size of text area
+minimum_size 320 0
+maximum_width 320
+
+# Draw shades?
+draw_shades no
+
+# Draw outlines?
+draw_outline no
+
+# Draw borders around text
+draw_borders no
+draw_graph_borders yes
+
+# Stippled borders?
+stippled_borders 8
+
+# border width
+border_width 1
+
+# Default colors and also border colors
+default_color white
+default_shade_color black
+default_outline_color white
+color1 green
+color2 red
+color3 cyan
+
+# Text alignment, other possible values are commented
+alignment top_right
+
+# Gap between borders of screen and text
+# same thing as passing -x at command line
+gap_x 10
+gap_y 50
+
+# Subtract file system buffers from used memory?
+no_buffers yes
+
+# set to yes if you want all text to be in uppercase
+uppercase no
+
+cpu_avg_samples 2
+net_avg_samples 2
+diskio_avg_samples 2
+
+# Force UTF8? note that UTF8 support required XFT
+override_utf8_locale yes
+
+# Add spaces to keep things from moving about?  This only affects certain objects.
+use_spacer right
+
+text_buffer_size 2048
+
+# variable is given either in format $variable or in ${variable}. Latter
+# allows characters right after the variable and must be used in network
+# stuff because of an argument
+# stuff after 'TEXT' will be formatted on screen
+
+TEXT
+
+${alignc}${color3}${font Monospace:style=Bold:pixelsize=35}${time %H:%M:%S}${font}${color}
+
+${alignc}${font Monospace:style=Bold:pixelsize=14}${time %A}, ${time %e} ${time %B}, ${time %G}${font}
+
+#############SYSTEM#############
+${color}${font Monospace:style=Bold:pixelsize=18}SYSTEM ${hr 2 }
+${font Monospace:size=10}
+USER: ${alignr}${exec whoami}
+HOSTNAME: ${alignr}$nodename
+KERNEL: $alignr$sysname $kernel
+UPTIME: ${color1}$alignr$uptime${color}
+LOAD: ${color1}$alignr$loadavg${color}
+
+#############CPU#############
+${color}${font Monospace:style=Bold:pixelsize=18}CPU ${hr 2 }
+${font Monospace:size=10}
+${exec cat /proc/cpuinfo | grep -Po 'model\s+name\s+:\s+\K.*?GHz' | head -1}
+
+TEMP: ${color1}$alignr${hwmon 0 temp 1}°C${color}
+USAGE: ${color1}$alignr${cpu cpu0}%
+${color2}${cpubar cpu0 15}
+
+${color}${alignc}RUNNING PROCESSES: ${color1}$processes
+${font Monospace:size=10}
+${alignc}${color}1st ${color1}${top name 1}${top cpu 1}%
+${alignc}${color}2nd ${color1}${top name 2}${top cpu 2}%
+${alignc}${color}3rd ${color1}${top name 3}${top cpu 3}%
+${alignc}${color}4th ${color1}${top name 4}${top cpu 4}%
+${alignc}${color}5th ${color1}${top name 5}${top cpu 5}%
+${alignc}${color}6th ${color1}${top name 6}${top cpu 6}%
+
+#############GPU#############
+${color}${font Monospace:style=Bold:pixelsize=18}GPU ${hr 2 }
+${font Monospace:size=10}
+${exec lspci | grep VGA |grep -Po "(?<=\[)(.*?)(?=\])"}
+
+TEMP: ${color1}$alignr${nvidia temp}°C${color}
+USAGE: ${color1}$alignr${nvidia gpuutil}%${color}
+FREQ: ${color1}$alignr${nvidia gpufreq}Mhz${color}
+MEMFREQ: ${color1}$alignr${nvidia memfreq}Mhz${color}
+
+#############MEMORY#############
+${color}${font Monospace:style=Bold:pixelsize=18}MEMORY ${hr 2 }
+${font Monospace:size=10}
+USAGE:$alignr${mem}/${memmax} ($memperc%)
+${color2}${membar 15}
+
+${alignc}${color}1st ${color1}${top_mem name 1}${top_mem mem 1}%
+${alignc}${color}2nd ${color1}${top_mem name 2}${top_mem mem 2}%
+${alignc}${color}3rd ${color1}${top_mem name 3}${top_mem mem 3}%
+${alignc}${color}4th ${color1}${top_mem name 4}${top_mem mem 4}%
+${alignc}${color}5th ${color1}${top_mem name 5}${top_mem mem 5}%
+${alignc}${color}6th ${color1}${top_mem name 6}${top_mem mem 6}%
+
+#############DISK#############
+${color}${font Monospace:style=Bold:pixelsize=18}DISK ${hr 2 }
+${font Monospace:size=10}
+/ ${alignr}${fs_used /}/${fs_size /} (${fs_used_perc /}%)
+${color2}${fs_bar 15 /}${color}
+
+/home ${alignr}${fs_used /home}/${fs_size /home} (${fs_used_perc /home}%)
+${color2}${fs_bar 15 /home}
+
+${alignc}${color}READ I/O: ${color1}${diskio_read /dev/sdb} ${alignr}${color}WRITE I/O: ${color1}${diskio_write /dev/sdb}
+
+#############INTERNET#############
+${color}${font Monospace:style=Bold:pixelsize=18}INTERNET ${hr 2 }
+${font Monospace:size=10}
+${color}VPN: ${if_empty ${exec cat /proc/net/route | grep tun0}}${color2}OFF${color}${else}${color1}ON${color}${endif}${color}
+${if_up wlp7s0}\
+SSID: ${color1}${exec iwgetid -r}${color}
+IPv4 LOCAL: ${color1}${addr wlp7s0}${color}
+PING: ${color1}${execi 1 sh -c 'ping 8.8.8.8 -c 1 | grep -Po "(?<=time=)(.*?)s"'}\
+${else}${color2}WIFI OFF${endif}
+
+${color}  DOWN: ${color1}${downspeed wlp7s0}${alignr}${color}UP: ${color1}${upspeed wlp7s0}   \
+
+${color black}${downspeedgraph wlp7s0 12,130 000000 00ff00}${alignr}${color black}${upspeedgraph wlp7s0 12,130 000000 00ff00}
+${color}  TOTAL: ${color1}${totaldown wlp7s0}${alignr}${color}TOTAL: ${color1}${totalup wlp7s0}
+
+${color}${font Monospace:style=Bold:pixelsize=19}UPDATES ${hr 2 }${font Monospace:size=10}${color}
+
+#############UPDATES#############
+#${if_match ${execpi 300 checkupdates | wc -l}>=1}${blink Pending updates: ${color1}${execpi 3600 checkupdates | wc -l}}${else}Your system is updated.${endif}
+${if_match ${execpi 300 checkupdates | wc -l}>=1}Pending updates: ${color1}${execpi 3600 checkupdates | wc -l}${else}Your system is updated.${endif}

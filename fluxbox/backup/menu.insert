@@ -1,0 +1,31 @@
+# 此文件可补充在mmaker末尾（如果你使用mmaker生成菜单）
+[submenu] (Appearance)
+[config] (Configure)
+ [submenu] (Menu size) {Choose Size...}
+ [stylesdir] (~/.fluxbox/styles)
+ [restart] (Apply style)
+ [end]
+[submenu] (Conky size) {Choose Size...}
+ [exec] (size 10) {~/.fluxbox/scripts/conky/conky-10}
+ [exec] (size 12) {~/.fluxbox/scripts/conky/conky-12}
+ [exec] (size 14) {~/.fluxbox/scripts/conky/conky-14}
+ [exec] (size 16) {~/.fluxbox/scripts/conky/conky-16}
+ [exec] (size 18) {~/.fluxbox/scripts/conky/conky-18}
+ [exec] (size 20) {~/.fluxbox/scripts/conky/conky-20}
+ [exec] (size 22) {~/.fluxbox/scripts/conky/conky-22}
+ [exec] (size 24) {~/.fluxbox/scripts/conky/conky-24}
+ [exec] (size 26) {~/.fluxbox/scripts/conky/conky-26}
+ [exec] (size 28) {~/.fluxbox/scripts/conky/conky-28}
+ [exec] (size 30) {~/.fluxbox/scripts/conky/conky-30}
+ [exec] (size 32) {~/.fluxbox/scripts/conky/conky-32}
+ [exec] (Desktop) {~/.fluxbox/scripts/conky/conky-Desktop}
+ [exec] (Laptop) {~/.fluxbox/scripts/conky/conky-Laptop}
+[end]
+  [exec] (Theme & Font) {lxappearance}
+[end]
+[separator] 
+  [restart] (Restart Fluxbox)
+  [exit] (Exit Session) 
+  [exec] (Reboot) {sudo shutdown -r now}
+  [exec] (Poweroff) {sudo shutdown -P now}
+[end]

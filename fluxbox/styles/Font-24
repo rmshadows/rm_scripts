@@ -1,0 +1,140 @@
+*Font:                          DejaVu-24:Serif:Condensed
+
+# Outer toolbar color
+toolbar:                        flat 
+toolbar.color:                  #7e7e7e
+
+toolbar.button:                         flat 
+toolbar.button.color:                   grey15
+toolbar.button.picColor:		grey50
+toolbar.button.pressed:			flat crossdiagonal gradient
+toolbar.button.pressed.color:           grey40
+toolbar.button.pressed.colorTo:		grey20
+
+toolbar.workspace:                                      
+toolbar.workspace.justify:              center
+toolbar.workspace.color:                grey15
+toolbar.workspace.colorTo:              grey10        
+toolbar.workspace.textColor:            #7e7e7e
+
+#toolbar.label:                  	flat 
+#toolbar.label.color:            	green
+#toolbar.label.textColor:        	green
+
+toolbar.iconbar.focused: 
+toolbar.iconbar.focused.color:		grey14
+toolbar.iconbar.focused.textColor:      #1e90ff
+toolbar.iconbar.focused.justify:        center
+toolbar.iconbar.unfocused:
+toolbar.iconbar.unfocused.color:	grey20
+toolbar.iconbar.unfocused.textColor:    #7e7e7e
+toolbar.iconbar.unfocused.justify:      center
+
+toolbar.windowLabel:            	flat 
+toolbar.windowLabel.color:      	grey15
+#toolbar.windowLabel.colorTo:    	grey20
+toolbar.windowLabel.textColor:  	gray50
+toolbar.clock:                  	flat 
+toolbar.clock.color:            	grey15
+#toolbar.clock.colorTo:          	grey20
+toolbar.clock.textColor:        	grey50
+toolbar.clock.justify:                	center
+
+menu.title:                     flat crossdiagonal gradient
+menu.title.pixmap:              menu.xpm
+menu.title.color:               #
+menu.title.colorTo:             #
+menu.title.textColor:           #1e90ff
+menu.title.justify:             center
+
+menu.frame:                     flat 
+menu.frame.pixmap:
+menu.frame.color:               grey10
+menu.frame.colorTo:             
+menu.frame.textColor:           #7e7e7e
+menu.frame.disableColor:        #5a5a5a
+menu.frame.justify:             left
+
+menu.bevelWidth:		1
+menu.borderColor:               #000000
+menu.borderWidth:               1
+
+menu.bullet.position:           right
+menu.bullet:                    triangle
+#menu.submenu.pixmap:            bullet.xpm
+
+#menu.bullet.position:           right
+#menu.bullet:                    triangle
+
+menu.hilite:                    flat
+menu.hilite.pixmap:             menu.xpm
+menu.hilite.color:              rgb:6/9/c
+menu.hilite.colorTo:            rgb:3/48/6
+menu.hilite.textColor:          #1e90ff
+
+#window.title.focus:            flat diagonal gradient
+window.title.focus:             flat 
+#window.title.focus.color:      rgb:6/9/c
+window.title.focus.color:       grey10
+#window.title.focus.colorTo:    rgb:4/6/8
+window.title.unfocus:           flat solid
+window.title.unfocus.color:     gray30
+
+#window.label.focus:            flat gradient
+window.label.focus:             flat 
+window.label.focus.color:       gray10
+#window.label.focus.colorTo:    gray40
+window.label.focus.textColor:   #1e90ff
+window.label.unfocus:           flat crossdiagonal gradient
+window.label.unfocus.color:     grey30
+window.label.unfocus.colorTo:   grey20
+window.label.unfocus.textColor: grey60
+
+#window.button.focus:           flat diagonal gradient
+window.button.focus:            flat 
+#window.button.focus.color:     rgb:4/6/8
+#window.button.focus.color:     #1e90ff
+window.button.focus.color:      grey10
+#window.button.focus.colorTo:   rgb:5/78/a
+#window.button.focus.picColor:  rgb:1/18/2
+window.button.focus.picColor:   grey70
+window.button.unfocus:          flat solid
+window.button.unfocus.color:    grey30
+window.button.unfocus.picColor: grey20
+window.button.pressed:          flat crossdiagonal gradient
+window.button.pressed.color:    grey40
+window.button.pressed.colorTo:  grey20
+
+window.handle.focus:            flat crossdiagonal gradient
+#window.handle.focus.color:     rgb:6/9/c
+#window.handle.focus.colorTo:   rgb:3/48/6
+window.handle.focus.color:      grey10
+window.handle.focus.colorTo:    grey20
+window.handle.unfocus:          flat solid
+window.handle.unfocus.color:    grey10
+
+window.grip.focus:              flat 
+#window.grip.focus.color:       red
+window.grip.focus.color:        #1e90ff
+#window.grip.focus.colorTo:     grey20
+window.grip.unfocus:            flat crossdiagonal gradient
+window.grip.unfocus.color:      grey30
+window.grip.unfocus.colorTo:    grey20
+
+window.frame.focusColor:        rgb:6/9/c
+window.frame.unfocusColor:      grey30
+
+#window.font:                   DejaVu-16:Serif:Condensed
+window.justify:                 right
+
+borderColor:                    grey10
+
+bevelWidth:                     1
+borderWidth:                    2
+handleWidth:                    4
+
+*textColor:                     grey85
+#*Font:                         DejaVu-16:Serif:Condensed
+
+!background: flat
+!background.color: grey20

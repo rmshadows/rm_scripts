@@ -1,0 +1,120 @@
+conky.config = {
+	mpd_host = 'localhost',
+	mpd_port = 6600,
+	mpd_password = '1234',
+
+-- maintain spacing between certain elements
+	use_spacer = 'none',
+
+-- set to yes if you want tormo to be forked in the background
+	background = false,
+
+	use_xft = true,
+	font = 'DejaVu Sans Mono:size=22',
+	xftalpha = 0.8,
+
+-- Update interval in seconds
+	update_interval = 3.0,
+
+-- Create own window instead of using desktop (required in nautilus)
+	draw_shades = true,
+	default_shade_color = 'gray',
+
+	own_window = false,-- create a separate XWindow over the one from Xfdesktop
+	own_window_type = 'desktop',-- the window cannot be moved or resized
+	own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',-- make it behave like it belongs to the desktop
+	own_window_argb_visual = true,-- true transparency, a compositor has to be active
+	own_window_argb_value = 100,-- make the background semi-transparent
+	double_buffer = true,-- avoid flickering
+
+-- Draw outlines?
+	draw_outline = false,-- amplifies text
+
+-- Draw borders around text
+	draw_borders = false,
+--default_color red
+
+-- Stippled borders?
+	stippled_borders = 0,
+
+-- border margins
+--window_border_inner_margin 3
+--border_margin 9
+
+-- border width
+	border_width = 1,
+
+-- Use double buffering (reduces flicker, may not work for everyone)
+	double_buffer = true,
+
+-- Minimum size of text area
+--minimum_size 280 5
+--maximum_width 280 
+	maximum_width = 1350,
+
+-- Default colors and also border colors, grey90 == #e5e5e5
+	default_color = 'grey90',
+	default_shade_color = 'black',
+	default_outline_color = 'DarkGrey',
+
+-- Text alignment, other possible values are commented
+--alignment top_left
+--alignment top_right
+	alignment = 'top_right',
+--alignment bottom_left
+--alignment bottom_right
+
+-- Gap between borders of screen and text
+	gap_x = 1,
+	gap_y = 5,
+
+-- Subtract file system buffers from used memory?
+	no_buffers = true,
+
+-- set to yes if you want all text to be in uppercase
+	uppercase = false,
+
+-- stuff after 'TEXT' will be formatted on screen
+
+};
+
+conky.text = [[
+${color #ffcb48}Load: $color$loadavg$color${color #ffcb48} UP:$color$uptime
+${offset 110}${color slate grey}${time %a, }${color }${time %e %B %G}
+${offset 110}${color slate grey}${time %Z,       }${color }${time %H:%M}
+${color 1793d0}CPU USAGE AND TEMPERATURE: ${color white}${execi 5 sensors | grep 'Core 0' | awk '{print $3}'} C
+${color #1e90ff}$cpubar
+#${cpugraph 25, 350 000000 6495ED}
+${color #ffcb48}NAME             PID   CPU%  MEM%
+${color #e5e5e5}${top name 1}${top pid 1}${top cpu 1}${top mem 1}
+${color #c4c4c4}${top name 2}${top pid 2}${top cpu 2}${top mem 2}
+${color #a3a3a3}${top name 3}${top pid 3}${top cpu 3}${top mem 3}
+
+${color 1793d0}MEMORY USAGE$color
+${color #ffcb48}RAM${color #707070}:$color  $memperc%    ${color #1e90ff}${membar 6}${color}
+#${color #ffcb48}SWAP${color #707070}:$color $swapperc%    ${color #1e90ff}${swapbar 6}$color
+
+${color 1793d0}DISK USAGE:
+${color #1e90ff}/root    ${color #1e90ff}${fs_bar /}
+${color #1e90ff}/storage ${color #1e90ff}${fs_bar /storage}
+
+${color 1793d0}NETWORK 
+${color #ffcb48}IP ADDRESS: ${color #e5e5e5} ${alignr}${addr eth0} 
+${color 1793d0}${if_mpd_playing}
+${color FF6744}*MPD*   $mpd_status
+${color 1793d0}Artist: ${color #e5e5e5}${mpd_artist 25}
+${color 1793d0}Album:  ${color #c4c4c4}${mpd_album 25}
+${color 1793d0}Title:  ${color #a3a3a3}${mpd_title 25}
+${color 1793d0}Length: ${color #e5e5e5}${mpd_length 15}
+#${color 1793d0}Channels: ${color #e5e5e5}${mpd_channels}
+#${color 1793d0}Samplerate: ${color #e5e5e5}${mpd_bits}/${mpd_samplerate} Hz
+
+${color 1793d0}Format:${color #e5e5e5}${execi 3 /etc/apl-files/conky/format.sh | cut -d ":" -f 2}
+${color 1793d0}Rate:${color #e5e5e5}  ${execi 3 /etc/apl-files/conky/rate.sh | cut -d ":" -f 2}
+${color 1793d0}Period size:${color #e5e5e5}${execi 3 /etc/apl-files/conky/period.sh | cut -d ":" -f 2}
+${color 1793d0}Buffer size:${color #e5e5e5}${execi 3 /etc/apl-files/conky/buffer.sh | cut -d ":" -f 2}
+
+${color #1e90ff}${mpd_bar}
+      ${color 1793d0}Random: ${color #a3a3a3}${mpd_random} ${color 1793d0}Repeat: ${color #a3a3a3}${mpd_repeat}
+
+$endif]];
