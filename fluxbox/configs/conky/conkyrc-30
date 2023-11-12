@@ -10,7 +10,7 @@ conky.config = {
 	background = false,
 
 	use_xft = true,
-	font = 'DejaVu Sans Mono:size=30',
+	font = 'Sans Mono:size=30',
 	xftalpha = 0.8,
 
 -- Update interval in seconds
