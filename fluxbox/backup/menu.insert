@@ -6,6 +6,8 @@
  [restart] (Apply style)
  [end]
 [submenu] (Conky size) {Choose Size...}
+ [exec] (kill conky) {pkill conky}
+ [exec] (reset conky) {~/.fluxbox/scripts/conky/conky-default}
  [exec] (size 10) {~/.fluxbox/scripts/conky/conky-10}
  [exec] (size 12) {~/.fluxbox/scripts/conky/conky-12}
  [exec] (size 14) {~/.fluxbox/scripts/conky/conky-14}
