@@ -53,8 +53,8 @@ Mod1 F1 :RootMenu
 
 ##### 自定义的快捷键 - Customized
 ### 这里是Alt键(打开终端)
-# Mod1 q :ExecCommand gnome-terminal
-Mod1 q :ExecCommand xfce4-terminal
+Mod1 q :ExecCommand gnome-terminal
+Mod1 Shift q :ExecCommand xfce4-terminal
 # 系统资源监视
 Mod1 Shift w :ExecCommand htop
 # Mod1 Shift w :ExecCommand gnome-system-monitor
@@ -70,6 +70,9 @@ Mod1 Shift k :Kill
 # 窗口全屏、关闭窗口
 Mod1 Shift f :Fullscreen
 Mod1 F4 :Close
+Mod1 F2 :ToggleDecor
+# app finder
+Mod1 Escape :ExecCommand xfce4-appfinder
 # 取消打印 Cancel Print
 # Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
 
@@ -89,8 +92,10 @@ Mod4 Left :ShadeOn
 Mod4 Right :ShadeOff
 # 锁屏 Win + L
 # Xfce4锁屏:
-Mod4 l :ExecCommand dm-tool lock
+# Mod4 l :ExecCommand dm-tool lock
 # Mod4 l :ExecCommand gnome-screensaver-command -l
+Mod4 l :ExecCommand i3lock
+
 
 # prtsc截屏，请安装scrot截屏
 # Print :ExecCommand scrot

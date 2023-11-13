@@ -6,11 +6,11 @@
 
 # Customize Here 这里是开机自启运行的
 /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg&
-# conky&
 # 启动fcitx
 fcitx5&
 # 启动网络管理器托盘
 nm-applet&
+# conky&
 
 # Change your keymap:
 xmodmap "~/.Xmodmap"
