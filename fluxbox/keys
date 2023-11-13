@@ -71,8 +71,6 @@ Mod1 Shift k :Kill
 Mod1 Shift f :Fullscreen
 Mod1 F4 :Close
 Mod1 F2 :ToggleDecor
-# app finder
-Mod1 Escape :ExecCommand xfce4-appfinder
 # 取消打印 Cancel Print
 # Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
 
@@ -95,7 +93,8 @@ Mod4 Right :ShadeOff
 # Mod4 l :ExecCommand dm-tool lock
 # Mod4 l :ExecCommand gnome-screensaver-command -l
 Mod4 l :ExecCommand i3lock
-
+# app finder
+Mod4 a :ExecCommand xfce4-appfinder
 
 # prtsc截屏，请安装scrot截屏
 # Print :ExecCommand scrot
