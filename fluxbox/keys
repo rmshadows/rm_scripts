@@ -8,11 +8,24 @@ OnLeftGrip Move1 :StartResizing bottomleft
 OnRightGrip Move1 :StartResizing bottomright
 OnWindowBorder Move1 :StartMoving
 
+! fluxbox-update_configs added '(workspace=[current])' to (Next|Prev)(Window|Group)
+! check lines marked by 'FBCV13' if they are correctly updated
 !mouse actions added by fluxbox-update_configs
+OnTitlebar Mouse1 :MacroCmd {Focus} {Raise} {ActivateTab}
+!mouse actions added by fluxbox-update_configs
+OnTitlebar Move1 :StartMoving
+OnLeftGrip Move1 :StartResizing bottomleft
+OnRightGrip Move1 :StartResizing bottomright
+OnWindowBorder Move1 :StartMoving
+
+!mouse actions added by fluxbox-update_configs
+# 鼠标标题栏中键 移动
 OnTitlebar Mouse2 :StartTabbing
 
 !mouse actions added by fluxbox-update_configs
+# 鼠标标题栏双击收起
 OnTitlebar Double Mouse1 :Shade
+# 鼠标标题栏右击
 OnTitlebar Mouse3 :WindowMenu
 
 !mouse actions added by fluxbox-update_configs
@@ -25,8 +38,8 @@ OnDesktop Mouse2 :workspaceMenu
 OnDesktop Mouse3 :rootMenu
 
 # Alt + Tab 切换窗口
-Mod1 Tab :NextWindow (workspace=[current]) !! FBCV13 !!
-Mod1 Shift Tab :PrevWindow (workspace=[current]) !! FBCV13 !!
+Mod1 Tab :NextWindow (workspace=[current]) (workspace=[current]) !! FBCV13 !! !! FBCV13 !!
+Mod1 Shift Tab :PrevWindow (workspace=[current]) (workspace=[current]) !! FBCV13 !! !! FBCV13 !!
 
 # Alt + 1-6 切换工作区
 Mod1 1 :Workspace 1
@@ -54,13 +67,13 @@ Mod1 F1 :RootMenu
 ##### 自定义的快捷键 - Customized
 ### 这里是Alt键(打开终端)
 Mod1 q :ExecCommand gnome-terminal
-Mod1 Shift q :ExecCommand xfce4-terminal
+# Mod1 q :ExecCommand xfce4-terminal
 # 系统资源监视
-Mod1 Shift w :ExecCommand htop
-# Mod1 Shift w :ExecCommand gnome-system-monitor
+# Mod1 Shift w :ExecCommand htop
+Mod1 Shift w :ExecCommand gnome-system-monitor
 # 文件管理
-Mod1 Shift e :ExecCommand thunar
-# Mod1 Shift e :ExecCommand nautilus
+# Mod1 Shift e :ExecCommand thunar
+Mod1 Shift e :ExecCommand nautilus
 # 打开浏览器
 Mod1 Shift r :ExecCommand firefox
 # 打开虚拟机
@@ -70,9 +83,10 @@ Mod1 Shift k :Kill
 # 窗口全屏、关闭窗口
 Mod1 Shift f :Fullscreen
 Mod1 F4 :Close
+# 窗口装饰条
 Mod1 F2 :ToggleDecor
 # 取消打印 Cancel Print
-# Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
+Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
 
 # 重启fluxbox(Alt + Win + r)
 Mod1 Mod4 r :Restart
@@ -82,20 +96,61 @@ Mod1 Mod4 Escape :Exit
 ### 这里是Super(开始键)键
 # 显示桌面
 Mod4 d :ShowDesktop
-# 最大化、最小化窗口
-Mod4 Up :MaximizeWindow
-Mod4 Down :MinimizeWindow
+
+# 窗口管理
+# Alt + 上/下  最大化、最小化窗口
+Mod1 Up :MaximizeWindow
+Mod1 Down :MinimizeWindow
 # 收起、放下窗口
-Mod4 Left :ShadeOn
-Mod4 Right :ShadeOff
+Mod1 Left :ShadeOn
+Mod1 Right :ShadeOff
+# Alt + H/V 水平、垂直最大化
+Mod1 h :MaximizeHorizontal
+Mod1 v :MaximizeVertical
+
+# 窗口位置
+# Win + 上下左右 窗口半屏上下左右
+# Example of macro commands
+# Position and resize windows to half of the screen in various positions
+Mod4 Up :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Up}
+Mod4 Left :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Left}
+Mod4 Right :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Right}
+Mod4 Down :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Bottom}
+# 窗口1/4
+# Win + qwas
+# As before but only use a quarter of the screen
+# 左上
+Mod4 q :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 00% Up}
+# 右上
+Mod4 w :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 00% Up}
+# 右下
+Mod4 a :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 50% Up}
+# 左下
+Mod4 s :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 50% Up}
+# 窗口排列方式
+# Example of the simple tiling features
+Mod4 1 :ArrangeWindows
+Mod4 2 :ArrangeWindowsVertical
+Mod4 3 :ArrangeWindowsHorizontal
+Mod4 4 :ArrangeWindowsHorizontal (Name=[current])
+Mod4 5 :ArrangeWindowsVertical (Name=[current])
+
+
 # 锁屏 Win + L
 # Xfce4锁屏:
 # Mod4 l :ExecCommand dm-tool lock
-# Mod4 l :ExecCommand gnome-screensaver-command -l
 Mod4 l :ExecCommand i3lock
-# app finder
 Mod4 a :ExecCommand xfce4-appfinder
 
+# 亮度调整(brightnessctl set +10%)
+Control Mod4 Left :ExecCommand brightnessctl set 5%-
+Control Mod4 Right :ExecCommand brightnessctl set +5%
+
 # prtsc截屏，请安装scrot截屏
-# Print :ExecCommand scrot
+Print :ExecCommand ksnip
+
+
+
+
+
 
