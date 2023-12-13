@@ -67,7 +67,7 @@ Mod1 F1 :RootMenu
 ##### 自定义的快捷键 - Customized
 ### 这里是Alt键(打开终端)
 Mod1 q :ExecCommand gnome-terminal
-# Mod1 q :ExecCommand xfce4-terminal
+Mod1 Shift q :ExecCommand xfce4-terminal
 # 系统资源监视
 # Mod1 Shift w :ExecCommand htop
 Mod1 Shift w :ExecCommand gnome-system-monitor
