@@ -143,10 +143,15 @@ Mod4 l :ExecCommand i3lock
 Mod4 a :ExecCommand xfce4-appfinder
 
 # 亮度调整(brightnessctl set +10%)
+# sudo apt install brightnessctl
 Control Mod4 Left :ExecCommand brightnessctl set 5%-
 Control Mod4 Right :ExecCommand brightnessctl set +5%
+# 通过xrandr:
+# Control Mod4 Left :ExecCommand ~/.fluxbox/scripts/xrandrBrightnessControl/xrandrBrightnessControl.sh 0
+# Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/xrandrBrightnessControl/xrandrBrightnessControl.sh 1
 
-# prtsc截屏，请安装scrot截屏
+# prtsc截屏，请安装scrot截屏 
+# sudo apt install ksnip
 Print :ExecCommand ksnip
 
 
