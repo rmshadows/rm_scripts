@@ -117,16 +117,16 @@ Mod4 Left :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Left}
 Mod4 Right :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Right}
 Mod4 Down :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Bottom}
 # 窗口1/4
-# Win + qwas
+# Win + Shift + qwas
 # As before but only use a quarter of the screen
 # 左上
-Mod4 q :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 00% Up}
+Mod4 Shift q :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 00% Up}
 # 右上
-Mod4 w :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 00% Up}
+Mod4 Shift w :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 00% Up}
 # 右下
-Mod4 a :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 50% Up}
+Mod4 Shift a :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 50% Up}
 # 左下
-Mod4 s :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 50% Up}
+Mod4 Shift s :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 50% Up}
 # 窗口排列方式
 # Example of the simple tiling features
 Mod4 1 :ArrangeWindows
@@ -140,15 +140,16 @@ Mod4 5 :ArrangeWindowsVertical (Name=[current])
 # Xfce4锁屏:
 # Mod4 l :ExecCommand dm-tool lock
 Mod4 l :ExecCommand i3lock
+# sudo apt install xfce4-appfinder
 Mod4 a :ExecCommand xfce4-appfinder
 
 # 亮度调整(brightnessctl set +10%)
 # sudo apt install brightnessctl
-Control Mod4 Left :ExecCommand brightnessctl set 5%-
-Control Mod4 Right :ExecCommand brightnessctl set +5%
+# Control Mod4 Left :ExecCommand brightnessctl set 5%-
+# Control Mod4 Right :ExecCommand brightnessctl set +5%
 # 通过xrandr:
-# Control Mod4 Left :ExecCommand ~/.fluxbox/scripts/xrandrBrightnessControl/xrandrBrightnessControl.sh 0
-# Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/xrandrBrightnessControl/xrandrBrightnessControl.sh 1
+Control Mod4 Left :ExecCommand ~/.fluxbox/scripts/xrandrBrightnessControl/xrandrBrightnessControl.sh 0
+Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/xrandrBrightnessControl/xrandrBrightnessControl.sh 1
 
 # prtsc截屏，请安装scrot截屏 
 # sudo apt install ksnip

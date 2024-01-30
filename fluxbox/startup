@@ -6,10 +6,13 @@
 
 # Customize Here 这里是开机自启运行的
 /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg&
+# /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/zetong-li-TbHYpbi_Gbc-unsplash.jpg&
 # 启动fcitx
+# fcitx&
 fcitx5&
-# 启动网络管理器托盘
+# 启动网络管理器托盘(有些系统叫另一个名)
 nm-applet&
+# nm-tray&
 # conky&
 
 # Change your keymap:

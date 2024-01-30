@@ -1,7 +1,7 @@
 #!/bin/bash 
 ## 搜索word文档
 ## Manual 搜索词 可以不启用，注释掉
-response="加强组织领导"
+# response="加强组织领导"
 
 cmdToCheck="catdoc"
 if ! [ -x "$(command -v "$cmdToCheck")" ]; then
