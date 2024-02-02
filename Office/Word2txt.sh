@@ -11,13 +11,18 @@ if ! [ -x "$(command -v "$cmdToCheck")" ]; then
     echo "Error: "$cmdToCheck" is not installed." >&2
     sudo apt install "$cmdToCheck"
 fi
+cmdToCheck="libreoffice"
+if ! [ -x "$(command -v "$cmdToCheck")" ]; then
+    echo "Error: "$cmdToCheck" is not installed." >&2
+    sudo apt install "$cmdToCheck"
+fi
 
 # 搜索的文件夹
-directory_path="src"
+directory_path="."
 # 搜索的文件扩展名
 file_extensions=("doc" "docx" "wps")
 # 导出的位置
-mirror_out="word_mirror"
+mirror_out="Mirror-0-Database"
 # 去除文件名中的空格(仅导出的文件)
 no_blank_filename=1
 # 如果导出的文件存在是否覆盖
@@ -149,38 +154,105 @@ for file_path in "${ffwe_file_list[@]}"; do
     # 转化docx到txt
     # 获取文件扩展名
     fext="${file_path##*.}"
-    if [ "$ooverwrite" -eq 1 ]; then
+    fext=$(echo "$fext" | tr '[:upper:]' '[:lower:]')
+    if [[ "$ooverwrite" -eq 1 ]]; then
         # 覆盖
         echo "【File】: $file_path -> $target_path"
         # 判断文件扩展名
-        if [ "$fext" == "doc" ]; then
+        if [[ "$fext" == "doc" ]]; then
             # 使用antiword
             antiword "$file_path" >"$target_path" 2>>"error_log.txt"
-        elif [ "$fext" == "docx" ]; then
+            if [ "$?" -ne 0 ]; then
+                # 提取文件名
+                tfn=$(basename "$file_path")
+                tdir=$(get_directory_path "$target_path")
+                outputfp="$tdir lo-$tfn"
+                # 在文件名前面加前缀
+                nfn="$prefix$tfn"
+                # 合并路径
+                output_path="$target_path$nfn"
+                libreoffice --headless --convert-to txt:Text --outdir "$outputfp" "$file_path" 2>>"error_log.txt"
+            fi
+        elif [[ "$fext" == "docx" ]]; then
             pandoc -s "$file_path" -t plain -o "$target_path" 2>>"error_log.txt"
-        elif [ "$fext" == "wps" ]; then
+            if [ "$?" -ne 0 ]; then
+                # 提取文件名
+                tfn=$(basename "$file_path")
+                tdir=$(get_directory_path "$target_path")
+                outputfp="$tdir lo-$tfn"
+                # 在文件名前面加前缀
+                nfn="$prefix$tfn"
+                # 合并路径
+                output_path="$target_path$nfn"
+                libreoffice --headless --convert-to txt:Text --outdir "$outputfp" "$file_path" 2>>"error_log.txt"
+            fi
+        elif [[ "$fext" == "wps" ]]; then
             antiword "$file_path" >"$target_path" 2>>"error_log.txt"
+            if [ "$?" -ne 0 ]; then
+                # 提取文件名
+                tfn=$(basename "$file_path")
+                tdir=$(get_directory_path "$target_path")
+                outputfp="$tdir lo-$tfn"
+                # 在文件名前面加前缀
+                nfn="$prefix$tfn"
+                # 合并路径
+                output_path="$target_path$nfn"
+                libreoffice --headless --convert-to txt:Text --outdir "$outputfp" "$file_path" 2>>"error_log.txt"
+            fi
         else
             # 记录无法处理的文件到日志
             echo "$file_path" >>"no_convert.log"
+            # libreoffice --headless --convert-to txt:Text --outdir "$target_path" "$file_path"
         fi
     else
         # 不覆盖
-        if ! [ -f "$target_path" ]; then
+        if ! [[ -f "$target_path" ]]; then
             echo "【File】: $file_path -> $target_path"
             # 判断文件扩展名
-            if [ "$fext" == "doc" ]; then
+            if [[ "$fext" == "doc" ]]; then
                 # 使用antiword
                 antiword "$file_path" >"$target_path" 2>>"error_log.txt"
-            elif [ "$fext" == "docx" ]; then
+                if [ "$?" -ne 0 ]; then
+                    # 提取文件名
+                    tfn=$(basename "$file_path")
+                    tdir=$(get_directory_path "$target_path")
+                    outputfp="$tdir lo-$tfn"
+                    # 在文件名前面加前缀
+                    nfn="$prefix$tfn"
+                    # 合并路径
+                    output_path="$target_path$nfn"
+                    libreoffice --headless --convert-to txt:Text --outdir "$outputfp" "$file_path" 2>>"error_log.txt"
+                fi
+            elif [[ "$fext" == "docx" ]]; then
                 pandoc -s "$file_path" -t plain -o "$target_path" 2>>"error_log.txt"
-            elif [ "$fext" == "wps" ]; then
+                if [ "$?" -ne 0 ]; then
+                    # 提取文件名
+                    tfn=$(basename "$file_path")
+                    tdir=$(get_directory_path "$target_path")
+                    outputfp="$tdir lo-$tfn"
+                    # 在文件名前面加前缀
+                    nfn="$prefix$tfn"
+                    # 合并路径
+                    output_path="$target_path$nfn"
+                    libreoffice --headless --convert-to txt:Text --outdir "$outputfp" "$file_path" 2>>"error_log.txt"
+                fi
+            elif [[ "$fext" == "wps" ]]; then
                 antiword "$file_path" >"$target_path" 2>>"error_log.txt"
+                if [ "$?" -ne 0 ]; then
+                    # 提取文件名
+                    tfn=$(basename "$file_path")
+                    tdir=$(get_directory_path "$target_path")
+                    outputfp="$tdir lo-$tfn"
+                    # 在文件名前面加前缀
+                    nfn="$prefix$tfn"
+                    # 合并路径
+                    output_path="$target_path$nfn"
+                    libreoffice --headless --convert-to txt:Text --outdir "$outputfp" "$file_path" 2>>"error_log.txt"
+                fi
             else
                 # 记录无法处理的文件到日志
                 echo "$file_path" >>"no_convert.log"
             fi
         fi
-
     fi
 done
