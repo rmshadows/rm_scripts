@@ -215,6 +215,7 @@ APT_TO_INSTALL_INDEX_1="
 - zhcon——tty_display_Chinese
 - zsh——zsh
 - zsh-autosuggestions——zsh_plugin
+- zsh-syntax-highlighting——zsh_plugin
 "
 
 
