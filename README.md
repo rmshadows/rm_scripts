@@ -12,7 +12,8 @@
   - Debian11_GNOME.sh——Debian 11(Bullseye) GNOME配置脚本
 - Debian_Server_Init——用于初始化新的服务器
   - *Debian10_Server_Init.sh——Debian 10服务器部署(停止更新，最终版本v0.0.4)*
-  - Debian11_Server_Init.sh——Debian 11服务器部署(TODO/未完成)
+  - Debian11_Server_Init.sh——Debian 11服务器部署(停止更新)
+  - Debian12_Server_Init.sh——Debian 12服务器部署
   - rsshub_docker.sh——简单粗暴删除RSSHUB后重装启动
 - FFmpeg——命令行调用FFmpeg工具处理视频
   - 详情见文件夹README
@@ -29,6 +30,9 @@
 ## 大事件记录
 
 >各脚本更新日志请分别查看文件夹中的README
+
+- 2024年2月22日
+  - 更新脚本：Debian 11 -> Debian 12
 
 - 2023年10月10日
   - 新增`fmgr`文件共享

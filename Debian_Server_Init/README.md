@@ -1,5 +1,64 @@
 # Debian11_Server_Init.sh
 
+>Current Version: 0.0.2
+
+## 使用方法
+
+适用：Debian 12
+
+首先自定义脚本与配置，然后以`root`用户运行(`sudo`也不行，必须`root`用户)。
+
+注意事项：
+
+默认使用root用户运行(禁止使用sudo)，如果未指定配置某用户(没有的用户会被新建)，则全部配置root用户。
+
+## 脚本内容
+
+- 检查点一：
+  - 更改镜像（针对国内服务器）；
+  - 默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release(必选)；
+  - 配置unattended-upgrades
+- 检查点二：
+  - 安装sudo openssh-server zsh(必选)；
+  - 设置所有用户使用zsh；
+  - 新建用户(包括配置sudo、是否使用zshrc、sudo免密码)
+- 检查点三：
+  - 安装vim-full，卸载vim-tiny；
+  - 添加/usr/sbin到环境变量；
+    - 添加添加HOME目录文件夹（Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service）(必选)；
+  - 安装bash-completion；
+  - 安装zsh-autosuggestions
+- 检查点四：
+  - 自定义自己的服务（运行一个shell脚本）；
+  - 设置主机名
+  - 配置语言
+  - 配置时区
+  - 配置tty1自动登录
+- 检查点五：
+  - 从apt仓库拉取常用软件
+  - 安装Python3
+  - 安装Python虚拟环境（全局）
+  - 安装Git
+  - 安装OpenSSH
+  - 安装nodejs
+  - 安装npm
+- 检查点六：
+  - 安装、配置HTTP服务
+- 检查点七：
+  - 安装docker-ce
+- 检查点八：
+  - 安装ufw防火墙(默认开放22、80 、443)
+
+## 更新日志
+
+>dev: Not available yet.
+
+- 2024.2.22——0.0.2
+  - 从Debian 11迁移到Debian 12
+  - 修复# 设置主机名环节
+
+# Debian11_Server_Init.sh
+
 >Current Version: 0.0.8
 
 ## 使用方法
@@ -163,6 +222,12 @@
 
 - `generate_ssl_cert.sh`——生成SSL证书
 - `AboutV2ray/x-ui-install.sh`——搭建`x-ui`和`vmess`
+
+---
+
+```
+sudo ln -s /etc/nginx/sites-available/xx /etc/nginx/sites-enabled/xx
+```
 
 # Debian10_Server_Init.sh(2021年7月停止维护)
 

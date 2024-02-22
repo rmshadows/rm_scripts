@@ -2,7 +2,7 @@
 # https://github.com/rmshadows/rm_scripts
 
 :<<!About-说明
-Version：0.0.1
+Version：0.0.2
 ============================================
 0 for No.
 1 for Yes.
@@ -1780,11 +1780,14 @@ if ! [ "$SET_HOST_NAME" -eq 0 ];then
     idxl=($idx)
     idxlen=${#idxl[@]}  
     # echo $idxlen
-    I_STRING="127.0.1.1\t$HOSTNAME"
+    # 127.0.1.1 vultr.guest vultr xxx
     if [ $idxlen -eq 1 ];then
+        # 获取旧行
+        line=$(awk "NR==$idx" /etc/hosts)
+        # 拼
+        I_STRING="$line\t$HOSTNAME"
         # 删除行
         sed -i "$idx d" /etc/hosts
-        # echo "127.0.1.1	$HOSTNAME" >> /etc/hosts
         # 在前面插入
         sed -i "$idx i $I_STRING" /etc/hosts
     elif [ $idxlen -eq 0 ];then
