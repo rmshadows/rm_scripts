@@ -17,7 +17,7 @@ FRP_DOWNLOAD="https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54
 LOCAL_FRP=""
 
 # frps配置
-FRPS_INI="bindPort = 7000
+FRPS_TOML="bindPort = 7000
 auth.method = \"token\"
 auth.token = \"passwd\"
 webServer.port = 7500
@@ -269,7 +269,7 @@ pwd
 prompt -x "Cd $HOME/Applications/frp"
 cd frp
 prompt -x "Set up server..."
-echo "$FRPS_INI" > frps.ini
+echo "$FRPS_TOML" > frps.toml
 prompt -x "Set up client sample..."
 mkdir client_config
 cd client_config
@@ -324,7 +324,7 @@ prompt -x "Make start and stop script..."
 # Start and stop script
 echo "#!/bin/bash
 cd $HOME/Applications/frp
-./frps -c ./frps.ini
+./frps -c ./frps.toml
 " > /home/$USER/Services/$SRV_NAME/server_"$SRV_NAME".sh
 echo "#!/bin/bash
 cd $HOME/Applications/frp
