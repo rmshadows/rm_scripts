@@ -7,41 +7,44 @@
 # 指定运行端口(默认)
 RUN_PORT=8000
 # 服务名
-SRV_NAME=frp
+SRV_NAME=frps
 # 反向代理的端口
 REVERSE_PROXY_URL=/frp/
 
 # Docs: https://gofrp.org/docs/
-FRP_DOWNLOAD="https://github.com/fatedier/frp/releases/download/v0.41.0/frp_0.41.0_linux_amd64.tar.gz"
+FRP_DOWNLOAD="https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_amd64.tar.gz"
 # 本地压缩包（tar.gz）注意：需要将上面设置为0
 LOCAL_FRP=""
 
 # frps配置
-FRPS_INI="[common]
-bind_port = 5000
-token = token
-dashboard_port = 7500
+FRPS_INI="bindPort = 7000
+auth.method = \"token\"
+auth.token = \"passwd\"
+webServer.port = 7500
 # dashboard 用户名密码，可选，默认为空
-dashboard_user = user
-dashboard_pwd = passwd
-log_file = $HOME/Logs/frp/frps.log
-log_max_days=30
+webServer.user = \"admin\"
+webServer.password = \"admin\"
+# Log.to = \"$HOME/Logs/frp/frps.log\"
+# Log.maxDays=30
 # 是否返回详细报错
-detailed_errors_to_client = false
+# detailedErrorsToClient = false
 # 允许的端口
-allow_ports = 
+# Server.allowPorts = \"3000-5000\"
 "
-FRPC_SAMPLE="[common]
-server_addr = 
-server_port = 5000
 
-[Name]
-type = tcp
-local_ip = 127.0.0.1
-local_port = 
-remote_port = 
-use_encryption = true
-token = token
+FRPC_SAMPLE="serverAddr = \"x.x.x.x\"
+serverPort = 7000
+auth.method = \"token\"
+auth.token = \"passwd\"
+
+[[proxies]]
+name = \"name\"
+type = \"tcp\"
+localIP = \"127.0.0.1\"
+localPort = 80
+remotePort = 6000
+transport.useEncryption = true
+transport.useCompression = true
 "
 
 # Reverse Proxy 反向代理
