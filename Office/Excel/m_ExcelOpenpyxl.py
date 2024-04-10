@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 from openpyxl import Workbook
 from openpyxl import load_workbook
+import os
+
+import m_System
 
 """
 文档：https://openpyxl.readthedocs.io/en/stable/tutorial.html#accessing-one-cell
@@ -168,8 +171,6 @@ def getRowOrColumns(ws, name):
     Args:
         ws: worksheet
         ws['A1':'C2']
-        cell1: 起始
-        cell2: 末尾
 
     Returns:
 
@@ -231,10 +232,8 @@ def justReadOneColumn(ws, col, deep=50, valueOnly=True):
         读列
         Args:
             ws: worksheet
-            min_col: 开始列
-            max_col: 结束列
-            min_row: 开始行
-            max_row: 结束行
+            col: 列
+            deep: 深度
             valueOnly: 是否仅返回值
         Returns:
             <Cell Sheet1.A1>
@@ -284,18 +283,104 @@ def replaceOneCellValue(wb, ws, cell, checkValue, replacement, whenEqual=True):
     ck = str(wss[cell].value)
     if wss[cell].value is None:
         ck = ""
-    if whenEqual:
-        if ck == str(checkValue):
-            wss[cell] = replacement
-            modify = True
+    # 不论怎样直接替换
+    if checkValue is None:
+        wss[cell] = replacement
+        modify = True
     else:
-        if ck != str(checkValue):
-            wss[cell] = replacement
-            modify = True
+        if whenEqual:
+            if ck == str(checkValue):
+                wss[cell] = replacement
+                modify = True
+        else:
+            if ck != str(checkValue):
+                wss[cell] = replacement
+                modify = True
     if modify:
         return wb
     else:
         return None
+
+
+def merge_xlsx_files(src_folder, output_file):
+    """
+    创建一个新的工作簿作为合并后的文件
+    (仅合并到一张worksheet！)
+    Args:
+        src_folder:
+        output_file:
+
+    Returns:
+
+    """
+    merged_wb = Workbook()
+    merged_ws = merged_wb.active
+    for filename in os.listdir(src_folder):
+        if filename.endswith(".xlsx"):
+            filepath = os.path.join(src_folder, filename)
+            # 打开每个源文件
+            wb = load_workbook(filepath)
+            for sheetname in wb.sheetnames:
+                ws = wb[sheetname]
+                # 复制每个工作表的内容到合并后的工作簿中
+                for row in ws.iter_rows():
+                    merged_ws.append([cell.value for cell in row])
+    # 保存合并后的工作簿到输出文件
+    merged_wb.save(output_file)
+
+
+def delete_worksheets_except_index(input_file, index_to_keep, saveAs=None):
+    """
+    删除除了指定索引的worksheet以外的其他表格
+    Args:
+        input_file:文件
+        index_to_keep:保留的index
+        saveAs: 保存路径
+
+    Returns:
+
+    """
+    # 加载 Excel 文件
+    wb = load_workbook(input_file)
+    # 获取要删除的工作表列表
+    sheets_to_delete = [sheet for i, sheet in enumerate(wb.worksheets) if i != index_to_keep]
+    # 删除工作表
+    for sheet in sheets_to_delete:
+        wb.remove(sheet)
+    if saveAs is None:
+        # 保存修改后的 Excel 文件
+        wb.save(input_file)
+    else:
+        wb.save(saveAs)
+
+
+def worksheetSplitInto(inputFile, outputDir=None, prefix=None):
+    """
+    将一个Excel中的多个worksheet拆成单个文件
+    Args:
+        inputFile: 输入文件
+        outputDir: 输出文件夹
+        prefix: 前缀
+
+    Returns:
+
+    """
+    wb = loadExcel(inputFile)
+    # 获取工作表名
+    wss = getSheetNames(wb)
+    # 没有文件夹就新建
+    if outputDir is None:
+        # 如果没给就以Excel的名字新建文件夹
+        t1, t2, t3 = m_System.splitFilePath(inputFile)
+        outputDir = os.path.join(t1, t2)
+        print("输出文件夹: {}".format(outputDir))
+    if not os.path.exists(outputDir):
+        os.mkdir(outputDir)
+    for i in range(0, len(wss)):
+        cpf = os.path.join(outputDir, wss[i])
+        # 首先复制文件
+        nfn = m_System.renameFile(inputFile, cpf, True, prefix=prefix)[1]
+        delete_worksheets_except_index(nfn, i)
 
 
 if __name__ == '__main__':

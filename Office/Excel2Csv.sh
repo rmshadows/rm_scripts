@@ -8,6 +8,8 @@ if ! [ -x "$(command -v "$cmdToCheck")" ]; then
     echo "Error: "$cmdToCheck" is not installed." >&2
     sudo apt-get install libreoffice
     sudo apt-get install libreoffice-java-common
+else
+    echo "Command found! : "$cmdToCheck"" >&1
 fi
 
 ####

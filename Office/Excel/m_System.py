@@ -236,6 +236,78 @@ def moveFD(src, dst):
     return True
 
 
+def renameFile(src, dst, copyFile=False, prefix=None, suffix=None, dstWithExt=False, ext=None):
+    """
+    重命名文件（可复制）
+    Args:
+        src:源文件
+        dst:目标名称（可以不带扩展名，如果带扩展名请修改dstWithExt）
+        copyFile:是否复制文件，默认否
+        prefix:前缀
+        suffix:后缀
+        dstWithExt:目标名称是否带有扩展名，默认没有
+        ext:指定扩展名
+
+    Returns:
+        返回结果, 新文件的名称
+    """
+    # 获取文件夹名， 文件名和扩展名
+    src_dir, src_name, src_ext = splitFilePath(src)
+    if dstWithExt:
+        # 如果带扩展名
+        if dst is None:
+            # 如果dst是None,则使用原文件名
+            dst_dir, dst_name, dst_ext = src_dir, src_name, src_ext
+        else:
+            dst_dir, dst_name, dst_ext = splitFilePath(dst)
+    else:
+        # 不带扩展名
+        if dst is None:
+            # 如果dst是None,则使用原文件名
+            dst_dir = src_dir
+            dst_name = src_name
+            dst_ext = src_ext
+        else:
+            # 不带扩展名，那扩展名沿用
+            dst_dir, dst_name, dst_ext = splitFilePath(dst)
+            dst_ext = src_ext
+    # 处理前缀和后缀
+    if prefix:
+        dst_name = prefix + dst_name
+    if suffix:
+        dst_name += suffix
+    # 处理扩展名
+    if ext:
+        dst_ext = ext if ext.startswith('.') else '.' + ext
+    # 组合新文件名
+    new_file_name = os.path.join(dst_dir, "{}{}".format(dst_name, dst_ext))
+    if copyFile:
+        return copyFD(src, new_file_name), new_file_name
+    else:
+        return moveFD(src, new_file_name), new_file_name
+
+
+def splitFilePath(file_path):
+    """
+    给定路径分离出文件夹、文件名、扩展名
+    Args:
+        file_path:
+
+    Returns:
+        如果是文件夹返回None
+    """
+    file_path = os.path.abspath(file_path)
+    if not os.path.isdir(file_path):
+        # 获取所在文件夹路径、文件名和扩展名
+        folder_path, file_name_ext = os.path.split(file_path)
+        # 分离文件名和扩展名
+        file_name, file_ext = os.path.splitext(file_name_ext)
+        # print(f"{file_path} => 目录：[{folder_path}] 文件名：[{file_name}] 扩展名：[{file_ext}]")
+        return folder_path, file_name, file_ext
+    else:
+        return None
+
+
 def displaySystemInfo():
     """
     打印系统信息
@@ -467,12 +539,27 @@ def remove_newlines(text):
 
     """
     # 替换Unix和Linux系统的换行符
-    text = text.replace('\n', ' ')
+    text = text.replace('\n', '')
     # 替换Windows系统的换行符
-    text = text.replace('\r\n', ' ')
+    text = text.replace('\r\n', '')
     # 替换旧版Mac系统的换行符
-    text = text.replace('\r', ' ')
+    text = text.replace('\r', '')
     return text
+
+
+def trim_spaces(string):
+    """
+    使用 strip() 方法去除字符串前后的空格
+    Args:
+        string:
+
+    Returns:
+
+    """
+    trimmed_string = string.strip()
+    # 将中间的空格保留
+    result = ' '.join(trimmed_string.split())
+    return result
 
 
 if __name__ == '__main__':
