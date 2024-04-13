@@ -1,3 +1,8 @@
+"""
+重命名worksheet，如果没有读取到RenameFile，会显示当前excel的worksheets名称
+"""
+import os.path
+
 import m_ExcelOpenpyxl
 import m_System
 
@@ -9,6 +14,11 @@ ACTION = True
 
 if __name__ == '__main__':
     wb = m_ExcelOpenpyxl.loadExcel(Workbook)
+    # 如果没有RenameFile
+    if not os.path.exists(RenameFile):
+        for i in m_ExcelOpenpyxl.getSheetNames(wb):
+            print(i)
+        exit(0)
     # 读取文件获取重命名的符号
     RN = []
     with open(RenameFile, "r", encoding="utf-8") as f:
@@ -16,6 +26,8 @@ if __name__ == '__main__':
         for i in f.readlines():
             i = m_System.remove_newlines(i)
             # print("{}: {}".format(n, i))
+            if i == "":
+                continue
             n += 1
             RN.append(i)
     # 打印表名

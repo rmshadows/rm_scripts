@@ -83,7 +83,7 @@ def isBomExist(text_file_path):
             return False
 
 
-def getSuffixFile(suffix, directory="."):
+def getSuffixFile(suffix, directory=".", case_sensitive=True):
     """
     返回文件夹下的带后缀的文件
     使用os模块的walk函数，搜索出指定目录下的全部PDF文件
@@ -92,14 +92,19 @@ def getSuffixFile(suffix, directory="."):
     Args:
         suffix: 后缀
         directory: 文件夹名
+        case_sensitive: 是否大小写敏感，默认为 True，表示大小写敏感
 
     Returns:
         列表
     """
+    if not case_sensitive:
+        suffix = suffix.lower()  # 将后缀转换为小写
+
     file_list = [os.path.join(root, filespath) \
                  for root, dirs, files in os.walk(directory) \
                  for filespath in files \
-                 if str(filespath).endswith(suffix)
+                 if (not case_sensitive and str(filespath).lower().endswith(suffix)) or \
+                    (case_sensitive and str(filespath).endswith(suffix))  # 判断是否大小写敏感
                  ]
     return file_list if file_list else []
 
@@ -249,6 +254,28 @@ def renameFile(src, dst, copyFile=False, prefix=None, suffix=None, dstWithExt=Fa
         ext:指定扩展名
 
     Returns:
+        返回结果
+    """
+    # 组合新文件名
+    new_file_name = editFilename(src, dst, prefix, suffix, dstWithExt, ext)
+    if copyFile:
+        return copyFD(src, new_file_name)
+    else:
+        return moveFD(src, new_file_name)
+
+
+def editFilename(src, dst, prefix=None, suffix=None, dstWithExt=False, ext=None):
+    """
+    编辑文件名，返回新的文件名
+    Args:
+        src:源文件
+        dst:目标名称（可以不带扩展名，如果带扩展名请修改dstWithExt）
+        prefix:前缀
+        suffix:后缀
+        dstWithExt:目标名称是否带有扩展名，默认没有
+        ext:指定扩展名
+
+    Returns:
         返回结果, 新文件的名称
     """
     # 获取文件夹名， 文件名和扩展名
@@ -280,11 +307,7 @@ def renameFile(src, dst, copyFile=False, prefix=None, suffix=None, dstWithExt=Fa
     if ext:
         dst_ext = ext if ext.startswith('.') else '.' + ext
     # 组合新文件名
-    new_file_name = os.path.join(dst_dir, "{}{}".format(dst_name, dst_ext))
-    if copyFile:
-        return copyFD(src, new_file_name), new_file_name
-    else:
-        return moveFD(src, new_file_name), new_file_name
+    return os.path.join(dst_dir, "{}{}".format(dst_name, dst_ext))
 
 
 def splitFilePath(file_path):
@@ -560,6 +583,52 @@ def trim_spaces(string):
     # 将中间的空格保留
     result = ' '.join(trimmed_string.split())
     return result
+
+
+def check_prefix_suffix(string, prefix=None, suffix=None):
+    """
+    检查字符串是否以特定前缀或后缀开头或结尾。
+
+    Args:
+        string (str): 要检查的字符串。
+        prefix (str): 要检查的前缀。如果为None，则不检查前缀。
+        suffix (str): 要检查的后缀。如果为None，则不检查后缀。
+
+    Returns:
+        bool: 如果字符串以指定的前缀开头且以指定的后缀结尾，则返回True；否则返回False。
+    """
+    if prefix is not None and not string.startswith(prefix):
+        return False
+    if suffix is not None and not string.endswith(suffix):
+        return False
+    return True
+
+
+def readFileAsList(filepath, separator="\t", comment="#", ignoreNone=True, encoding="UTF-8"):
+    """
+    读取文件到列表
+    Args:
+        filepath: 文件路径
+        separator: 分隔符
+        comment: 注释
+        ignoreNone: 忽略空行
+        encoding: 编码
+
+    Returns:
+
+    """
+    lst = []
+    with open(filepath, "r", encoding=encoding) as ff:
+        for line in ff.readlines():
+            line = remove_newlines(line)
+            if check_prefix_suffix(line, comment):
+                # 遇到注释
+                continue
+            if line == "" and ignoreNone:
+                # 为空且要求忽略
+                continue
+            lst.append(line.split(separator))
+    return lst
 
 
 if __name__ == '__main__':

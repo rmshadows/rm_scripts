@@ -5,7 +5,7 @@
 import m_ExcelOpenpyxl
 
 # 表格
-WORKBOOK = ""
+WORKBOOK = "1.xlsx"
 
 if __name__ == '__main__':
     m_ExcelOpenpyxl.worksheetSplitInto(WORKBOOK)

@@ -1,5 +1,5 @@
 #!/bin/bash
-### 转gbk编码到utf8
+### 将当前目录下gbk编码的CSV转为utf8
 
 fexts=("CSV" "csv")
 outputf="./ConvertGBK2UTF8"

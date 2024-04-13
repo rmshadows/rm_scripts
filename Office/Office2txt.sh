@@ -1,5 +1,5 @@
 #!/bin/bash
-## 搜索word,excel文件，转化为txt文本 保持目录结构
+## 搜索指定文件夹下（src）的word,excel文件，转化为txt文本 保持目录结构
 
 cmdToCheck="pandoc"
 if ! [ -x "$(command -v "$cmdToCheck")" ]; then

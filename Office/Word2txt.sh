@@ -1,5 +1,5 @@
 #!/bin/bash
-## 搜索word文件，转化为txt文本 保持目录结构
+## 搜索指定文件夹（src）下的word文件，转化为txt文本 保持目录结构
 
 cmdToCheck="pandoc"
 if ! [ -x "$(command -v "$cmdToCheck")" ]; then

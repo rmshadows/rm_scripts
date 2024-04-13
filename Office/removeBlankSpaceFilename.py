@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# 将指定文件夹（.）下的所有文件名中包含空格的提换成指定符号（_）
+
 import os
 import re
 

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-修改某个目录下Excel表格的值（递归）
+修改某个目录下所有Excel表格的值（递归）
 """
 import os
 
