@@ -379,7 +379,8 @@ def worksheetSplitInto(inputFile, outputDir=None, prefix=None):
     for i in range(0, len(wss)):
         cpf = os.path.join(outputDir, wss[i])
         # 首先复制文件
-        nfn = m_System.renameFile(inputFile, cpf, True, prefix=prefix)[1]
+        nfn = m_System.editFilename(inputFile, cpf, prefix=prefix)
+        m_System.copyFD(inputFile, nfn)
         delete_worksheets_except_index(nfn, i)
 
 
