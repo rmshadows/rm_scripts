@@ -2,7 +2,12 @@
 from openpyxl import Workbook
 from openpyxl import load_workbook
 import os
+from openpyxl.styles import Font, PatternFill
+from openpyxl.comments import Comment
+from openpyxl.utils import get_column_letter
+from openpyxl.workbook.workbook import Workbook as WorkbookClass  # 为了兼容 openpyxl 3.x 以及 2.x 的命名差异
 
+import m_Array
 import m_System
 
 """
@@ -22,7 +27,7 @@ Worksheet.rows
 """
 
 
-def createNewWorkbook(firstSheetName=None):
+def createNewWorkbook(firstSheetName="Sheet1"):
     """
     新建workbook但不是新建一个实际的文件
     获取第一张自动生成的表wb.active
@@ -96,6 +101,31 @@ def copyWorksheet(wb, ws):
 
     """
     return wb.copy_worksheet(ws)
+
+def isNumber(var):
+    return isinstance(var, (int, float))
+def isString(var):
+    return isinstance(var, str)
+
+
+def getWorksheet(wb, indexOrName):
+    """
+    获取worksheet
+    Args:
+        wb:
+        indexOrName:
+
+    Returns:
+
+    """
+    if isNumber(indexOrName):
+        # 如果指定worksheet
+        return getSheetByIndex(wb, indexOrName)
+    elif isString(indexOrName):
+        # 如果指定名称
+        return wb[indexOrName]
+    else:
+        return getSheetByIndex(wb, 0)
 
 
 def readRows(ws, min_row, max_row, min_col, max_col, valueOnly=True):
@@ -384,5 +414,264 @@ def worksheetSplitInto(inputFile, outputDir=None, prefix=None):
         delete_worksheets_except_index(nfn, i)
 
 
+def appendData(ws, list):
+    """
+    添加一行数据
+    we’ll enter this data onto the worksheet.
+    As this is a list of lists, we can simply use the Worksheet.append() function.
+    Args:
+        ws: worksheet
+        list: 列表
+
+    Returns:
+        none
+    """
+    ws.append(list)
+
+
+def cellBold(ws, cellID):
+    """
+    字体加粗
+    Args:
+        ws: 工作表
+        cellID: ID
+
+    Returns:
+
+    """
+    ft = Font(bold=True)
+    ws[cellID].font = ft
+
+
+def barChart(title="标题", x="X轴", y="Y轴", type="col"):
+    """
+    返回柱状图（空的）
+    Args:
+        title:
+        x:
+        y:
+        type:
+
+    Returns:
+
+    """
+    from openpyxl.chart import BarChart
+    chart = BarChart()
+    chart.type = type
+    chart.title = title
+    chart.y_axis.title = y
+    chart.x_axis.title = x
+    chart.legend = None
+    return chart
+
+
+def reference(worksheet=None, range_string=None, min_col=None,min_row=None,max_col=None,max_row=None):
+    """
+    返回引用区间
+    Args:
+        worksheet:
+        range_string:
+        min_col:
+        min_row:
+        max_col:
+        max_row:
+
+    Returns:
+
+    """
+    from openpyxl.chart import Reference
+    return Reference(worksheet, min_col, min_row, max_row, max_col, range_string)
+
+
+def barChartAppendData(chart, data, categories):
+    """
+    为柱状统计图添加数据
+    Args:
+        chart:
+        data: # data = Reference(ws, min_col=3, min_row=2, max_row=4, max_col=3)
+        categories: # categories = Reference(ws, min_col=1, min_row=2, max_row=4, max_col=1)
+    Returns:
+
+    """
+    chart.add_data(data)
+    chart.set_categories(categories)
+    return chart
+
+
+def deleteWorksheet(wb, worksheetNameOrIndex):
+    """
+    删除指定的worksheet
+    Args:
+        wb:
+        worksheetNameOrIndex: 数字索引or字符串名称
+
+    Returns:
+
+    """
+    # 检查给定的 wb 是否是 Workbook 类型
+    if not isinstance(wb, Workbook):
+        raise ValueError("The 'wb' argument must be a Workbook object.")
+    # 如果给定的是字符串，表示按照工作表名称删除
+    if isinstance(worksheetNameOrIndex, str):
+        if worksheetNameOrIndex in wb.sheetnames:
+            sheet = wb[worksheetNameOrIndex]
+            wb.remove(sheet)
+        else:
+            print(f"Worksheet '{worksheetNameOrIndex}' not found. No action taken.")
+    # 如果给定的是整数，表示按照工作表索引删除
+    elif isinstance(worksheetNameOrIndex, int):
+        if 0 <= worksheetNameOrIndex < len(wb.sheetnames):
+            wb.remove(wb.worksheets[worksheetNameOrIndex])
+        else:
+            print(f"Index '{worksheetNameOrIndex}' is out of range. No action taken.")
+    # 其他类型不做处理
+    else:
+        print("Invalid input type. Only str (worksheet name) or int (worksheet index) allowed. No action taken.")
+    return wb
+
+
+def is_openpyxl_workbook(obj):
+    """
+    判断是不是workbook对象
+    Args:
+        obj:
+
+    Returns:
+
+    """
+    return isinstance(obj, Workbook) or isinstance(obj, WorkbookClass)
+
+
+def copyWorksheetIntoBase(wbSrcf, wsSrc, wbDstf, savePath="", copyTitle=None):
+    """
+    复制某Excel建议用另一个
+    Args:
+        wbSrcf:文件1
+        wsSrc:表
+        wbDstf: 复制到文件2
+        savePath: 保存为
+        copyTitle: 复制的标题
+
+    Returns:
+
+    """
+    if is_openpyxl_workbook(wbSrcf):
+        wbSrc = wbSrcf
+    else:
+        wbSrc = load_workbook(wbSrcf)
+    if is_openpyxl_workbook(wbSrcf):
+        wbDst = wbDstf
+    else:
+        wbDst = load_workbook(wbDstf)
+    # 获取源工作表
+    source_sheet = getWorksheet(wbSrc, wsSrc)
+    # 获取工作表名字，并判断是否要修改
+    wsDstName = copyTitle
+    if wsDstName is None:
+        wsDstName = m_Array.modify_string_if_duplicate(source_sheet.title, getSheetNames(wbDst))
+        if wsDstName is None:
+            wsDstName = source_sheet.title
+    # 新建一张表
+    target_sheet = wbDst.create_sheet(title=wsDstName)
+    print(f"Copy {wbSrcf} - {source_sheet.title} -> {wbDstf} - {wsDstName}")
+    # 复制数据和格式
+    for row in source_sheet.iter_rows():
+        for cell in row:
+            target_sheet[cell.coordinate].value = cell.value
+            if cell.has_style:
+                target_sheet[cell.coordinate]._style = cell._style
+            if cell.comment:
+                target_sheet[cell.coordinate].comment = cell.comment
+    # 复制合并单元格
+    for merged_cell_range in source_sheet.merged_cells.ranges:
+        target_sheet.merge_cells(str(merged_cell_range))
+    # 调整列宽
+    for col in source_sheet.columns:
+        target_sheet.column_dimensions[get_column_letter(col[0].column)].width = source_sheet.column_dimensions[
+            get_column_letter(col[0].column)].width
+    # 保存目标Excel文件为
+    if savePath is None:
+        return wbDst
+    elif savePath == "":
+        nfn = m_System.editFilename(wbSrcf, None, "merge-")
+        wbDst.save(nfn)
+    else:
+        wbDst.save(savePath)
+
+
+def copyWorksheetInto(wbSrcf, wsSrc, wbDstf, savePath="", copyTitle=None):
+    """
+    复制某Excel到另一个Excel，如果savePath是None，返回wb
+    Args:
+        wbSrcf:文件1 或者wb对象
+        wsSrc:表
+        wbDstf: 复制到文件2
+        savePath: 保存为
+        copyTitle: 复制的标题
+
+    Returns:
+
+    """
+    if is_openpyxl_workbook(wbSrcf):
+        wbSrc = wbSrcf
+    else:
+        wbSrc = load_workbook(wbSrcf)
+    if is_openpyxl_workbook(wbSrcf):
+        wbDst = wbDstf
+    else:
+        wbDst = load_workbook(wbDstf)
+    # 获取源工作表
+    source_sheet = getWorksheet(wbSrc, wsSrc)
+    # 获取工作表名字，并判断是否要修改
+    wsDstName = copyTitle
+    if wsDstName is None:
+        wsDstName = m_Array.modify_string_if_duplicate(source_sheet.title, getSheetNames(wbDst))
+        if wsDstName is None:
+            wsDstName = source_sheet.title
+    # 新建一张表
+    target_sheet = wbDst.create_sheet(title=wsDstName)
+    print(f"Copy {wbSrcf} - {source_sheet.title} -> {wbDstf} - {wsDstName}")
+    # 复制数据和格式
+    for row in source_sheet.iter_rows():
+        for cell in row:
+            target_cell = target_sheet[cell.coordinate]
+            target_cell.value = cell.value
+            if cell.has_style:
+                target_cell._style = cell._style
+            if cell.comment:
+                target_sheet[cell.coordinate].comment = cell.comment
+            # 复制字体
+            if source_sheet[cell.coordinate].font:
+                target_cell.font = Font(name=source_sheet[cell.coordinate].font.name,
+                                        size=source_sheet[cell.coordinate].font.size,
+                                        bold=source_sheet[cell.coordinate].font.bold,
+                                        italic=source_sheet[cell.coordinate].font.italic,
+                                        color=source_sheet[cell.coordinate].font.color)
+            # 复制背景色
+            if source_sheet[cell.coordinate].fill:
+                target_cell.fill = PatternFill(fill_type=source_sheet[cell.coordinate].fill.fill_type,
+                                               fgColor=source_sheet[cell.coordinate].fill.start_color.rgb)
+            # 复制标注
+            if source_sheet[cell.coordinate].comment:
+                target_cell.comment = Comment(source_sheet[cell.coordinate].comment.text,
+                                              source_sheet[cell.coordinate].comment.author)
+    # 复制合并单元格
+    for merged_cell_range in source_sheet.merged_cells.ranges:
+        target_sheet.merge_cells(str(merged_cell_range))
+    # 调整列宽
+    for col in source_sheet.columns:
+        target_sheet.column_dimensions[get_column_letter(col[0].column)].width = source_sheet.column_dimensions[
+            get_column_letter(col[0].column)].width
+    # 保存目标Excel文件为3.xlsx
+    if savePath is None:
+        return wbDst
+    elif savePath == "":
+        nfn = m_System.editFilename(wbSrcf,None,"merge-")
+        wbDst.save(nfn)
+    else:
+        wbDst.save(savePath)
+
+
 if __name__ == '__main__':
     print("Hello World")
+
