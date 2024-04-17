@@ -18,6 +18,8 @@
 - FFmpeg——命令行调用FFmpeg工具处理视频
   - 详情见文件夹README
 - fmgr文件传输——Nginx+Php fpm的文件共享（可上传），用于Linux主机临时局域网共享文件（直接丢进nginx根目录）
+- JavaReleaseJpackage——用来的包Java程序
+- Office——Office相关的脚本
 - RAR——RAR相关脚本
   - 详情见文件夹README
 - Windows——一些Windows的脚本(基本都是没用的东西)
@@ -30,6 +32,9 @@
 ## 大事件记录
 
 >各脚本更新日志请分别查看文件夹中的README
+
+- 2024年4月17日
+  - 添加了Office模块
 
 - 2024年2月22日
   - 更新脚本：Debian 11 -> Debian 12
