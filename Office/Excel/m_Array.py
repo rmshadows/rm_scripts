@@ -4,6 +4,8 @@
 """
 import itertools
 
+from natsort import natsorted
+
 
 def averageSplitList(list2split:list, n:int):
     """
@@ -88,6 +90,18 @@ def sortListBy(list, byIndex = 0, reverse = False):
 
     """
     return sorted(list, key=lambda x:x[byIndex], reverse=reverse)
+
+
+def sortByNatsorted(list):
+    """
+    自然排序功能
+    Args:
+        list:
+
+    Returns:
+
+    """
+    return natsorted(list)
 
 
 def sortDictByValue(dict, reverse = False):

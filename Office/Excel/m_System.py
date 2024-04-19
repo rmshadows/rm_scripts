@@ -8,7 +8,7 @@ import shutil
 from subprocess import Popen, PIPE
 import re
 from inputimeout import inputimeout, TimeoutOccurred
-
+from natsort import natsorted
 
 IS_WINDOWS = os.sep == "\\"
 
@@ -106,7 +106,11 @@ def getSuffixFile(suffix, directory=".", case_sensitive=True):
                  if (not case_sensitive and str(filespath).lower().endswith(suffix)) or \
                     (case_sensitive and str(filespath).endswith(suffix))  # 判断是否大小写敏感
                  ]
-    return file_list if file_list else []
+    if file_list:
+        sorted_files = natsorted(file_list)
+        return sorted_files
+    else:
+        return []
 
 
 def removeBom(filepath):
@@ -633,9 +637,9 @@ def readFileAsList(filepath, separator="\t", comment="#", ignoreNone=True, encod
 
 if __name__ == '__main__':
     print("是否是管理员：{}".format(checkAdministrator()))
-    execCommand("ls", 0, True)
+    # execCommand("ls", 0, True)
     print("CPU核心数: {}".format(cpu_count()))
-    print("gitignore文件是否有UTF-8 BOM: {}".format(isBomExist("gitignore")))
+    # print("gitignore文件是否有UTF-8 BOM: {}".format(isBomExist("gitignore")))
     # 列出py文件
-    for f in getSuffixFile("py"):
-        print(f)
+    # for f in getSuffixFile("py"):
+    #     print(f)

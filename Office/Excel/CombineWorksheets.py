@@ -12,6 +12,7 @@ WDIR = "src"
 CopyAllWorksheet = True
 # 显示详情
 Verbose = False
+# Verbose = True
 
 def isNumber(var):
     return isinstance(var, (int, float))
