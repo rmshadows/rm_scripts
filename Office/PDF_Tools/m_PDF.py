@@ -48,7 +48,7 @@ def mergePdfs(directory, output_pdf_file):
     # 为了避免RecursionError: maximum recursion depth exceeded while calling a Python object > 1000
     sys.setrecursionlimit(1200)
     merger = PdfFileMerger()
-    pdf_files = m_System.getSuffixFile(directory, "pdf", False)
+    pdf_files = m_System.getSuffixFile("pdf", directory, False)
     pdf_files.sort()
     for pdf in pdf_files:
         merger.append(pdf)
@@ -277,13 +277,33 @@ def rotate_pdf_pages(directory, rotation_angle):
                 pdf_writer.write(output_file)
 
 
+def get_pdf_page_sizes(pdf_file):
+    """
+    获取 PDF 文件中每一页的大小（宽度和高度）。
+
+    Args:
+    - pdf_file: PDF 文件路径。
+
+    Returns:
+    - page_sizes: 包含每一页大小的列表，每个元素是一个元组 (width, height)。
+    """
+    page_sizes = []
+    with open(pdf_file, 'rb') as f:
+        pdf_reader = PdfFileReader(f)
+        num_pages = pdf_reader.getNumPages()
+        for page_num in range(num_pages):
+            page = pdf_reader.getPage(page_num)
+            width = page.mediaBox.getUpperRight_x() - page.mediaBox.getLowerLeft_x()
+            height = page.mediaBox.getUpperRight_y() - page.mediaBox.getLowerLeft_y()
+            page_sizes.append((width, height))
+    return page_sizes
+
+
 if __name__ == '__main__':
     # 合并PDF
-    image2pdf("images", "output.pdf")
-    # 拆分PDF
-    # pdf2images("1.pdf", 400, "jpg")
-    # 将指定文件夹中的每张 JPG 图片转换为单独的 PDF 文件
-    # jpg_to_individual_pdf("images")
+    # image2pdf("images", "output.pdf")
+    for i in get_pdf_page_sizes("1.pdf"):
+        print(i)
 
 
 
