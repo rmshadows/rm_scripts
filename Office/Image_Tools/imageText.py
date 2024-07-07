@@ -8,7 +8,7 @@ x = 0
 y = 0
 # 0:不显示路径 1:显示图片相对路径 2:仅显示到上级文件夹
 RelPath = 2
-FontSize = 150
+FontSize = 40
 Font = "zh.ttf"
 
 if __name__ == '__main__':
@@ -31,6 +31,6 @@ if __name__ == '__main__':
             mark_text = ""
         if (MarkText is not None) and (MarkText != ""):
             mark_text = "{0}（{1}）".format(mark_text, MarkText)
-        img = m_Image.draw_text(image, 10, 10, mark_text, FontSize, word_css=Font)
+        img = m_Image.draw_text(image, x, y, mark_text, FontSize, word_css=Font)
         m_Image.saveAsPrefixName(img,  i, "save-", True)
 
