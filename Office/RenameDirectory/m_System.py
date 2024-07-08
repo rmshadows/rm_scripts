@@ -268,50 +268,55 @@ def renameFile(src, dst, copyFile=False, prefix=None, suffix=None, dstWithExt=Fa
         return moveFD(src, new_file_name)
 
 
-def editFilename(src, dst, prefix=None, suffix=None, dstWithExt=False, ext=None):
+def editFilename(src, dst, prefix=None, suffix=None, ext=None):
     """
     编辑文件名，返回新的文件名
     Args:
         src:源文件
-        dst:目标名称（可以不带扩展名，如果带扩展名请修改dstWithExt）
+        dst:目标名称（不要带扩展名，如果带扩展名请修改dstWithExt）注意，仅提供文件名即可
         prefix:前缀
         suffix:后缀
-        dstWithExt:目标名称是否带有扩展名，默认没有
         ext:指定扩展名
-
     Returns:
         返回结果, 新文件的名称
     """
-    # 获取文件夹名， 文件名和扩展名
-    src_dir, src_name, src_ext = splitFilePath(src)
-    if dstWithExt:
-        # 如果带扩展名
+    # 获取文件夹名， 文件名和扩展名(判断是不是文件)
+    s = splitFileNameAndExt(src)
+    dst_dir, dst_name, dst_ext = None, None, None
+    if s is not None:
+        # 文件夹、文件名、扩展名
+        src_dir, src_name, src_ext = s
         if dst is None:
             # 如果dst是None,则使用原文件名
-            dst_dir, dst_name, dst_ext = src_dir, src_name, src_ext
+            dst_dir, dst_name = src_dir, src_name
         else:
-            dst_dir, dst_name, dst_ext = splitFilePath(dst)
+            dst_dir, dst_name = src_dir, dst
+        # 扩展名
+        if ext is not None:
+            # 如果dst是None,则使用原文件名
+            dst_ext = ext
+        else:
+            dst_ext = src_ext
     else:
-        # 不带扩展名
+        # 处理文件夹 上级目录、当前目录、文件夹名
+        src_par_dir, src_dir, src_name = splitFilePath(src)
         if dst is None:
-            # 如果dst是None,则使用原文件名
-            dst_dir = src_dir
+            dst_dir = src_par_dir
             dst_name = src_name
-            dst_ext = src_ext
         else:
-            # 不带扩展名，那扩展名沿用
-            dst_dir, dst_name, dst_ext = splitFilePath(dst)
-            dst_ext = src_ext
+            dst_dir = src_par_dir
+            dst_name = dst
     # 处理前缀和后缀
     if prefix:
         dst_name = prefix + dst_name
     if suffix:
         dst_name += suffix
     # 处理扩展名
-    if ext:
-        dst_ext = ext if ext.startswith('.') else '.' + ext
-    # 组合新文件名
-    return os.path.join(dst_dir, "{}{}".format(dst_name, dst_ext))
+    if fileOrDirectory(src) == 1:
+        # 组合新文件名
+        return os.path.join(dst_dir, "{}{}".format(dst_name, dst_ext))
+    else:
+        return os.path.join(dst_dir, dst_name)
 
 
 def splitFileNameAndExt(file_path):
@@ -335,25 +340,32 @@ def splitFileNameAndExt(file_path):
         return None
 
 
-def splitFilePath(file_path):
+def splitFilePath(file_path, fileOrDirectory=0):
     """
     给定路径分离出文件夹、文件名、扩展名
+    注意：必须是存在的文件夹
     如果是文件夹，返回上级文件夹的绝对路径、上级文件夹名称和当前文件夹名称
     Args:
         file_path: 绝对路径
+        fileOrDirectory: 对于不存的文件或者文件夹要指明类型 0:文件或文件夹存在 1:文件 2:文件夹
 
     Returns:
         tuple: (folder_path, file_name, file_ext) 如果是文件
         tuple: (parent_folder_path, parent_folder_name, current_folder_name) 如果是文件夹
     """
     file_path = os.path.abspath(file_path)
-    if not os.path.isdir(file_path):
-        # 获取所在文件夹路径、文件名和扩展名
-        folder_path, file_name_ext = os.path.split(file_path)
-        # 分离文件名和扩展名
-        file_name, file_ext = os.path.splitext(file_name_ext)
-        return folder_path, file_name, file_ext
-    else:
+    if fileOrDirectory == 0:
+        if not os.path.isdir(file_path):
+            return splitFileNameAndExt(file_path)
+        else:
+            # 获取当前文件夹的名称
+            current_folder_name = os.path.basename(file_path)
+            # 获取上级文件夹路径
+            parent_folder_path = os.path.dirname(file_path)
+            # 获取上级文件夹的名称
+            parent_folder_name = os.path.basename(parent_folder_path)
+            return parent_folder_path, parent_folder_name, current_folder_name
+    elif fileOrDirectory == 1:
         # 获取当前文件夹的名称
         current_folder_name = os.path.basename(file_path)
         # 获取上级文件夹路径
@@ -361,6 +373,10 @@ def splitFilePath(file_path):
         # 获取上级文件夹的名称
         parent_folder_name = os.path.basename(parent_folder_path)
         return parent_folder_path, parent_folder_name, current_folder_name
+    elif fileOrDirectory == 1:
+        return splitFileNameAndExt(file_path)
+    else:
+        return None
 
 
 def getFileNameOrDirectoryName(abPath):
@@ -369,7 +385,7 @@ def getFileNameOrDirectoryName(abPath):
     Returns:
     """
     if fileOrDirectory(abPath) == 1:
-        return splitFilePath(abPath)[-2]
+        return splitFileNameAndExt(abPath)[1]
     else:
         return splitFilePath(abPath)[-1]
 
@@ -721,19 +737,20 @@ def ls(path='.', show_hidden=False):
     show_hidden (bool): Whether to show hidden files. Default is False.
     """
     try:
+        abp = os.path.abspath(path)
         # List directory contents
-        items = os.listdir(path)
+        items = os.listdir(abp)
 
         # Filter out hidden files if show_hidden is False
         if not show_hidden:
             items = [item for item in items if not item.startswith('.')]
         abItems = []
         for i in items:
-            abItems.append(os.path.abspath(i))
+            abItems.append(os.path.join(abp, i))
         # Sort and print items
         abItems = sortByNatsorted(abItems)
-        for item in items:
-            print(item)
+        # for item in items:
+        #     print(item)
         return abItems
     except Exception as e:
         print(f"Error: {e}")
@@ -917,6 +934,82 @@ def filter_file_items(items, exclusion, mode=0, item_type=0, relp=".", withFileE
     return filtered_items
 
 
+def filter_filename_and_directoryname(file_list, exclude, ext=True):
+    """
+    过滤文件名、文件夹列表，精确到扩展名
+    Args:
+        file_list:
+        exclude:
+        ext:是否带扩展名
+
+    Returns:
+
+    """
+    r = []
+    for file in file_list:
+        ab = os.path.abspath(file)
+        if fileOrDirectory(file) == 1:
+            if ext:
+                s = splitFileNameAndExt(file)
+                fn = "{}{}".format(s[1], s[2])
+            else:
+                fn = getFileNameOrDirectoryName(ab)
+        else:
+            fn = getFileNameOrDirectoryName(ab)
+        if fn not in exclude:
+            r.append(file)
+    return r
+
+
+def filter_filename_and_directoryname_contains_string(file_list, exclude_string):
+    """
+    按字符过滤文件名、文件夹列表
+    Args:
+        file_list:
+        exclude:
+
+    Returns:
+
+    """
+    r = []
+    for file in file_list:
+        fn = getFileNameOrDirectoryName(file)
+        for es in exclude_string:
+            if es not in fn:
+                r.append(file)
+    return r
+
+
+def isInExcludeList(fp, excludeList, mode=0):
+    """
+    返回是否在排除列表(文件名)
+    mode:
+    0: 带扩展名的文件名、文件夹名排除
+    1: 不带扩展名的文件名、文件夹名排除
+    2: 只要字符在文件名中就算
+    Returns:
+
+    """
+    if mode == 0:
+        # 带扩展名的文件名、文件夹名排除
+        if len(filter_filename_and_directoryname([fp], excludeList, True)) == 0:
+            return True
+        else:
+            return False
+    elif mode == 1:
+        if len(filter_filename_and_directoryname([fp], excludeList, False)) == 0:
+            return True
+        else:
+            return False
+    elif mode == 2:
+        if len(filter_filename_and_directoryname_contains_string([fp], excludeList)) == 0:
+            return True
+        else:
+            return False
+    else:
+        return None
+
+
 def split_path_into_parts(path):
     """
     将路径拆分为其组成部分。
@@ -945,4 +1038,3 @@ if __name__ == '__main__':
     # execCommand("ls", 0, True)
     print("CPU核心数: {}".format(cpu_count()))
     fs = getTreeAbPath(tree("."))
-
