@@ -18,60 +18,33 @@
 
 server
 {
-    # 监听端口
     listen 80 default_server;
     listen [::]:80 default_server;
-    # 域名
     server_name _;
     # Add index.php to the list if you are using PHP
     index index.html index.php index.htm index.nginx-debian.html;
-    # 站点根目录
     root /home/HTML;
     
-    # error_page 404 https://www.baidu.com; #错误页
+    # error_page 404 https://www.baidu.com;
     # error_page  500 502 503 504  /50x.html;
     
     # PHP
     location ~ .*\.(php|php5)?$
     {
-      # fastcgi_pass unix:/tmp/php-cgi.sock;
-      fastcgi_pass 127.0.0.1:9000;
+      fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+      # fastcgi_pass 127.0.0.1:9000;
       fastcgi_index index.php;
       include fastcgi.conf;
     }
 
-    # e.g.重写405到路径xxx https://www.zhihu.com/question/281145972/answer/3148134002?utm_id=0
-    #location /405 {
-    #    rewrite ^/405(/|/index\.html)?$ /fmgr/xxx.php;
-    #}
-
-    # 不是GET POST HEAD就返回空响应(一些情况可能需要注释掉)
-    # if ($request_method !~ ^(GET|HEAD|POST)$) {
-    #   return 444;
-    # }
+    location /f {
+        rewrite ^/f(/|/index\.html)?$ /fmgr/index.php;
+    }
     
-    # 重写fmgr路径(针对上传temp文件夹)
+    # rewrite fmgr
     location ~/fmgr/filesfmgr {
         rewrite ^/fmgr/filesfmgr(.*)$ /fmgr/$1;
     }    
-  
-    # 图片过期
-    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|ico)$
-    {
-      expires 30d;
-      # access_log off;
-    }
-    # js css文件过期
-    location ~ .*\.(js|css)?$
-    {
-      expires 15d;
-      # access_log off;
-    }
-    
-    # 负载均衡
-    # location  ~*^.+$ {         
-    #    proxy_pass  http://mysvr;  #请求转向mysvr 定义的服务器列表
-    # }
 
     # SSL configuration
 	#
@@ -89,7 +62,6 @@ server
 	# include snippets/snakeoil.conf;
 
     # pass PHP scripts to FastCGI server
-	# PHP配置 (原来的模板)
 	#location ~ \.php$ {
 	#	include snippets/fastcgi-php.conf;
 	#
@@ -99,19 +71,51 @@ server
 	#	fastcgi_pass 127.0.0.1:9000;
 	#}
 
-	#location / {
-	#	# First attempt to serve request as file, then
-	#	# as directory, then fall back to displaying a 404.
-	#	try_files $uri $uri/ =404;
-	#}
+	location / {
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+	}
 
 	# deny access to .htaccess files, if Apache's document root
 	# concurs with nginx's one
-	#
-	#location ~ /\.ht {
-	#	deny all;
-	#}
+	location ~ /\.ht {
+		deny all;
+	}
 }
+
+
+# server
+# {
+#     listen 443 ssl http2;
+#     listen [::]:443 ssl http2;
+    
+#     ssl_certificate ~/server.pem;
+#     ssl_certificate_key ~/server.key;
+#     ssl_session_timeout 1d;
+#     ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+#     ssl_session_tickets off;
+
+#     # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
+#     # ssl_dhparam /path/to/dhparam;
+#     # intermediate configuration
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
+#     ssl_prefer_server_ciphers off;
+
+#     location / {
+#         proxy_pass http://backend_server;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_connect_timeout 60s;
+#         proxy_send_timeout 60s;
+#         proxy_read_timeout 60s;
+#         proxy_buffering off;
+#     }
+# }
+
 
 # Virtual Host configuration for example.com
 #
