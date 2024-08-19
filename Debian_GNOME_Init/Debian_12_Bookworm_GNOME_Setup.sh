@@ -15,10 +15,11 @@ fi
 # root用户密码
 ROOT_PASSWD=""
 ## 检查点一：
-# 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:1
-SET_APT_SOURCE=1
+# 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:3
+SET_APT_SOURCE=3
 # 你的更新源 Preset=""
 SET_YOUR_APT_SOURCE="# 中科大源 from:https://mirrors.ustc.edu.cn/repogen/
+# 帮助：https://mirrors.ustc.edu.cn/help/debian.html
 # Tips: Remember to install package <apt-transport-https>
 deb https://mirrors.ustc.edu.cn/debian/ bookworm main contrib non-free non-free-firmware
 # deb-src https://mirrors.ustc.edu.cn/debian/ bookworm main contrib non-free non-free-firmware
@@ -122,12 +123,12 @@ SET_INSTALL_CNPM=0
 SET_INSTALL_HEXO=0
 
 #### 下列软件安装时间较长，故放在最后安装
-# 是否安装Virtual Box Preset=1
-SET_INSTALL_VIRTUALBOX=1
+# 是否安装Virtual Box Preset=0
+SET_INSTALL_VIRTUALBOX=0
 # 设置vbox仓库，0:官网(bookworm) 1:清华大学镜像站 注意：如果是sid源，则使用sid仓库 Preset=1
 SET_VIRTUALBOX_REPO=1
-# 是否安装anydesk (受国外仓库限制，安装慢) Preset=1
-SET_INSTALL_ANYDESK=1
+# 是否安装anydesk (受国外仓库限制，安装慢) Preset=0
+SET_INSTALL_ANYDESK=0
 # 是否设置anydesk开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_ANYDESK=0
 # 是否安装typora  Preset=1
@@ -138,8 +139,8 @@ SET_INSTALL_SUBLIME_TEXT=0
 SET_INSTALL_TEAMVIEWER=0
 # 是否设置teamviewer开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_TEAMVIEWER=0
-# 是否安装WPS (APT安装慢) Preset=1
-SET_INSTALL_WPS_OFFICE=1
+# 是否安装WPS (APT安装慢) Preset=1 注：2024年8月起可能失效
+SET_INSTALL_WPS_OFFICE=0
 # 拷贝字体到~/.fonts文件夹下，如果需要，请将该变量设置为存放字体的文件夹路径(e.g.: FONTS). Preset=0
 SET_FONTS=0
 # 是否安装Skype Preset=1
@@ -150,7 +151,7 @@ SET_INSTALL_DOCKER_CE=0
 SET_DOCKER_CE_REPO=1
 # 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_DOCKER_CE=0
-# 安装网易云音乐 Preset=1
+# 安装网易云音乐 Preset=0
 SET_INSTALL_NETEASE_CLOUD_MUSIC=1
 # 安装Google-Chrome（for CN） Preset=1
 SET_INSTALL_GOOGLE_CHROME=1
@@ -186,8 +187,8 @@ SET_SSH_KEY_PUBLIC_TEXT=""
 ## 检查点七(谨慎！可能弄坏您的应用软件)
 # 是否接受dconf配置带来的风险 Preset=1
 SET_DCONF_SETTING=1
-# 导入GNOME Terminal的dconf配置 0:否 Preset=0
-SET_IMPORT_GNOME_TERMINAL_DCONF=0
+# 导入GNOME Terminal的dconf配置 0:否 Preset=1
+SET_IMPORT_GNOME_TERMINAL_DCONF=1
 GNOME_TERMINAL_DCONF="[legacy]
 mnemonics-enabled=false
 theme-variant='dark'
@@ -196,15 +197,15 @@ theme-variant='dark'
 full-screen='F11'
 next-tab='<Alt>x'
 prev-tab='<Alt>z'"
-# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0:否 Preset=0
-SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=0
+# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0:否 Preset=1
+SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=1
 GNOME_WM_KEYBINDINGS_DCONF="[/]
 always-on-top=['<Alt>O']
 switch-to-workspace-1=['<Primary>Left']
 switch-to-workspace-2=['<Primary>Right']
 switch-to-workspace-3=['<Primary>Up']
 switch-to-workspace-4=['<Primary>Down']"
-# 导入GNOME 自定义快捷键的dconf配置 0: 否 Preset=0
+# 导入GNOME 自定义快捷键的dconf配置 0: 否 Preset=1
 SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
 GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/']"
 GNOME_CUSTOM_KEYBINDINGS_DCONF="[custom0]
@@ -213,7 +214,7 @@ command='gnome-terminal'
 name='gnome-terminal'
 
 [custom1]
-binding='<Alt>e'
+binding='<Shift><Alt>e'
 command='nautilus'
 name='nautilus'
 
@@ -235,21 +236,21 @@ name='firefox-esr'"
 SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
 GNOME_AREASCREENSHOT_KEYBINDINGS="['<Shift><Alt>s']"
 GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP="['<Primary><Shift>s']"
-# 导入GNOME 屏幕放大镜配置 Preset=0
+# 导入GNOME 屏幕放大镜配置 Preset=1
 SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
 GNOME_MAGNIFIER_KEYBINDINGS="['<Alt>0']"
 GNOME_MAGNIFIER_KEYBINDINGS_IN="['<Alt>equal']"
 GNOME_MAGNIFIER_KEYBINDINGS_OUT="['<Alt>minus']"
 # 导入切换窗口配置（将会禁用切换应用程序快捷键）
-SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS=0
+SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS=1
 GNOME_SWITCH_WINDOWS_KEYBINDINGS="['<Alt>Tab']"
 GNOME_SWITCH_APPLICATIONS_KEYBINDINGS="['<Super>Tab']"
 GNOME_SWITCH_APPLICATIONS_BACKWARD_KEYBINDINGS="['<Shift><Super>Tab']"
 # 导入显示桌面快捷键
-SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=0
+SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=1
 GNOME_SHOW_DESKTOP_KEYBINDINGS="['<Super>d']"
-# 导入GNOME 电源配置 注意：Debian 12似乎已失效 Preset=0
-SET_IMPORT_GNOME_POWER_DCONF=0
+# 导入GNOME 电源配置 注意：Debian 12似乎已失效 Preset=1
+SET_IMPORT_GNOME_POWER_DCONF=1
 GNOME_POWER_DCONF="[/]
 sleep-inactive-ac-timeout=3600
 sleep-inactive-ac-type='nothing'"
@@ -2025,7 +2026,7 @@ if [ "$SET_WIRED_ALLOW_HOTPLUG" -ne 0 ];then
     prompt -m "设置网卡 $SET_WIRED_ALLOW_HOTPLUG 为热拔插模式以缩短开机时间。"
     # Not /etc/network/interfaces !
     # 如果不存在/etc/network/interfaces.d/setup这个文件就新建
-    if ! [ -f "/etc/network/interfaces.d/setup" ]then;
+    if ! [ -f "/etc/network/interfaces.d/setup" ];then
         prompt -x "没有找到 /etc/network/interfaces.d/setup 文件，新建文件中..."
         echo "# tee by rm_scripts.
 allow-hotplug $SET_WIRED_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/setup
