@@ -3,7 +3,7 @@
 # https://www.debian.org/releases/stable/amd64/release-notes/ch-information.zh-cn.html
 
 :<<!说明
-Version：0.0.5
+Version：0.0.6
 ！！！！关于Debian 12.0.0: 建议使用前卸载raspi-firmware，否则可能apt升级出错，请使用purge ！
 sudo apt purge raspi-firmware
 预设参数（在这里修改预设参数, 谢谢）
@@ -18,7 +18,20 @@ ROOT_PASSWD=""
 # 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:1
 SET_APT_SOURCE=1
 # 你的更新源 Preset=""
-SET_YOUR_APT_SOURCE=""
+SET_YOUR_APT_SOURCE="# 中科大源 from:https://mirrors.ustc.edu.cn/repogen/
+# Tips: Remember to install package <apt-transport-https>
+deb https://mirrors.ustc.edu.cn/debian/ bookworm main contrib non-free non-free-firmware
+# deb-src https://mirrors.ustc.edu.cn/debian/ bookworm main contrib non-free non-free-firmware
+
+deb https://mirrors.ustc.edu.cn/debian/ bookworm-updates main contrib non-free non-free-firmware
+# deb-src https://mirrors.ustc.edu.cn/debian/ bookworm-updates main contrib non-free non-free-firmware
+
+deb https://mirrors.ustc.edu.cn/debian/ bookworm-backports main contrib non-free non-free-firmware
+# deb-src https://mirrors.ustc.edu.cn/debian/ bookworm-backports main contrib non-free non-free-firmware
+
+deb https://mirrors.ustc.edu.cn/debian-security/ bookworm-security main contrib non-free non-free-firmware
+# deb-src https://mirrors.ustc.edu.cn/debian-security/ bookworm-security main contrib non-free non-free-firmware
+"
 # 更新与安装是否不过问 Preset:1
 SET_APT_RUN_WITHOUT_ASKING=1
 # 是否禁用unattended-upgrades.service 0:不做处理 1:启用 2:禁用  Preset=0

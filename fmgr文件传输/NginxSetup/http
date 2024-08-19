@@ -15,6 +15,9 @@
 #
 # Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
 ##
+# 请修改php配置部分！！
+# 请修改php配置部分！！
+# 请修改php配置部分！！
 
 server
 {
@@ -37,8 +40,8 @@ server
       include fastcgi.conf;
     }
 
-    location /f {
-        rewrite ^/f(/|/index\.html)?$ /fmgr/index.php;
+    location /x {
+        rewrite ^/x(/|/index\.html)?$ /fmgr/index.php;
     }
     
     # rewrite fmgr

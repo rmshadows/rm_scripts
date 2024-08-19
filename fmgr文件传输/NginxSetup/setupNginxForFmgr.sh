@@ -22,6 +22,10 @@ else
     echo "default 配置文件的连接不存在。"
 fi
 
+r=`whereis php-fpm`
+# echo $r
+PF_VERSION=${r#*\/php-fpm}
+
 # 生成新的 http 配置文件
 HTTP_CONF='/etc/nginx/sites-available/http'
 sudo tee $HTTP_CONF > /dev/null <<EOF
@@ -58,14 +62,14 @@ server
     # PHP
     location ~ .*\.(php|php5)?$
     {
-      fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+      fastcgi_pass unix:/run/php/php$PF_VERSION-fpm.sock;
       # fastcgi_pass 127.0.0.1:9000;
       fastcgi_index index.php;
       include fastcgi.conf;
     }
 
-    location /f {
-        rewrite ^/f(/|/index\.html)?$ /fmgr/index.php;
+    location /x {
+        rewrite ^/x(/|/index\.html)?$ /fmgr/index.php;
     }
     
     # rewrite fmgr
