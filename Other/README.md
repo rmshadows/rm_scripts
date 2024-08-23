@@ -2,6 +2,7 @@
 
 - checkZerotier.sh——检查Zerotier状态
 - create_self-signed-cert.sh——生成SSL证书`./create_self-signed-cert.sh --ssl-domain=www.meet.nyj --ssl-trusted-ip=192.168.1.93 --ssl-size=2048 --ssl-date=3650`
+- delete_empty_dirs.sh——删除空文件夹
 - Docker-WeChat.sh——安装Docker微信（不再维护）
 - downloadAptPackage.sh——下载APT包及其依赖
 - generateSSLCert.sh——生成自签名SSL证书（仅Key+PEM）
