@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Copy_File_Path.sh
 # 获取当前选中的文件或文件夹路径
 FILE_PATH="$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"
 # 是否提醒

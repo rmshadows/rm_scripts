@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# nautilus删除所选文件夹下面的空文件夹
+# nautilus删除所选文件夹下面的空文件夹 Delete_empty_dirs.sh
 
 # 处理每个选中的目录
 for dir in "$@"; do

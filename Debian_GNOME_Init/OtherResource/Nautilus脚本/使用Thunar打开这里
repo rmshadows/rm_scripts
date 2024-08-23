@@ -1,6 +1,7 @@
 #!/bin/bash
 # sudo apt-get install nautilus-actions
 # 放在 ~/.local/share/nautilus/scripts
+# Open_current_directory_by.sh
 
 dapp="thunar"
 
