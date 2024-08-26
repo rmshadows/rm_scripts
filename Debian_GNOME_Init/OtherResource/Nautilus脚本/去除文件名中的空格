@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# 要替换的符号
+REPLACEM="_"
+
+# 递归遍历目录或文件
+function rrename() {
+    local path="$1"
+
+    # 检查路径是否存在空格
+    if [[ "$path" =~ [[:space:]] ]]; then
+        local new_path="${path// /$REPLACEM}"
+        echo "【$path】->【$new_path】"
+        mv "$path" "$new_path"
+        if [ $? -eq 0 ]; then
+            path="$new_path"  # 更新路径以便正确处理子目录
+        else
+            echo "重命名失败：$path"
+            return
+        fi
+    fi
+
+    # 如果是目录，递归处理
+    if [ -d "$path" ]; then
+        for item in "$path"/*; do
+            [ -e "$item" ] && rrename "$item"
+        done
+    fi
+}
+
+# 遍历所有传递给脚本的文件/目录
+for path in "$@"; do
+    rrename "$path"
+done
+
+notify-send "空格名称替换完成。"
+
