@@ -180,7 +180,8 @@ def image2pdf(directory, output_pdf_name, content:bool=True, order=None, removeP
             img = Image.open(imgf)
             if img.mode == "RGBA":
                 img.convert("RGB")
-            to_save_path = m_System.editFilename(imgf, None, None, None, None, "jpg")
+            #     def editFilename(src, dst, prefix=None, suffix=None, ext=None):
+            to_save_path = m_System.editFilename(imgf, None, None, None, ".jpg")
             img.save(to_save_path)
             # 删除原来的png
             if removePngJpeg:
@@ -188,7 +189,7 @@ def image2pdf(directory, output_pdf_name, content:bool=True, order=None, removeP
         elif img_ext == "jpeg":
             img = Image.open(imgf)
             # 构造完整文件路径
-            to_save_path = m_System.editFilename(imgf, None, None, None, None, "jpg")
+            to_save_path = m_System.editFilename(imgf, None, None, None, ".jpg")
             # 打开图像并保存为 .jpg 格式
             img.save(to_save_path, 'JPEG')
             print(f'Converted {imgf} to {to_save_path}')
