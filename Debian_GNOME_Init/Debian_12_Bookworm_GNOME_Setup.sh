@@ -1101,8 +1101,8 @@ alias ssd='sudo systemctl stop'
 alias ssf='sudo systemctl restart'
 alias duls='du -sh ./*'
 alias dulsd='du -sh \`la\`'
-alias zshrc='vim '\$HOME'/.zshrc'
-alias szsh='source '\$HOME'/.zshrc'
+alias zshrc='vim $HOME/.zshrc'
+alias szsh='source $HOME/.zshrc'
 
 # 代理
 # alias proxyAll='export ALL_PROXY=socks5://127.0.0.1:20170'
@@ -1110,7 +1110,7 @@ alias szsh='source '\$HOME'/.zshrc'
 # 其他
 # alias apt='sudo apt-get'
 alias upgrade='sudo apt update && sudo apt upgrade'
-alias ssh-key-install='ssh-copy-id -i '\$HOME'/.ssh/id_rsa.pub'
+alias ssh-key-install='ssh-copy-id -i $HOME/.ssh/id_rsa.pub'
 alias sshpwdconnect='pwdconnect(){sshpass -p \"\$1\" ssh};pwdconnect'
 
 # unset _JAVA_OPTIONS
@@ -1126,8 +1126,8 @@ fi
 alias acpy='activatePythonVenv'
 function activatePythonVenv(){
     # 如果存在Python虚拟环境激活文件
-    if [ -f \"'\$HOME'/.python_venv_activate\" ];then
-        source '\$HOME'/.python_venv_activate
+    if [ -f \"$HOME/.python_venv_activate\" ];then
+        source $HOME/.python_venv_activate
     fi
 }
 
