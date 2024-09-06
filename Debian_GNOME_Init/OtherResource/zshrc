@@ -195,6 +195,7 @@ alias gitac='git add . -A && git commit -m "add and update ———— `date` "
 alias gitfindhistory='gitsearch(){git log --all --pretty=oneline -- $1};gitsearch'
 alias gitam='git add . -A && git commit -m '
 alias githardpull='git fetch --all && git reset --hard'
+alias gplb='git pull && git branch -a'
 
 # SSH
 alias ssh-key-install='ssh-copy-id -i /home/ryan/.ssh/id_rsa.pub'
