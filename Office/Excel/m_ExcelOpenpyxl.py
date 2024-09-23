@@ -6,9 +6,13 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.comments import Comment
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook.workbook import Workbook as WorkbookClass  # 为了兼容 openpyxl 3.x 以及 2.x 的命名差异
+from openpyxl.utils import range_boundaries
 
 import m_Array
 import m_System
+
+from openpyxl import load_workbook, Workbook
+from copy import copy
 
 """
 文档：https://openpyxl.readthedocs.io/en/stable/tutorial.html#accessing-one-cell
@@ -670,6 +674,207 @@ def copyWorksheetInto(wbSrcf, wsSrc, wbDstf, savePath="", copyTitle=None):
         wbDst.save(nfn)
     else:
         wbDst.save(savePath)
+
+
+def copy_cell_format(source_cell, target_cell):
+    # 复制源单元格的格式到目标单元格
+    if source_cell.has_style:
+        target_cell.font = copy(source_cell.font)
+        target_cell.border = copy(source_cell.border)
+        target_cell.fill = copy(source_cell.fill)
+        target_cell.number_format = copy(source_cell.number_format)
+        target_cell.protection = copy(source_cell.protection)
+        target_cell.alignment = copy(source_cell.alignment)
+
+
+def merge_excel_with_format_and_merged_cells(src_folder, output_file, sheet_name, cell_range):
+    """
+    合并指定文件夹中的Excel文件的某个工作表中的某个范围的数据和格式（包括合并单元格）。
+
+    :param src_folder: 包含Excel文件的文件夹路径
+    :param output_file: 保存合并结果的输出文件路径,None则返回wb
+    :param sheet_name: 需要读取的工作表名称
+    :param cell_range: 需要合并的单元格范围（如'A1:X66'）
+    """
+    # 创建一个新的工作簿
+    new_workbook = Workbook()
+    new_sheet = new_workbook.active
+    new_sheet.title = sheet_name
+    # 初始化行号，用于在新表中存储数据
+    current_row = 1
+    # 获取src文件夹中的所有xlsx文件（大小写不敏感）
+    files = [f for f in os.listdir(src_folder) if f.lower().endswith('.xlsx')]
+    for file in files:
+        file_path = os.path.join(src_folder, file)
+        # 加载Excel文件
+        workbook = load_workbook(file_path, data_only=False)  # 保留格式
+        # 获取指定的工作表
+        if sheet_name in workbook.sheetnames:
+            sheet = workbook[sheet_name]
+        else:
+            print(f"警告：文件 {file} 中未找到工作表 {sheet_name}")
+            continue
+        # 获取要合并的区域，例如 'A1:X66'
+        start_cell, end_cell = cell_range.split(':')
+        min_col = sheet[start_cell].column
+        min_row = sheet[start_cell].row
+        max_col = sheet[end_cell].column
+        max_row = sheet[end_cell].row
+        # 复制合并单元格信息
+        for merged_cells in sheet.merged_cells.ranges:
+            if merged_cells.min_row >= min_row and merged_cells.max_row <= max_row and \
+                    merged_cells.min_col >= min_col and merged_cells.max_col <= max_col:
+                new_sheet.merge_cells(
+                    start_row=current_row + (merged_cells.min_row - min_row),
+                    start_column=merged_cells.min_col,
+                    end_row=current_row + (merged_cells.max_row - min_row),
+                    end_column=merged_cells.max_col
+                )
+        # 逐行读取指定区域的内容和格式
+        for row in sheet.iter_rows(min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col):
+            for col_idx, cell in enumerate(row, start=1):
+                new_cell = new_sheet.cell(row=current_row, column=col_idx, value=cell.value)
+                copy_cell_format(cell, new_cell)  # 复制格式
+            current_row += 1
+    # 保存合并后的新Excel文件
+    if output_file is None:
+        return new_workbook
+    else:
+        new_workbook.save(output_file)
+        print(f"合并完成，保存到: {output_file}")
+
+
+def insert_header_from_excel(target_file_or_wb, header_file, header_range, target_sheets=None, savePath=None):
+    """
+    从header_file中读取指定区域的表头，并插入到目标Excel文件的所有工作表或指定工作表的顶部。
+    表头内容和格式会被保留，并在目标文件原有内容之前插入。
+
+    :param target_file_or_wb: 目标Excel文件路径或wb
+    :param header_file: 包含表头的Excel文件路径
+    :param header_range: 表头的单元格范围（如'A1:X3'）
+    :param target_sheets: 目标工作表的名称列表，默认为None表示插入到所有工作表
+    :param savePath: 保存修改后的文件路径，默认为None表示覆盖原文件
+    """
+    if os.path.isfile():
+        # 加载目标Excel文件
+        target_wb = load_workbook(target_file_or_wb)
+    else:
+        target_wb = target_file_or_wb
+    # 加载包含表头的Excel文件
+    header_wb = load_workbook(header_file)
+    header_sheet = header_wb.active  # 默认使用第一个工作表
+
+    # 获取表头范围的起始和结束单元格位置
+    min_col, min_row, max_col, max_row = range_boundaries(header_range)
+    # 读取表头内容和格式
+    header_data = []
+    for row in header_sheet.iter_rows(min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col):
+        header_row = []
+        for cell in row:
+            header_row.append(cell)
+        header_data.append(header_row)
+    # 记录表头的合并单元格
+    header_merged_cells = list(header_sheet.merged_cells.ranges)
+    # 确定要插入表头的工作表
+    if target_sheets is None:
+        # 如果没有指定工作表，则应用到所有工作表
+        target_sheets = target_wb.sheetnames
+    for sheet_name in target_sheets:
+        if sheet_name not in target_wb.sheetnames:
+            print(f"警告：目标文件中未找到工作表 {sheet_name}")
+            continue
+        target_sheet = target_wb[sheet_name]
+        # 记录工作表中所有的合并单元格
+        merged_cells = list(target_sheet.merged_cells.ranges)
+        # 先拆分合并的单元格
+        for merged_range in merged_cells:
+            target_sheet.unmerge_cells(str(merged_range))
+        # 将原有内容下移，插入表头
+        target_sheet.insert_rows(1, amount=max_row - min_row + 1)
+
+        # 将表头插入到目标工作表的顶部
+        for row_offset, header_row in enumerate(header_data, start=0):
+            for col_offset, header_cell in enumerate(header_row, start=0):
+                target_cell = target_sheet.cell(row=row_offset + 1, column=min_col + col_offset)
+                target_cell.value = header_cell.value
+                copy_cell_format(header_cell, target_cell)  # 复制格式
+        # 恢复表头的合并单元格
+        for merged_range in header_merged_cells:
+            min_range_col, min_range_row, max_range_col, max_range_row = range_boundaries(str(merged_range))
+            # 调整行号，将表头的合并区域应用到目标表
+            new_range = f"{get_column_letter(min_range_col)}{min_range_row}:{get_column_letter(max_range_col)}{max_range_row}"
+            target_sheet.merge_cells(new_range)
+        # 恢复原有的合并单元格，并调整位置
+        for merged_range in merged_cells:
+            min_range_col, min_range_row, max_range_col, max_range_row = range_boundaries(str(merged_range))
+            # 调整行号，将原有的合并区域向下偏移插入的表头行数
+            new_min_row = min_range_row + (max_row - min_row + 1)
+            new_max_row = max_range_row + (max_row - min_row + 1)
+            new_range = f"{get_column_letter(min_range_col)}{new_min_row}:{get_column_letter(max_range_col)}{new_max_row}"
+            # 应用调整后的合并单元格
+            target_sheet.merge_cells(new_range)
+    # 保存修改后的目标文件
+    if savePath is None:
+        return target_wb
+    else:
+        target_wb.save(savePath)
+        print(f"表头已插入到目标文件的顶部，保存到: {savePath}")
+
+
+def remove_blank_rows_or_columns(wb, sheet_name, mode='row'):
+    """
+    从指定的工作表中移除空白行或空白列。
+
+    :param wb: openpyxl 加载的工作簿对象
+    :param sheet_name: 要操作的工作表名称
+    :param mode: 'row' 表示移除空白行，'col' 表示移除空白列
+    """
+    sheet = wb[sheet_name]
+    if mode == 'row':
+        # 从底部向上删除空白行，防止索引混乱
+        for row in range(sheet.max_row, 0, -1):
+            if all([cell.value is None for cell in sheet[row]]):
+                sheet.delete_rows(row)
+    elif mode == 'col':
+        # 从右向左删除空白列，防止索引混乱
+        for col in range(sheet.max_column, 0, -1):
+            if all([sheet.cell(row=row, column=col).value is None for row in range(1, sheet.max_row + 1)]):
+                sheet.delete_cols(col)
+    print(f"{'空白行' if mode == 'row' else '空白列'} 已移除。")
+
+
+def remove_blank_cells(wb, sheet_name, cell_range, mode='row'):
+    """
+    移除指定单元格范围内的空白单元格，按行或列模式处理。
+    :param wb: openpyxl 加载的工作簿对象
+    :param sheet_name: 要操作的工作表名称
+    :param cell_range: 需要处理的单元格范围，例如 'A1:B10'
+    :param mode: 'row' 表示按行移除空白单元格并向上移动，'col' 表示按列移除空白单元格并向左移动
+    """
+    sheet = wb[sheet_name]
+    start_cell, end_cell = cell_range.split(':')
+    # 获取指定范围的起始和结束位置
+    start_col, start_row = sheet[start_cell].column, sheet[start_cell].row
+    end_col, end_row = sheet[end_cell].column, sheet[end_cell].row
+    if mode == 'row':
+        # 按行模式移除空白单元格
+        for col in range(start_col, end_col + 1):
+            non_empty_values = [sheet.cell(row=row, column=col).value for row in range(start_row, end_row + 1) if
+                                sheet.cell(row=row, column=col).value is not None]
+            for i, value in enumerate(non_empty_values):
+                sheet.cell(row=start_row + i, column=col).value = value
+            for row in range(start_row + len(non_empty_values), end_row + 1):
+                sheet.cell(row=row, column=col).value = None
+    elif mode == 'col':
+        # 按列模式移除空白单元格
+        for row in range(start_row, end_row + 1):
+            non_empty_values = [sheet.cell(row=row, column=col).value for col in range(start_col, end_col + 1) if
+                                sheet.cell(row=row, column=col).value is not None]
+            for i, value in enumerate(non_empty_values):
+                sheet.cell(row=row, column=start_col + i).value = value
+            for col in range(start_col + len(non_empty_values), end_col + 1):
+                sheet.cell(row=row, column=col).value = None
+    print(f"{'行' if mode == 'row' else '列'}模式下的空白单元格已移除。")
 
 
 if __name__ == '__main__':
