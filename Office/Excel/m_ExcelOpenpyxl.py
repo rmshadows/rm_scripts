@@ -755,7 +755,7 @@ def insert_header_from_excel(target_file_or_wb, header_file, header_range, targe
     :param target_sheets: 目标工作表的名称列表，默认为None表示插入到所有工作表
     :param savePath: 保存修改后的文件路径，默认为None表示覆盖原文件
     """
-    if os.path.isfile():
+    if os.path.isfile(target_file_or_wb):
         # 加载目标Excel文件
         target_wb = load_workbook(target_file_or_wb)
     else:
