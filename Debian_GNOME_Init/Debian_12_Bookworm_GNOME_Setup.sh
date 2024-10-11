@@ -2414,7 +2414,8 @@ if [ "$SET_INSTALL_NPM" -eq 1 ];then
     if [ "$SET_INSTALL_CNPM" -eq 1 ];then
         if ! [ -x "$(command -v cnpm)" ]; then
             prompt -x "安装CNPM"
-            sudo npm install cnpm -g --registry=https://r.npm.taobao.org
+            # https://r.npm.taobao.org已失效
+            sudo npm install cnpm -g --registry=https://registry.npmmirror.com/
         fi
         if [ "$SET_INSTALL_HEXO" -eq 1 ];then
             if ! [ -x "$(command -v hexo)" ]; then
