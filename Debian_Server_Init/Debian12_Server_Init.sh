@@ -416,6 +416,7 @@ alias l='ls -CF'
 # alias hcg='hexo clean && hexo g'
 # alias gitam='git add . -A && git commit -m '
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
+# alias gplb='git pull && git branch -a'
 # FFMPEG
 # 裁剪 开始、结尾、文件、输出文件
 # alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss \$2 -to \$3 -i \$1 -vcodec copy -acodec copy \$4};ffmpegCutVideo'

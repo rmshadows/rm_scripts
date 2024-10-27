@@ -1085,6 +1085,7 @@ alias ssf='sudo systemctl restart'
 # alias gitac='git add . -A && git commit -m \"update —— \`date\`\"'
 # alias gitam='git add . -A && git commit -m '
 # alias githardpull='git fetch --all && git reset --hard origin/main && git pull'
+# alias gplb='git pull && git branch -a'
 # Git查历史文件
 # alias gitfindhistory='gitsearch(){git log --all --pretty=oneline -- \$1};gitsearch'
 
