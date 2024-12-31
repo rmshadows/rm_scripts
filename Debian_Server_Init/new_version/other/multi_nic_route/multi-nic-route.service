@@ -1,0 +1,13 @@
+[Unit]
+Description=Multi-NIC Route Configuration Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=【path to】/multi_nic_route.sh
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
+

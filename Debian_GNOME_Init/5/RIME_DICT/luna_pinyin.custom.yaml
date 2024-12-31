@@ -1,0 +1,50 @@
+# luna_pinyin.custom.yaml
+#
+# 補靪功能：將朙月拼音的詞庫修改爲朙月拼音擴充詞庫
+#
+# 作者：瑾昀 <cokunhui@gmail.com>
+#
+# 部署位置：
+# ~/.config/ibus/rime  (Linux)
+# ~/Library/Rime  (Mac OS)
+# %APPDATA%\Rime  (Windows)
+#
+# 於重新部署後生效
+#
+#
+# 注意：本補靪適用於所有朙月拼音系列方案（「朙月拼音」、「朙月拼音·简化字」、「朙月拼音·臺灣正體」、「朙月拼音·語句流」）。
+# 只須將本 custom.yaml 的前面名字改爲對應的輸入方案名字然後放入用戶文件夾重新部署即可。如 luna_pinyin_simp.custom.yaml。
+# 雙拼用戶請使用 double_pinyin.custom.yaml。
+#
+#
+# 附朙月拼音系列方案與其對應的 id 一覽表：
+# 輸入方案	id
+# 朙月拼音	luna_pinyin
+# 朙月拼音·简化字	luna_pinyin_simp
+# 朙月拼音·臺灣正體	luna_pinyin_tw
+# 朙月拼音·語句流	luna_pinyin_fluency
+#
+
+patch:
+  # 載入朙月拼音擴充詞庫
+  "translator/dictionary": luna_pinyin.extended
+  # 改寫拼寫運算，使得含西文的詞彙（位於 luna_pinyin.cn_en.dict.yaml 中）不影響簡拼功能（注意，此功能只適用於朙月拼音系列方案，不適用於各類雙拼方案）
+  # 本條補靪只在「小狼毫 0.9.30」、「鼠鬚管 0.9.25 」、「Rime-1.2」及更高的版本中起作用。
+  "speller/algebra/@before 0": xform/^([b-df-hj-np-tv-z])$/$1_/
+  
+  # 备选词数量
+  "menu/page_size": 8
+  
+  # emoji表情 https://github.com/rime/rime-emoji
+  # 添加了opencc文件夹
+  switches/@next:
+    name: emoji_suggestion
+    reset: 1
+    states: [ "🈚︎", "🈶️" ]
+  'engine/filters/@before 0':
+    simplifier@emoji_suggestion
+  emoji_suggestion:
+    opencc_config: emoji.json
+    option_name: emoji_suggestion
+    tips: none
+    inherit_comment: false

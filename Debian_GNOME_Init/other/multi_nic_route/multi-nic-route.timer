@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Multi-NIC Route Configuration Service Periodically
+
+[Timer]
+OnBootSec=5min       # 启动后 5 分钟执行
+OnUnitActiveSec=1h   # 每隔 1 小时运行一次
+
+[Install]
+WantedBy=timers.target
+

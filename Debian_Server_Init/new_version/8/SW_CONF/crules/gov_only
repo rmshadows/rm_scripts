@@ -1,0 +1,31 @@
+# 仅用政务内网
+# 假定wlx08107bbbe420 (net)是外网，内网是eth0
+# Shorewall version 4 - Rules File
+#
+# For information on the settings in this file, type "man shorewall-rules"
+#
+# The manpage is also online at
+# http://www.shorewall.net/manpages/shorewall-rules.html
+#
+######################################################################################################################################################################################################
+#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME		HEADERS		SWITCH		HELPER
+#							PORT	PORT(S)		DEST		LIMIT		GROUP
+?SECTION ALL
+?SECTION ESTABLISHED
+?SECTION RELATED
+?SECTION INVALID
+?SECTION UNTRACKED
+?SECTION NEW
+?COMMENT 下一行表示所有来自 net（外部网络）并指向防火墙的无效 TCP 数据包都将被丢弃。
+Invalid(DROP)	net		$FW		tcp
+
+?COMMENT 自定义规则
+# Allow wlx08107bbbe420 (net) to communicate with 192.168.1.11 允许访问某主机
+ACCEPT net:192.168.1.11 all
+# Allow 192.168.1.115 to communicate with wlx08107bbbe420 (net) 允许个别局域网IP访问主机
+ACCEPT all net:192.168.1.11
+
+# Drop all other traffic from/to wlx08107bbbe420 (net) 丢弃外网数据
+DROP net all
+DROP all net
+

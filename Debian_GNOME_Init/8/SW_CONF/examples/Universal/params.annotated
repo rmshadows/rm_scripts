@@ -1,0 +1,71 @@
+#
+# Shorewall - Sample Params File for universal configuration.
+# Copyright (C) 2006-2014 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------------------------------------
+# For information on entries in this file, type "man shorewall-params"
+######################################################################################################################################################################################################
+# 
+# Assign any shell variables that you need in this file. The file is always
+# processed by /bin/sh so the full range of shell capabilities may be used.
+# 
+# It is suggested that variable names begin with an upper case letter to
+# distinguish them from variables used internally within the Shorewall programs
+# 
+# The following variable names must be avoided. Those in bold font must be
+# avoided in all Shorewall versions; those in regular font must be avoided in
+# versions prior to 4.4.8.
+# 
+# Any option from shorewall.conf (5)
+# COMMAND
+# CONFDIR
+# DEBUG
+# ECHO_E
+# ECHO_N
+# EXPORT
+# FAST
+# FILEMODE
+# HOSTNAME
+# IPT_OPTIONS
+# NOROUTES
+# PREVIEW
+# PRODUCT
+# PROFILE
+# PURGE
+# RECOVERING
+# RESTOREPATH
+# RING_BELL
+# SHAREDIR
+# Any name beginning with SHOREWALL_ or SW_
+# STOPPING
+# TEST
+# TIMESTAMP
+# USE_VERBOSITY
+# VARDIR
+# VERBOSE
+# VERBOSE_OFFSET
+# VERSION
+# 
+# Example params file:
+# 
+# NET_IF=eth0
+# NET_BCAST=130.252.100.255
+# NET_OPTIONS=routefilter
+# 
+# Example shorewall-interfaces(5) file.
+# 
+# ZONE    INTERFACE       BROADCAST       OPTIONS
+# net     $NET_IF         $NET_BCAST      $NET_OPTIONS
+# 
+# This is the same as if the interfaces file had contained:
+# 
+# ZONE    INTERFACE       BROADCAST       OPTIONS
+# net     eth0            130.252.100.255 routefilter
+# 
+######################################################################################################################################################################################################

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# 设置 DISPLAY 环境变量为 :2
+export DISPLAY=:2
+
+# 启用 VNC 配置（用于剪贴板等功能）
+vncconfig -iconic &
+
+# 设置背景颜色
+xsetroot -solid grey
+
+# 检查 D-Bus 是否正在运行
+if pgrep -x "dbus-daemon" > /dev/null; then
+    echo "D-Bus is already running."
+else
+    echo "Starting D-Bus..."
+    eval $(dbus-launch --sh-syntax)
+fi
+
+# 设置 fcitx 的环境变量
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+
+# 启动 fcitx
+# fcitx &
+
+# 启动 GNOME 终端
+gnome-terminal --disable-factory &
+
+# 清除会话管理器和 D-Bus 地址
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+
+# 启动 Fluxbox 窗口管理器
+startfluxbox &
+

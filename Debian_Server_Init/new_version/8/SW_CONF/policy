@@ -1,0 +1,36 @@
+# 定义默认策略
+# Shorewall version 4 - Policy File
+#
+# For information about entries in this file, type "man shorewall-policy"
+#
+# The manpage is also online at
+# http://www.shorewall.net/manpages/shorewall-policy.html
+###############################################################################
+#SOURCE	DEST	POLICY		LOGLEVEL	RATE		CONNLIMIT
+$FW	net	ACCEPT # 这条规则允许所有从防火墙自身发往网络区域的流量。
+net	all	DROP		$LOG_LEVEL
+
+
+# THE FOLLOWING POLICY MUST BE LAST 这条规则丢弃所有未被之前规则匹配的流量，并记录日志(要求放在最后)。
+all	all		DROP		$LOG_LEVEL
+
+###############################################################################
+# 参考
+# 允许防火墙访问政务网
+# $FW       gov        ACCEPT
+# 拒绝互联网流量访问除特定区域外的所有网络
+# net       all        DROP       $LOG_LEVEL
+# 拒绝政务网流量访问除特定区域外的所有网络
+# gov       all        DROP       $LOG_LEVEL
+## 参考1(断网)
+# $FW    all    DROP
+# all    all    DROP    $LOG_LEVEL
+## 参考2(只出不进)
+# $FW    all    ACCEPT        # 允许防火墙内部的流量
+# all    all    DROP          # 禁止所有进入流量
+# all    $FW    ACCEPT        # 允许所有外出的流量
+## 参考3（只进不出）
+# $FW     all     ACCEPT # 允许从外部到本机的所有流量
+# lo      all     ACCEPT # 允许本地回环接口的流量
+# net     all     DROP    $LOG_LEVEL # 禁止所有输出流量
+# all     all     DROP    $LOG_LEVEL # 禁止所有未被匹配的流量

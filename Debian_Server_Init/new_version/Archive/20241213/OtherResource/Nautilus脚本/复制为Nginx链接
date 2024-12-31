@@ -1,0 +1,43 @@
+#!/bin/bash
+# 配置你的 Nginx 外网地址
+BASE_URL="http://127.0.0.1/"
+NGINX_ROOTP="/home/HTML/"
+
+# 初始化一个空字符串，用来存储所有生成的链接
+ALL_URLS=""
+# 是否在nginx root文件夹
+InRootDirectory=1
+
+# 遍历所选文件
+for FILE in "$@"; do
+    # 获取文件的绝对路径
+    ABS_PATH=$(realpath "$FILE")
+    
+    # 检查文件是否位于 Nginx 根目录内
+    if [[ "$ABS_PATH" == $(realpath "$NGINX_ROOTP")* ]]; then
+        # 获取文件的相对路径，去除根路径
+        RELATIVE_PATH=$(realpath --relative-to="$NGINX_ROOTP" "$FILE")
+        # 转换为外网链接
+        URL="${BASE_URL}/${RELATIVE_PATH}"
+    else
+        if [ "$InRootDirectory" -eq 1 ];then
+            InRootDirectory=0
+        fi
+        # 文件不在 Nginx 根目录内，使用文件的 basename 生成外网链接
+        URL="${BASE_URL}/$(basename "$FILE")"
+    fi
+    
+    # 将生成的链接追加到 ALL_URLS 变量，并用空格分隔链接
+    ALL_URLS="${ALL_URLS}${URL}\n"
+done
+
+# 将所有链接一次性复制到剪贴板
+echo -e "$ALL_URLS" | xsel -b
+
+# 使用 zenity 弹窗提示所有链接已复制，调整窗口大小，避免换行
+if [ "$InRootDirectory" -eq 1 ];then
+    zenity --info --text="链接已复制(All links copied to clipboard): \n$ALL_URLS" --width=600 --height=100
+else
+    zenity --warning --text="部分链接不在Nginx Root文件夹中: \n$ALL_URLS" --width=600 --height=100
+fi
+

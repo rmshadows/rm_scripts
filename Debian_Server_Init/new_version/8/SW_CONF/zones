@@ -1,0 +1,21 @@
+# 定义网域
+# 默认定义防火墙、外网、局域网和政务网
+# Shorewall version 4 - Zones File
+#
+# For information about this file, type "man shorewall-zones"
+#
+# The manpage is also online at
+# http://www.shorewall.net/manpages/shorewall-zones.html
+# 
+###############################################################################
+#ZONE	TYPE		OPTIONS		IN			OUT
+# 					OPTIONS			OPTIONS
+# 防火墙本身
+fw	firewall
+# 互联网
+net	ip
+# 局域网
+loc     ip
+# 政务网
+gov     ip
+

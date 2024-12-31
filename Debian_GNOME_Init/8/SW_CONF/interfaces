@@ -1,0 +1,28 @@
+# 定义网络接口
+# Shorewall version 4 - Interfaces File
+#
+# For information about entries in this file, type "man shorewall-interfaces"
+#
+# The manpage is also online at
+# https://shorewall.org/manpages/shorewall-interfaces.html
+#  
+###############################################################################
+?FORMAT 2
+###############################################################################
+#ZONE	INTERFACE	OPTIONS
+-	lo		ignore
+net	all		dhcp,nosmurfs,routefilter,logmartians,physical=+
+
+
+
+
+
+###############################################################################
+# 其他参考
+## 参考0
+# -	lo		ignore
+# net	all		dhcp,nosmurfs,routefilter,logmartians,physical=+
+## 参考1
+# -	lo		ignore
+# gov	enxc868de36fee5	dhcp,nosmurfs,routefilter,logmartians
+# net	wlx08107bbbe420	dhcp,nosmurfs,routefilter,logmartians

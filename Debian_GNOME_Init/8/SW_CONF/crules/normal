@@ -1,0 +1,33 @@
+# 防火墙规则配置文件
+# Shorewall version 4 - Rules File
+#
+# For information on the settings in this file, type "man shorewall-rules"
+#
+# The manpage is also online at
+# https://shorewall.org/manpages/shorewall-rules.html
+#
+######################################################################################################################################################################################################
+#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME		HEADERS		SWITCH		HELPER
+#							PORT	PORT(S)		DEST		LIMIT		GROUP
+?SECTION ALL
+?SECTION ESTABLISHED
+?SECTION RELATED
+?SECTION INVALID
+?SECTION UNTRACKED
+?SECTION NEW
+# Drop packets in the INVALID state
+Invalid(DROP)  net    	        $FW		tcp
+
+?COMMENT 自定义规则
+# 不允许别人Ping自己
+Ping(DROP)	net		$FW
+
+
+#### 示例
+# ?COMMENT Nginx
+# ACCEPT:info	net:192.168.0.0/24,192.168.1.0/24	$FW	tcp	80
+# Permit all ICMP traffic FROM the firewall TO the net zone # 自己没法发送Ping，但是可以回复Ping
+# DROP		$FW		net		icmp
+# SSH(ACCEPT)	net		$FW # 允许SSH
+
+
