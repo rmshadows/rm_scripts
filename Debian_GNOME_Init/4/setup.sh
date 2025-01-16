@@ -4,16 +4,14 @@
 配置Python3源为清华大学镜像
 配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
 安装配置Apache2
+配置PHP FPM
+配置nginx
 安装配置Git(配置User Email)
 安装配置SSH
 安装配置npm(是否安装hexo)
 检查点四
 
 source "cfg.sh"
-
-TODO
-    addFolder "$HOME_INDEX/Logs/apache2" # for apache2
-    addFolder "$HOME_INDEX/Logs/nginx" # for nginx
 
 # 从APT仓库安装常用软件包
 if [ "$SET_APT_INSTALL" -eq 1 ]; then
@@ -194,63 +192,67 @@ if [ "$SET_INSTALL_PHP" -eq 1 ]; then
     prompt -x "安装Php和php-fpm"
     doApt install php
     doApt install php-fpm
-    # 获取版本号
-    phpfpmVersion=$(sudo systemctl list-unit-files | grep "\-"fpm | grep ^php | sed 's/.fpm.*//' | sed 's/php//g')
     if [ $? -eq 0 ]; then
-        # 配置php fpm中
-        fromp=$(pwd)
-        cd /etc/php/*/fpm/pool.d/
-        phpconff=""www.conf""
-        if [ -f "$phpconff" ]; then
-            check_var="^listen = 9000"
-            if cat "$phpconff" | grep "$check_var" >/dev/null; then
-                prompt -w "端口号似乎已经配置了!"
-            else
-                # 存在配置文件就修改端口号 (在这里修改php fpm端口号)
-                prompt -x "修改php fpm端口号为9000 ..."
-                check_var="^listen = /run/php/php8.2-fpm.sock"
+        # 获取版本号
+        phpfpmVersion=$(sudo systemctl list-unit-files | grep "\-"fpm | grep ^php | sed 's/.fpm.*//' | sed 's/php//g')
+        # 如果指定端口
+        if [ "$SET_PHP_FPM_PORT" -ne 0 ]; then
+            # 配置php fpm
+            fromp=$(pwd)
+            cd /etc/php/*/fpm/pool.d/
+            phpconff=""www.conf""
+            if [ -f "$phpconff" ]; then
+                check_var="^listen = $SET_PHP_FPM_PORT"
                 if cat "$phpconff" | grep "$check_var" >/dev/null; then
-                    # 开始配置
-                    backupFile "$phpconff"
-                    prompt -x "注释掉listen = /run/php/php8.2-fpm.sock，改为listen=9000"
-                    # 去除开头的^后:
-                    tempCheckVar=${check_var#?}
-                    sudo sed -i s@"$check_var"@\;\ "$tempCheckVar"\\nlisten=9000@g "$phpconff"
+                    prompt -w "端口号似乎已经配置了!"
                 else
-                    # 如果没找到那句话就搜索有无listen开头的参数
-                    check_var="^listen = "
-                    idx=$(cat "$phpconff" | grep -n "$check_var" | gawk '{print $1}' FS=":")
-                    idxl=($idx)
-                    idxlen=${#idxl[@]}
-                    # 解析行号
-                    if [ $idxlen -eq 1 ]; then
+                    # 存在配置文件就修改端口号 (在这里修改php fpm端口号)
+                    prompt -x "修改php fpm端口号为$SET_PHP_FPM_PORT ..."
+                    check_var="^listen = /run/php/php$phpfpmVersion-fpm.sock"
+                    if cat "$phpconff" | grep "$check_var" >/dev/null; then
+                        # 开始配置
                         backupFile "$phpconff"
-                        sudo sed -i "$idx d" "$phpconff"
-                        sudo sed -i "$idx i listen = 9000" "$phpconff"
-                        sudo systemctl restart php"$phpfpmVersion"-fpm.service
-                    elif [ $idxlen -eq 0 ]; then
-                        prompt -e "在php fpm配置文件中没有找到listen参数,请自行检查配置文件!!"
+                        prompt -x "注释掉listen = /run/php/php$phpfpmVersion-fpm.sock，改为listen=$SET_PHP_FPM_PORT"
+                        # 去除开头的^后:
+                        tempCheckVar=${check_var#?}
+                        # sudo sed -i s@"$check_var"@\; "$tempCheckVar"\\nlisten = SET_PHP_FPM_PORT@g "$phpconff" # 用不了
+                        sudo sed -i "s|$check_var|; $tempCheckVar\nlisten = $SET_PHP_FPM_PORT|g" "$phpconff"
                     else
-                        prompt -e "Find duplicate user setting in $phpconff ! Check manually!"
+                        # 如果没找到那句话就搜索有无listen开头的参数
+                        check_var="^listen = "
+                        idx=$(cat "$phpconff" | grep -n "$check_var" | gawk '{print $1}' FS=":")
+                        idxl=($idx)
+                        idxlen=${#idxl[@]}
+                        # 解析行号
+                        if [ $idxlen -eq 1 ]; then
+                            backupFile "$phpconff"
+                            sudo sed -i "$idx d" "$phpconff"
+                            sudo sed -i "$idx i listen = $SET_PHP_FPM_PORT" "$phpconff"
+                            sudo systemctl restart php"$phpfpmVersion"-fpm.service
+                        elif [ $idxlen -eq 0 ]; then
+                            prompt -e "在php fpm配置文件中没有找到listen参数,请自行检查配置文件!!"
+                        else
+                            prompt -e "Find duplicate user setting in $phpconff ! Check manually!"
+                        fi
                     fi
                 fi
+                # 配置php fpm是否开机启动
+                if [ "$SET_PHP_FPM_ENABLE" -eq 0 ]; then
+                    # php8.2-fpm.service
+                    prompt -x "Disable php-fpm service."
+                    sudo systemctl disable php"$phpfpmVersion"-fpm.service
+                elif [ "$SET_PHP_FPM_ENABLE" -eq 1 ]; then
+                    prompt -x "Enable php-fpm service."
+                    sudo systemctl enable php"$phpfpmVersion"-fpm.ser vice
+                fi
+            else
+                prompt -e "phpfpm没有/etc/php/*/fpm/pool.d/www.conf 文件!"
+                # 这里不退出
+                # quitThis
             fi
-            # 配置php fpm是否开机启动
-            if [ "$SET_PHP_FPM_ENABLE" -eq 0 ]; then
-                # php8.2-fpm.service
-                prompt -x "Disable php-fpm service."
-                sudo systemctl disable php"$phpfpmVersion"-fpm.service
-            elif [ "$SET_PHP_FPM_ENABLE" -eq 1 ]; then
-                prompt -x "Enable php-fpm service."
-                sudo systemctl enable php"$phpfpmVersion"-fpm.service
-            fi
-        else
-            prompt -e "phpfpm没有/etc/php/*/fpm/pool.d/www.conf 文件!"
-            # 这里不退出
-            # quitThis
+            # 回到原来的目录
+            cd "$fromp"
         fi
-        # 回到原来的目录
-        cd "$fromp"
     else
         prompt -e "Php似乎安装失败了。"
         quitThis
@@ -280,11 +282,12 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
         backupFile /etc/nginx/sites-available/default
 
         prompt -i "Set up a new nginx.conf"
-        replace_username "nginx.conf.src"
+        # replace_username "nginx.conf.src"
+        replace_placeholders_with_values "nginx.conf.src"
         sudo cp "nginx.conf" /etc/nginx/nginx.conf
         sudo cp "block_ip.conf" /etc/nginx/block_ip.conf
         sudo cp "SelectNginxSites.sh" /etc/nginx/
-        
+
         prompt -i "Genarate a http website."
         sudo cp "http" /etc/nginx/sites-available/http
         # 禁用默认的配置文件，启用新的
@@ -351,7 +354,7 @@ if [ "$SET_INSTALL_NPM" -eq 1 ]; then
             fi
         fi
     fi
-    if [ "$SET_INSTALL_HEXO" -eq 1 ]; then  
+    if [ "$SET_INSTALL_HEXO" -eq 1 ]; then
         if ! [ -x "$(command -v hexo)" ]; then
             prompt -x "安装HEXO"
             sudo npm install -g hexo-cli

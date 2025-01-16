@@ -1,5 +1,4 @@
-# change User Name 是用户名
-# changeUserName
+# 【$CURRENT_USER】
 # ~/.zshrc file for zsh non-login shells.
 # see /usr/share/doc/zsh/examples/zshrc for examples
 
@@ -200,7 +199,7 @@ alias gitam='git add . -A && git commit -m '
 alias gplb='git pull && git branch -a'
 
 # SSH
-alias ssh-key-install='ssh-copy-id -i /home/changeUserName/.ssh/id_rsa.pub'
+alias ssh-key-install='ssh-copy-id -i /home/【$CURRENT_USER】/.ssh/id_rsa.pub'
 alias sshpwdconnect='pwdconnect(){sshpass -p "$1" ssh};pwdconnect'
 
 # 代理
@@ -215,8 +214,8 @@ alias ssa='sudo systemctl start'
 alias sss='sudo systemctl status'
 alias ssd='sudo systemctl stop'
 alias ssf='sudo systemctl restart'
-alias zshrc='vim /home/changeUserName/.zshrc'
-alias szsh='source /home/changeUserName/.zshrc'
+alias zshrc='vim /home/【$CURRENT_USER】/.zshrc'
+alias szsh='source /home/【$CURRENT_USER】/.zshrc'
 alias upgrade='sudo apt update && sudo apt upgrade'
 alias duls='du -sh ./*'
 alias dulsd='du -sh `la`'
@@ -232,8 +231,8 @@ fi
 alias acpy='activatePythonVenv'
 function activatePythonVenv(){
     # 如果存在Python虚拟环境激活文件
-    if [ -f "/home/changeUserName/.python_venv_activate" ];then
-        source /home/changeUserName/.python_venv_activate
+    if [ -f "/home/【$CURRENT_USER】/.python_venv_activate" ];then
+        source /home/【$CURRENT_USER】/.python_venv_activate
     fi
 }
 
@@ -243,4 +242,4 @@ activatePythonVenv
 
 # Created by `pipx` on 2023-06-30 12:10:31
 # :/usr/games:/usr/local/games
-export PATH="$PATH:/home/changeUserName/.local/bin"
+export PATH="$PATH:/home/【$CURRENT_USER】/.local/bin"

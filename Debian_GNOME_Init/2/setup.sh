@@ -10,7 +10,8 @@ prompt -i "——————————  检查点二  ———————�
 
 source "cfg.sh"
 # 修改zshrc中用户名
-replace_username "$ZSHRC_CONFIG"
+# replace_username "$ZSHRC_CONFIG"
+replace_placeholders_with_values "$ZSHRC_CONFIG"
 # 去掉后面的.src
 ZSHRC_CONFIG="${ZSHRC_CONFIG%.src}"
 

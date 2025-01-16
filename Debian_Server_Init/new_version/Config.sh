@@ -1,8 +1,7 @@
 #!/bin/bash
-:<<!说明
+: <<!说明
 这里是执行的配置
 !说明
-
 
 ## 检查点一 ##==
 # 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:3
@@ -14,7 +13,6 @@ SET_APT_RUN_WITHOUT_ASKING=1
 SET_ENABLE_UNATTENDED_UPGRADE=0
 # 是否在安装软件前更新整个系统 0:just apt update 1:apt dist-upgrade 2:apt upgrade   Preset:1
 SET_APT_UPGRADE=1
-
 
 ## 检查点二 ##==
 # Set to 1 will specify a user.User will be created if not exist.If set to 0, continue with root(是否指定某用户进行配置，否的话将以root用户继续)  Preset:1
@@ -44,7 +42,6 @@ SET_BASH_COMPLETION=1
 # 是否安装zsh-autosuggestions Preset=1
 SET_ZSH_AUTOSUGGESTIONS=1
 
-
 ## 检查点三 ##==
 # 设置家目录文件夹(Data for data;Applications for apps;Temp for file transport;Workplace for work;Services for service)
 SET_BASE_HOME=1
@@ -61,7 +58,7 @@ SET_LOCALES="en_US.UTF-8 UTF-8
 zh_CN.UTF-8 UTF-8
 "
 # Set time zone (zoneinfo file path)(设置时间支持) Preset=0
-# e.g.:Shanghai China,You need to set this: /usr/share/zoneinfo/Asia/Shanghai 
+# e.g.:Shanghai China,You need to set this: /usr/share/zoneinfo/Asia/Shanghai
 SET_TIME_ZONE=0
 # Set tty1 auto-login (设置TTY1自动登录) Preset=1
 SET_TTY_AUTOLOGIN=1
@@ -70,7 +67,7 @@ SET_TTY_AUTOLOGIN=1
 # 从APT源安装常用软件
 # 是否从APT源安装常用软件 Preset=1
 SET_APT_INSTALL=1
-:<<注释
+: <<注释
 有几个预选的安装列表供参考:
 0.自定义列表
 1.轻便安装
@@ -82,22 +79,10 @@ SET_APT_INSTALL_LIST_INDEX=1
 # 警告：Debian 12中 pip install可能破坏系统稳定性！谨慎使用
 # 安装Python3 Preset=1
 SET_PYTHON3_INSTALL=1
-# 配置Python3源为清华大学镜像 Preset=1
-SET_PYTHON3_MIRROR=1
+# 配置Python3源为清华大学镜像 Preset=0
+SET_PYTHON3_MIRROR=0
 # 配置Python3全局虚拟环境（Debian12中无法直接使用pip了） Preset=1
 SET_PYTHON3_VENV=1
-# 安装配置Apache2 Preset=0 (新版本默认安装Nginx，并配置PHP)
-SET_INSTALL_APACHE2=0
-# 是否设置Apache2开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_APACHE2=0
-# 是否安装Nginx Preset=1
-SET_INSTALL_NGINX=1
-# 是否安装PHP（包括php fpm） Preset=1
-SET_INSTALL_PHP=1
-# 是否设置php fpm开机自启,默认禁用 Preset=0
-SET_PHP_FPM_ENABLE=0
-# 是否设置Nginx开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_NGINX=0
 # 安装配置git Preset=1
 SET_INSTALL_GIT=1
 # Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
@@ -106,10 +91,10 @@ SET_GIT_EMAIL=0
 # 安装配置ssh Preset=1
 SET_INSTALL_OPENSSH=1
 # SSH开机是否自启 Preset=0 默认禁用
-SET_ENABLE_SSH=0
+SET_ENABLE_SSH=1
 # 安装配置npm Preset=0
 SET_INSTALL_NPM=0
-# 是否安装Nodejs(注意：nodejs来源于apt仓库！如需nvm请手动安装) Preset=0
+# 是否安装Nodejs(注意：nodejs来源于apt仓库！) Preset=0
 SET_INSTALL_NODEJS=0
 # 是否安装CNPM Preset=0
 SET_INSTALL_CNPM=0
@@ -117,48 +102,41 @@ SET_INSTALL_CNPM=0
 SET_INSTALL_HEXO=0
 
 #### 下列软件安装时间较长，故放在最后安装
-# 是否安装Virtual Box Preset=0
-SET_INSTALL_VIRTUALBOX=0
-# 设置vbox仓库，0:官网(bookworm) 1:清华大学镜像站 注意：如果是sid源，则使用sid仓库 Preset=1
-SET_VIRTUALBOX_REPO=1
-# 是否安装anydesk (受国外仓库限制，安装慢) Preset=0
-SET_INSTALL_ANYDESK=0
-# 是否设置anydesk开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_ANYDESK=0
-# 是否安装typora  Preset=1
-SET_INSTALL_TYPORA=0
-# 是否安装sublime text  (受国外仓库限制，安装慢) Preset=0
-SET_INSTALL_SUBLIME_TEXT=0
-# 是否安装teamviewer (受国外仓库限制，安装慢) Preset=0
-SET_INSTALL_TEAMVIEWER=0
-# 是否设置teamviewer开机自启动(注意，0为禁用，1为启用) Preset=0
-SET_ENABLE_TEAMVIEWER=0
-# 是否安装WPS (APT安装慢) Preset=1 注：2024年8月起可能失效
-SET_INSTALL_WPS_OFFICE=0
-# 是否安装Skype Preset=0
-SET_INSTALL_SKYPE=0
-# 是否安装Docker-ce (可能失效了) Preset=0
+# 是否安装docker-ce
 SET_INSTALL_DOCKER_CE=0
+# 是否重装docker？
+SET_DOCKER_PURGE_REINSTALL=1
+# Manage Docker as a non-root user?
+SET_DOCKER_NON_ROOT=0
 # 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1
 SET_DOCKER_CE_REPO=1
 # 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_DOCKER_CE=0
-# 安装网易云音乐(可能失效了) Preset=0
-SET_INSTALL_NETEASE_CLOUD_MUSIC=0
-# 安装Google-Chrome（for CN） Preset=1
-SET_INSTALL_GOOGLE_CHROME=1
 
 ## 检查点五 ##==
-# 拷贝字体到~/.fonts文件夹下。默认是FONTS文件夹，如果需要，请到对应文件夹中的cfg.sh设置存放字体的文件夹路径(e.g.: FONTS). Preset=1
-SET_FONTS=1
-# 注意：xdotool不支持在wayland运行，fcitx也建议在x11下运行。注销、登录界面选择运行于xorg的GNOME
-# 注意：fcitx 和 fcitx5 无法共存！参见：https://lists.debian.org/debian-chinese-gb/2021/12/msg00000.html 和 https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html
-# 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime 3.fcitx5-rime Preset=3
-SET_INSTALL_RIME=3
-# 是否导入词库 0: 否 1:从Github导入公共词库 (注意网速！)  2:从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
-# 配置本地词库和远程词库地址请到相应文件夹中的cfg.sh
-SET_IMPORT_RIME_DICT=2
-
+# Install http server(安装HTTP服务) [0:No 1:nginx 2:apache2] Preset=1
+SET_INSTALL_HTTP_SERVER=1
+# 设置网站根目录 Preset=0 0指的是默认~/nginx/ 其他请指定
+SET_HTTP_SERVER_ROOT=0
+# Enable http server (允许开机自启) Preset=1
+SET_ENABLE_HTTP_SERVICE=1
+# Disable default site and enable https site (禁用默认网页，启用https网页。) Preset=0
+# 使用Let's Encrypt的用户请使用HTTP站点
+# HTTPS证书默认 /etc/ssl/changeSET_SERVER_NAME.pem
+SET_ENABLE_HTTPS_SITE=0
+# Set server domain (设置域名) Preset=localhost
+SET_SERVER_NAME=localhost
+# If NGINX: set ~/nginx/res passwd (如果是nginx，配置~/nginx/res的访问用户、密码) Preset:default nginxLogin
+SET_NGINX_RES_USER=default
+SET_NGINX_RES_PASSWD=nginxLogin
+# If APACHE Deny access /usr/share (配置禁止访问/usr/share目录) Preset=0
+SET_APACHE_DENY_USR_SHARE=0
+# 是否安装PHP（包括php fpm） Preset=1
+SET_INSTALL_PHP=1
+# 是否指定PHP运行端口 Preset=0
+SET_PHP_FPM_PORT=0
+# 是否设置php fpm开机自启,默认禁用 Preset=0
+SET_PHP_FPM_ENABLE=1
 
 ## 检查点六 ##
 # 配置SSH Key Preset=1
@@ -180,24 +158,6 @@ SET_SSH_KEY_PRIVATE_TEXT=""
 SET_SSH_KEY_PUBLIC_TEXT=""
 
 ## 检查点七(谨慎！可能弄坏您的应用软件) ##==
-# 是否接受dconf配置带来的风险 Preset=1
-SET_DCONF_SETTING=1
-# 导入GNOME Terminal的dconf配置 0:否 Preset=1
-SET_IMPORT_GNOME_TERMINAL_DCONF=1
-# 导入GNOME 您自定义修改的系统内置快捷键的dconf配置 0:否 Preset=1
-SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=1
-# 导入GNOME 自定义快捷键的dconf配置 0: 否 Preset=1
-SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
-# 导入GNOME 选区截屏配置 注意：Debian 12似乎已失效 Preset=0 
-SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
-# 导入GNOME 屏幕放大镜配置 Preset=1
-SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
-# 导入切换窗口配置（将会禁用切换应用程序快捷键）
-SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS=1
-# 导入显示桌面快捷键
-SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=1
-# 导入GNOME 电源配置 注意：Debian 12似乎已失效 Preset=1
-SET_IMPORT_GNOME_POWER_DCONF=1
 
 ## 检查点八 ##
 # 是否配置Shorewall防火墙(但是需要手动启用) Preset=1
@@ -211,9 +171,6 @@ SET_ENABLE_GRUB_OS_PROBER=0
 # 最后一步 设置用户目录所属 Preset=1
 SET_USER_HOME=1
 
-
-
-
 ############################################################################
 #### 默认变量赋值
 # 获取当前用户名和家目录 root 和 /root (如果有指定会在下面被修改，这里只是避免出现Null情况)
@@ -221,7 +178,7 @@ SET_USER_HOME=1
 CURRENT_USER="$USER"
 HOME_INDEX="$HOME"
 # 设置用户目录(如果有指定)
-if [ "$SET_USER" -eq 1 ];then
+if [ "$SET_USER" -eq 1 ]; then
     CURRENT_USER="$SET_USER_NAME"
     HOME_INDEX="/home/$SET_USER_NAME"
 else
@@ -230,9 +187,9 @@ else
 fi
 
 # 初始化主机名
-if [ "$SET_HOST_NAME" == 0 ];then
+if [ "$SET_HOST_NAME" == 0 ]; then
     # 如果没有配置主机名
-    if [ "$HOSTNAME" == "" ];then
+    if [ "$HOSTNAME" == "" ]; then
         HOSTNAME="$HOST"
     fi
 else
@@ -240,13 +197,23 @@ else
 fi
 
 # Git
-if [ "$SET_GIT_USER" -eq 0 ];then
+if [ "$SET_GIT_USER" -eq 0 ]; then
     SET_GIT_USER=$CURRENT_USER
 fi
-if [ "$SET_GIT_EMAIL" -eq 0 ];then
+if [ "$SET_GIT_EMAIL" -eq 0 ]; then
     SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
 fi
 # SSH
-if [ "$SET_SSH_KEY_COMMENT" -eq 0 ];then
+if [ "$SET_SSH_KEY_COMMENT" -eq 0 ]; then
     SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian 11_GNOME_Deploy_Script"
+fi
+# HTTP ROOT
+if [ "$SET_HTTP_SERVER_ROOT" -eq 0 ]; then
+    if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
+        SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/nginx"
+    elif [ "$SET_INSTALL_HTTP_SERVER" -eq 2 ]; then
+        SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/apache2"
+    else
+        SET_HTTP_SERVER_ROOT="/home/HTML"
+    fi
 fi

@@ -9,7 +9,8 @@
 
 
 # 修改customize-autorun.service中用户名 生成customize-autorun.service
-replace_username "customize_systemd_service/customize-autorun.service.src"
+# replace_username "customize_systemd_service/customize-autorun.service.src"
+replace_placeholders_with_values "customize_systemd_service/customize-autorun.service.src"
 
 # 检查有线网卡的函数
 check_wired_network() {

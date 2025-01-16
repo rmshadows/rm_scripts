@@ -47,144 +47,72 @@
 
 - 加载配置文件和函数库等等
 - 获取当前用户名
-- 首先检查用户是否在`sudo`组中且免密码。如果没有，临时添加`$USER ALL=(ALL)NOPASSWD:ALL`进`/etc/sudoers`文件中(运行结束或者Ctrl+c中断会自动移除)。
-- 检查是否在sudo组中
-- 是的话检查是否免密码
 - 检查是否时GNOME桌面，不是则警告、退出。
 - 与用户确认执行
 
 ### 检查点一
 
-- 临时成为免密`sudoer`(必选)。
-- 添加用户到`sudo`组。
-- 设置用户`sudo`免密码。
 - 默认源安装apt-transport-https ca-certificates wget gnupg2 gnupg lsb-release
 - 更新源、更新系统。
 - 配置unattended-upgrades
 
 ### 检查点二
 
-- 替换vim-tiny为vim-full
+- 新建用户
+- 检查是否在sudo组中
+- 是的话检查是否免密码
+- 询问是否将当前用户加入sudo组, 是否sudo免密码（如果已经是sudoer且免密码则跳过）。
+- 临时成为免密sudoer(必选)。
+- 添加用户到sudo组。
+- 设置用户sudo免密码。
+- 卸载vim-tiny，安装vim-full
 - 替换Bash为Zsh
-- 替换默认的ZSHRC文件
-- 添加/usr/sbin到用户的SHELL环境变量
-- 替换root用户的SHELL配置
+- 添加/usr/sbin到环境变量
+- 替换root用户shell配置文件
 - 安装bash-completion
 - 安装zsh-autosuggestions
 
 ### 检查点三
 
-- 自定义自己的服务（运行一个shell脚本）
-- 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
-- 复制模板文件夹内容
+- 配置家目录文件夹
+- 配置自定义的systemtl服务
 - 配置启用NetworkManager、安装net-tools
-- 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过
 - 配置GRUB网卡默认命名方式
+- 配置主机名
+- 配置语言支持
+- 配置时区
+- 设置TTY1自动登录
 
 ### 检查点四
 
 - 从APT源安装常用软件
 
   ```
-  - aircrack-ng——aircrack-ng
   - apt-transport-https——apt-transport-https
-  - arp-scan——arp-scan
-  - axel——axel下载器
-  - bash-completion——终端自动补全
-  - bleachbit——系统清理软件
-  - build-essential——开发环境
-  - clamav——Linux下的杀毒软件
-  - cmake——cmake
-  - crunch——字典生成
-  - cups——cups打印机驱动
+  - axel——axel_downloader
+  - bash-completion——bash_completion
+  - build-essential——build-essential
+  - ca-certificates——ca-certificates
   - curl——curl
-  - dislocker——查看bitlocker分区
-  - dos2unix——将Windows下的文本文档转为Linux下的文本文档
-  - drawing——GNOME画图
-  - dsniff——网络审计
-  - ettercap-graphical——ettercap-graphical
-  - flatpak——flatpak平台
-  - gedit-plugin*——Gedit插件
-  - gimp——gimp图片编辑
-  - gnome-shell-extension-arc-menu——GNOME扩展+ARC菜单
-  - gnome-shell-extension-autohidetopbar——GNOME扩展+自动隐藏顶栏
-  - gnome-shell-extension-bluetooth-quick-connect——GNOME扩展+蓝牙快速连接
-  - gnome-shell-extension-caffeine——GNOME扩展+防止屏幕休眠
-  - gnome-shell-extension-dashtodock——GNOME扩展+DashtoDock侧栏
-  - gnome-shell-extension-dash-to-panel——GNOME扩展+任务栏
-  - gnome-shell-extension-desktop-icons——GNOME扩展+桌面图标
-  - gnome-shell-extension-disconnect-wifi——GNOME扩展+断开wifi
-  - gnome-shell-extension-draw-on-your-screen——GNOME扩展+屏幕涂鸦
-  - gnome-shell-extension-freon——GNOME扩展+顶栏显示磁盘温度
-  - gnome-shell-extension-gamemode——GNOME扩展+游戏模式
-  - gnome-shell-extension-hard-disk-led——GNOME扩展
-  - gnome-shell-extension-hide-activities——GNOME扩展
-  - gnome-shell-extension-hide-veth——GNOME扩展
-  - gnome-shell-extension-impatience——GNOME扩展
-  - gnome-shell-extension-kimpanel——GNOME扩展
-  - gnome-shell-extension-move-clock——GNOME扩展+移动时钟
-  - gnome-shell-extension-multi-monitors——GNOME扩展+多屏幕支持
-  - gnome-shell-extension-no-annoyance——GNOME扩展
-  - gnome-shell-extension-panel-osd——GNOME扩展
-  - gnome-shell-extension-pixelsaver——GNOME扩展
-  - gnome-shell-extension-prefs——GNOME扩展
-  - gnome-shell-extension-redshift——GNOME扩展
-  - gnome-shell-extension-remove-dropdown-arrows——GNOME扩展
-  - gnome-shell-extensions——GNOME扩展
-  - gnome-shell-extensions-gpaste——GNOME扩展+GNOME剪辑板
-  - gnome-shell-extension-shortcuts——GNOME扩展
-  - gnome-shell-extension-show-ip——GNOME扩展+顶栏菜单显示IP
-  - gnome-shell-extension-tilix-shortcut——GNOME扩展
-  - gnome-shell-extension-top-icons-plus——GNOME扩展
-  - gnome-shell-extension-volume-mixer——GNOME扩展
-  - gnome-shell-extension-weather——GNOME扩展+天气
-  - gnucash——GNU账本
-  - grub-customizer——GRUB或BURG定制器
-  - gufw——防火墙
-  - handbrake——视频转换
-  - hping3——hping3
-  - htop——htop彩色任务管理器
-  - httrack——网站克隆
-  - hydra——hydra
-  - inotify-tools——inotify文件监视
-  - kompare——文件差异对比
-  - konversation——IRC客户端
-  - lshw——显示硬件
+  - gnupg——GPG
+  - htop——colored_top
+  - httrack——website_clone
+  - lsb-release——lsb-release
   - make——make
-  - masscan——masscan
-  - mdk3——mdk3
-  - meld——文件差异合并
-  - nautilus-extension-*——nautilus插件
-  - net-tools——ifconfig等工具
-  - nmap——nmap
-  - nodejs——nodejs
-  - npm——nodejs包管理器
-  - ntpdate——NTP时间同步
-  - obs-studio——OBS
-  - openssh-server——SSH
-  - pwgen——随机密码生成
-  - python3-pip——pip3
-  - qt5ct——qt界面
-  - reaver——无线WPS测试
-  - screenfetch——显示系统信息
-  - sed——文本编辑工具
-  - silversearcher-ag——Ag快速搜索工具
-  - slowhttptest——慢速HTTP链接测试
+  - net-tools——ifconfig
+  - screenfetch——display_system_info
+  - sed——text_edit
+  - silversearcher-ag——Ag_searcher
   - tcpdump——tcpdump
-  - tree——树状显示文件夹
-  - traceroute——路由跟踪
-  - vim——VIM编辑器
-  - vlc——vlc视频播放器
-  - wafw00f——网站防火墙检测
-  - websploit——Web渗透测试
-  - wget——wget网络下载工具
-  - wireshark——wireshark
-  - xdotool——X自动化工具
-  - xprobe——网页防火墙测试
-  - xsel——剪贴板操作
-  - zhcon——tty中文虚拟
+  - tree——ls_dir_as_tree
+  - traceroute——trace_route
+  - wget——wget
+  - zhcon——tty_display_Chinese
+  - zsh——zsh
+  - zsh-autosuggestions——zsh_plugin
+  - zsh-syntax-highlighting——zsh_plugin
   ```
-
+  
 - 脚本最后再安装的应用(滞后)
 
   ```
@@ -194,66 +122,33 @@
 
 - 安装Python3
 
-  - 配置Python3源为清华大学镜像
-  - 配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
+- 配置Python3源为清华大学镜像
 
-- 安装配置Apache2
+- 配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
 
-  - 配置Apache2 共享目录为 /home/HTML(必选)
-    - 是否禁用Apache2开机自启
-
-- 安装配置Git
-
-  - 配置User Email
+- 安装配置Git(配置User Email)
 
 - 安装配置SSH
 
-- 安装配置npm
-
-  - 安装cnpm
-    - 安装hexo
-    - 安装nodejs(必选)
-
-- 安装VirtualBox(滞后)
-
-- 安装Anydesk(滞后)
-
-- 安装Typora(滞后)
-
-- 安装sublime text(滞后)
-
-- 安装teamviewer(滞后)
-
-- 安装wps-office(滞后)
-
-- 安装skype(滞后)
+- 安装配置npm(是否安装hexo)
 
 - 安装docker-ce(滞后)
-
-- 安装网易云音乐(滞后)
 
 - 禁用第三方软件仓库更新(提升apt体验)(滞后)
 
 ### 检查点五
 
-- 配置中州韵输入法(fcitx、ibus、fcitx5)
+- 
 
-- 配置词库(github导入公共词库、导入本地词库)
 
 ### 检查点六
 
-- 配置SSH Key(新密钥，导入)
+- 
 
-### 检查点七(谨慎使用！可能弄坏您的应用程序！)
+### 检查点七
 
-- 备份原有的dconf配置
+- 
 
-- 导入GNOME Terminal的dconf配置
-- 导入GNOME 您自定义修改的系统内置快捷键的dconf配置
-- 导入GNOME 自定义快捷键的dconf配置
-- 导入GNOME 选区截屏配置
-- 导入GNOME 屏幕放大镜配置
-- 导入GNOME 电源配置
 
 ### 检查点八
 

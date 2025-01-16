@@ -3,7 +3,6 @@
 安装Python3
 配置Python3源为清华大学镜像
 配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
-安装配置Apache2
 安装配置Git(配置User Email)
 安装配置SSH
 安装配置npm(是否安装hexo)
@@ -157,155 +156,6 @@ source $venv_libs_dir/bin/activate" >$act
     fi
 fi
 
-# 安装配置Apache2
-if [ "$SET_INSTALL_APACHE2" -eq 1 ]; then
-    prompt -x "安装Apache2"
-    doApt install apache2
-    prompt -m "配置Apache2 共享目录为 /home/HTML"
-    addFolder /home/HTML
-    prompt -x "设置/home/HTML读写权限为755"
-    sudo chmod 755 /home/HTML
-    sudo chown "$CURRENT_USER" /home/HTML
-    sudo chgrp "$CURRENT_USER" /home/HTML
-    if [ $? -eq 0 ]; then
-        backupFile /etc/apache2/apache2.conf
-        prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
-        sudo sed -i 's/\/var\/www\//\/home\/HTML\//g' /etc/apache2/apache2.conf
-        sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/home\/HTML/g' /etc/apache2/sites-available/000-default.conf
-        if [ "$SET_ENABLE_APACHE2" -eq 0 ]; then
-            prompt -x "禁用Apache2服务开机自启"
-            sudo systemctl disable apache2.service
-        elif [ "$SET_ENABLE_APACHE2" -eq 1 ]; then
-            prompt -x "配置Apache2服务开机自启"
-            sudo systemctl enable apache2.service
-        fi
-    else
-        prompt -e "Apache2似乎安装失败了。"
-        quitThis
-    fi
-fi
-
-# 配置PHP FPM
-if [ "$SET_INSTALL_PHP" -eq 1 ]; then
-    prompt -x "安装Php和php-fpm"
-    doApt install php
-    doApt install php-fpm
-    # 获取版本号
-    phpfpmVersion=$(sudo systemctl list-unit-files | grep "\-"fpm | grep ^php | sed 's/.fpm.*//' | sed 's/php//g')
-    if [ $? -eq 0 ]; then
-        # 配置php fpm中
-        fromp=$(pwd)
-        cd /etc/php/*/fpm/pool.d/
-        phpconff=""www.conf""
-        if [ -f "$phpconff" ]; then
-            check_var="^listen = 9000"
-            if cat "$phpconff" | grep "$check_var" >/dev/null; then
-                prompt -w "端口号似乎已经配置了!"
-            else
-                # 存在配置文件就修改端口号 (在这里修改php fpm端口号)
-                prompt -x "修改php fpm端口号为9000 ..."
-                check_var="^listen = /run/php/php8.2-fpm.sock"
-                if cat "$phpconff" | grep "$check_var" >/dev/null; then
-                    # 开始配置
-                    backupFile "$phpconff"
-                    prompt -x "注释掉listen = /run/php/php8.2-fpm.sock，改为listen=9000"
-                    # 去除开头的^后:
-                    tempCheckVar=${check_var#?}
-                    sudo sed -i s@"$check_var"@\;\ "$tempCheckVar"\\nlisten=9000@g "$phpconff"
-                else
-                    # 如果没找到那句话就搜索有无listen开头的参数
-                    check_var="^listen = "
-                    idx=$(cat "$phpconff" | grep -n "$check_var" | gawk '{print $1}' FS=":")
-                    idxl=($idx)
-                    idxlen=${#idxl[@]}
-                    # 解析行号
-                    if [ $idxlen -eq 1 ]; then
-                        backupFile "$phpconff"
-                        sudo sed -i "$idx d" "$phpconff"
-                        sudo sed -i "$idx i listen = 9000" "$phpconff"
-                        sudo systemctl restart php"$phpfpmVersion"-fpm.service
-                    elif [ $idxlen -eq 0 ]; then
-                        prompt -e "在php fpm配置文件中没有找到listen参数,请自行检查配置文件!!"
-                    else
-                        prompt -e "Find duplicate user setting in $phpconff ! Check manually!"
-                    fi
-                fi
-            fi
-            # 配置php fpm是否开机启动
-            if [ "$SET_PHP_FPM_ENABLE" -eq 0 ]; then
-                # php8.2-fpm.service
-                prompt -x "Disable php-fpm service."
-                sudo systemctl disable php"$phpfpmVersion"-fpm.service
-            elif [ "$SET_PHP_FPM_ENABLE" -eq 1 ]; then
-                prompt -x "Enable php-fpm service."
-                sudo systemctl enable php"$phpfpmVersion"-fpm.service
-            fi
-        else
-            prompt -e "phpfpm没有/etc/php/*/fpm/pool.d/www.conf 文件!"
-            # 这里不退出
-            # quitThis
-        fi
-        # 回到原来的目录
-        cd "$fromp"
-    else
-        prompt -e "Php似乎安装失败了。"
-        quitThis
-    fi
-fi
-
-# 安装配置Nginx
-if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
-    # 首先停止Apache2
-    if [ -x "$(command -v apache2ctl)" ]; then
-        prompt -x 'Stop apache2...'
-        sudo systemctl stop apache2.service
-        sudo systemctl disable apache2.service
-    fi
-    prompt -x "Install nginx..."
-    doApt install nginx
-    # 注意：！！如果要修改根目录请同步修改所有/home/HTML(上面Nginx配置也有)
-    prompt -m "配置Nginx 共享目录为 /home/HTML"
-    addFolder /home/HTML
-    prompt -x "设置/home/HTML读写权限为755"
-    sudo chmod 755 /home/HTML
-    sudo chown "$CURRENT_USER" /home/HTML
-    sudo chgrp "$CURRENT_USER" /home/HTML
-    # 安装无问题，开始修改配置文件
-    if [ "$?" -eq 0 ]; then
-        backupFile /etc/nginx/nginx.conf
-        backupFile /etc/nginx/sites-available/default
-
-        prompt -i "Set up a new nginx.conf"
-        replace_username "nginx.conf.src"
-        sudo cp "nginx.conf" /etc/nginx/nginx.conf
-        sudo cp "block_ip.conf" /etc/nginx/block_ip.conf
-        sudo cp "SelectNginxSites.sh" /etc/nginx/
-        
-        prompt -i "Genarate a http website."
-        sudo cp "http" /etc/nginx/sites-available/http
-        # 禁用默认的配置文件，启用新的
-        prompt -x "Disable default site and Enable nginx https site."
-        if [ -f /etc/nginx/sites-enabled/default ]; then
-            sudo rm /etc/nginx/sites-enabled/default
-        fi
-        if ! [ -f /etc/nginx/sites-enabled/http ]; then
-            # 请使用绝对路径
-            sudo ln -s /etc/nginx/sites-available/http /etc/nginx/sites-enabled/http
-        fi
-        # 配置是否开机启动
-        if [ "$SET_ENABLE_NGINX" -eq 0 ]; then
-            prompt -x "Disable Nginx service."
-            sudo systemctl disable nginx.service
-        elif [ "$SET_ENABLE_NGINX" -eq 1 ]; then
-            prompt -x "Enable Nginx service."
-            sudo systemctl enable nginx.service
-        fi
-    else
-        prompt -e "Nginx's installation seems failed."
-        quitThis
-    fi
-fi
-
 # 安装配置Git(配置User Email)
 if [ "$SET_INSTALL_GIT" -eq 1 ]; then
     prompt -x "安装Git"
@@ -347,7 +197,7 @@ if [ "$SET_INSTALL_NPM" -eq 1 ]; then
             fi
         fi
     fi
-    if [ "$SET_INSTALL_HEXO" -eq 1 ]; then  
+    if [ "$SET_INSTALL_HEXO" -eq 1 ]; then
         if ! [ -x "$(command -v hexo)" ]; then
             prompt -x "安装HEXO"
             sudo npm install -g hexo-cli
@@ -358,3 +208,4 @@ fi
 if [ "$SET_INSTALL_NODEJS" -eq 1 ]; then
     doApt install nodejs
 fi
+

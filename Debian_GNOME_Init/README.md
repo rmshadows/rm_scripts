@@ -202,6 +202,10 @@
   - 配置Apache2 共享目录为 /home/HTML(必选)
     - 是否禁用Apache2开机自启
 
+- 安装php-fpm
+
+- 安装nginx
+
 - 安装配置Git
 
   - 配置User Email
