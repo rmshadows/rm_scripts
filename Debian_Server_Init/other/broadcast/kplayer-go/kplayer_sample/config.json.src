@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "play": {
+        "play_model": "【$play_model】",
+        "encode_model": "rtmp",
+        "rpc": {
+            "on": false,
+            "http_port": 4158,
+            "grpc_port": 4159,
+            "address": "127.0.0.1"
+        },
+        "encode": {
+            "video_width": 【$video_width】,
+            "video_height": 【$video_height】,
+            "video_fps": 【$video_fps】,
+            "audio_channel_layout": 【$audio_channel_layout】,
+            "audio_channels": 【$audio_channels】,
+            "bit_rate": 【$bit_rate】,
+            "avg_quality": 【$avg_quality】
+        }
+    },
+    "resource": {
+        "lists": [
+            【$flists】
+        ]
+    },
+    "output": {
+        "reconnect_internal": 【$reconnect_internal】,
+        "lists": [
+            {
+                "path": "【$rtmp_url】"
+            }
+        ]
+    }
+}

@@ -1,0 +1,3 @@
+#!/bin/bash
+cd 【$LFSS_ROOT】
+./linx-server -config linx-server.conf

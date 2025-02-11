@@ -1,0 +1,13 @@
+bindPort = 7000
+auth.method = "token"
+auth.token = "passwd"
+webServer.port = 7500
+# dashboard 用户名密码，可选，默认为空
+webServer.user = "admin"
+webServer.password = "admin"
+# Log.to = "【$HOME】/Logs/frp/frps.log"
+# Log.maxDays=30
+# 是否返回详细报错
+detailedErrorsToClient = false
+# 允许的端口
+# Server.allowPorts = "3000-5000"

@@ -1,0 +1,62 @@
+[Unit]
+# 服务的描述，可以根据实际情况修改
+Description=【$SRV_NAME】服务
+# 服务启动顺序，确保网络服务已经启动
+After=network.target               
+
+[Service]
+# 服务启动时执行的命令
+ExecStart=/home/【$USER】/Services/【$SRV_NAME】/start_【$SRV_NAME】.sh  
+# 服务停止时执行的命令 
+# ExecStop=/home/【$USER】/Services/【$SRV_NAME】/stop_【$SRV_NAME】.sh    
+# 启动方式，通常使用 forking 类型（适用于后台启动的服务）
+Type=forking                       
+# 启用私有临时目录，服务的临时目录不与系统共享，提升安全性
+PrivateTmp=true                    
+# 以普通用户身份运行服务，避免使用 root 权限
+User=【$USER】                      
+# 服务运行时的用户组
+Group=【$USER】                     
+# 仅赋予服务必要的网络绑定权限（如果需要）
+# AmbientCapabilities=CAP_NET_BIND_SERVICE  
+# 禁止创建新的权限，避免服务被恶意提升权限
+NoNewPrivileges=true               
+
+# 日志输出
+# StandardOutput=journal
+# StandardError=journal
+# 设置标准输出和错误输出到指定的日志文件
+StandardOutput=file:/home/【$USER】/Services/【$SRV_NAME】/stdout.log
+StandardError=file:/home/【$USER】/Services/【$SRV_NAME】/stderr.log
+
+# 限制服务访问的路径
+# 设置服务的只读路径，避免修改系统关键文件
+# ReadOnlyPaths=/etc,/usr,/bin,/lib   
+# 设置可写路径，只允许服务在此路径下进行写操作
+# ReadWritePaths=/var/opt/【$SRV_NAME】  
+
+# 服务资源限制
+# 限制最大文件描述符数，防止服务打开过多文件
+# LimitNOFILE=4096                   
+LimitNOFILE=1048576
+# 限制最大锁定内存数，防止服务锁定过多内存
+# LimitMEMLOCK=64M                   
+
+# 系统保护设置
+# 系统文件和目录被保护为只读，防止服务修改重要文件
+# ProtectSystem=full                  
+# 防止服务加载内核模块
+# ProtectKernelModules=true         
+# 限制服务仅使用 IPv4 协议（如不需要 IPv6 可设置此项）  
+# RestrictAddressFamilies=AF_INET   
+# 限制系统调用，只允许安全的系统调用  
+# SystemCallFilter=~@system-service   
+
+# 启动失败后的重启机制
+# 如果服务失败，则自动重启
+Restart=on-failure      
+# 重启之间的延迟时间，避免快速重启造成负担 
+RestartSec=5s                        
+
+[Install]
+WantedBy=multi-user.target          # 设置服务在多用户模式下启动

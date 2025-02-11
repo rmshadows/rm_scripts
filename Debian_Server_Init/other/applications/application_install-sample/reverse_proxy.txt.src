@@ -1,0 +1,38 @@
+# Reverse Proxy 反向代理
+apache 服务器请使用:
+<VirtualHost *:【$REVERSE_PROXY_PORT】>
+    CustomLog 【$HOME】/Logs/apache/【$SRV_NAME】-【$RUN_PORT】.log common
+    ServerName xxx_server
+    ProxyPass / http://127.0.0.1:【$RUN_PORT】/
+    ProxyPassReverse / http://127.0.0.1:【$RUN_PORT】/
+    SSLEngine on
+    SSLProxyEngine on
+    SSLCertificateFile /etc/ssl/xxx.pem
+    SSLCertificateKeyFile /etc/ssl/xxx.key
+</VirtualHost>
+
+Nginx请使用:
+location 【$REVERSE_PROXY_URL】 {
+    access_log 【$HOME】/Logs/nginx/【$SRV_NAME】.log;
+    proxy_pass http://127.0.0.1:【$RUN_PORT】/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    expires 1d;
+}
+
+或者
+
+server {
+    listen 【某端口】;
+    server_name 【xxx_server】;
+  
+    access_log 【$HOME】/Logs/nginx/【$SRV_NAME】.log;
+    proxy_pass http://127.0.0.1:【$RUN_PORT】/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    expires 1d;
+
+    # SSL setting
+    # ssl_certificate /etc/ssl/xxx.pem;
+    # ssl_certificate_key /etc/ssl/xxx.key;
+}

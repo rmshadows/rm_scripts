@@ -1,0 +1,31 @@
+# Reverse Proxy 反向代理
+apache 服务器请使用:
+<IfModule mod_proxy.c>
+    <IfModule mod_proxy_wstunnel.c>
+        ProxyTimeout 900
+        ProxyPass /xmpp-websocket ws://localhost:8000/xmpp-websocket
+        ProxyPass /colibri-ws/ ws://localhost:8000/colibri-ws/
+        ProxyPass / http://localhost:8000/
+        ProxyPassReverse / http://localhost:8000/
+    </IfModule>
+</IfModule>
+
+Nginx请使用:
+location /xmpp-websocket {
+    proxy_pass http://localhost:8000/xmpp-websocket;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
+
+location /colibri-ws {
+    proxy_pass http://localhost:8080/colibri-ws;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
+
+location / {
+    proxy_pass http://localhost:8000/;
+    proxy_http_version 1.1;
+}

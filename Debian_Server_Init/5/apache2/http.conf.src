@@ -1,0 +1,60 @@
+<VirtualHost *:80>
+    # ServerName 指令设置服务器用于识别自身的请求方案、主机名和端口。
+    # 在创建重定向 URL 时使用。在虚拟主机的上下文中，ServerName
+    # 指定请求的 Host: 头部必须匹配的主机名。
+    # 对于默认的虚拟主机（此文件），此值不决定性，因为它是作为最后的宿主来使用的。
+    # 然而，对于任何其他虚拟主机，必须显式设置它。
+    ServerName 【$SET_SERVER_NAME】
+
+    ServerAdmin webmaster@localhost  # 服务器管理员的电子邮件
+    DocumentRoot 【$SET_HTTP_SERVER_ROOT】  # 设置网站根目录
+
+    # 可用的日志级别：trace8, ..., trace1, debug, info, notice, warn,
+    # error, crit, alert, emerg。
+    # 也可以为特定模块配置日志级别，例如：
+    #LogLevel info ssl:warn
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log  # 错误日志文件位置
+    CustomLog ${APACHE_LOG_DIR}/access.log combined  # 访问日志文件位置
+
+    # 对于 conf-available/ 中的大多数配置文件，它们在全局级别启用或禁用，
+    # 可以为某个特定的虚拟主机单独包含一行。例如，以下行仅为此主机启用 CGI 配置
+    # 如果它已在全局范围内禁用（使用 "a2disconf" 命令）。
+    #Include conf-available/serve-cgi-bin.conf
+
+    # 安全设置：
+    # 禁用目录列表显示，防止目录内容被公开显示
+    <Directory 【$SET_HTTP_SERVER_ROOT】>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted  # 允许所有人访问
+    </Directory>
+
+    # 限制 HTTP 请求方法，仅允许 GET、POST 和 HEAD 方法
+    <LimitExcept GET POST HEAD>
+        Require all denied  # 禁止其他所有方法
+    </LimitExcept>
+
+    # 防止访问敏感文件（如备份文件、配置文件等）
+    <FilesMatch "\.(bak|config|dist|ini|log|sh|sql|swp|yaml|pem|key)$">
+        Require all denied  # 禁止访问特定类型的文件
+    </FilesMatch>
+
+    # 防止访问 .ht* 文件（如 .htaccess 和 .htpasswd）
+    <FilesMatch "^\.ht">
+        Require all denied  # 禁止访问 .ht 文件
+    </FilesMatch>
+
+    # 设置安全 HTTP 头，防止 XSS 和点击劫持等攻击
+    Header always set X-Content-Type-Options "nosniff"  # 防止 MIME 类型嗅探
+    Header always set X-Frame-Options "DENY"  # 防止点击劫持
+    Header always set X-XSS-Protection "1; mode=block"  # 防止跨站脚本攻击
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS  # 强制使用 HTTPS
+
+    # 隐藏 Apache 版本和服务器信息
+    ServerSignature Off  # 禁用服务器签名
+    ServerTokens Prod  # 只显示产品信息，不显示版本号等敏感信息
+
+    # 限制请求体大小，防止恶意请求导致的 DoS 攻击
+    LimitRequestBody 1048576  # 限制请求体大小为 1MB
+</VirtualHost>

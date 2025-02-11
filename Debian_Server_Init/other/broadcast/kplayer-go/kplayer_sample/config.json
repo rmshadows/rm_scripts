@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "play": {
+        "play_model": "random",
+        "encode_model": "rtmp",
+        "rpc": {
+            "on": false,
+            "http_port": 4158,
+            "grpc_port": 4159,
+            "address": "127.0.0.1"
+        },
+        "encode": {
+            "video_width": 780,
+            "video_height": 480,
+            "video_fps": 10,
+            "audio_channel_layout": 3,
+            "audio_channels": 2,
+            "bit_rate": 0,
+            "avg_quality": 19
+        }
+    },
+    "resource": {
+        "lists": [
+                "../videos/1.mp4",
+                "../videos/2.mp4"
+        ]
+    },
+    "output": {
+        "reconnect_internal": 5,
+        "lists": [
+            {
+                "path": "【$rtmp_url】"
+            }
+        ]
+    }
+}

@@ -1,0 +1,191 @@
+# 这是 Apache 服务器的主要配置文件。它包含了
+# 用来指示服务器操作行为的配置指令。
+# 详细指令信息请参阅：http://httpd.apache.org/docs/2.4/
+# 关于 Debian 特定的提示，请查阅 /usr/share/doc/apache2/README.Debian。
+#
+#
+# Apache 2 配置在 Debian 中的运作方式总结：
+# 在 Debian 中，Apache 2 的配置方式与上游推荐的方法有所不同。
+# 这是因为 Debian 的默认 Apache2 安装尝试提供更灵活的模块、虚拟主机和
+# 额外配置指令的添加和移除方式，以简化自动化变更和服务器管理。
+
+# 它被拆分为多个文件，形成如下的配置层级，所有文件都位于 /etc/apache2/ 目录：
+#
+#    /etc/apache2/
+#    |-- apache2.conf
+#    |   `--  ports.conf
+#    |-- mods-enabled
+#    |   |-- *.load
+#    |   `-- *.conf
+#    |-- conf-enabled
+#    |   `-- *.conf
+#    `-- sites-enabled
+#        `-- *.conf
+#
+# * apache2.conf 是主要配置文件（即此文件）。它通过包含其他配置文件来构建整个配置结构。
+#
+# * ports.conf 总是从主要配置文件中包含。它负责设置监听端口，可随时自定义。
+#
+# * mods-enabled/、conf-enabled/ 和 sites-enabled/ 目录中的配置文件分别管理模块、
+#   全局配置片段和虚拟主机配置。
+#   
+#   通过符号链接将这些文件从相应的 *-available/ 目录激活，可以使用 a2enmod/a2dismod，
+#   a2ensite/a2dissite 和 a2enconf/a2disconf 工具管理这些链接。详见各命令的手册。
+#
+# * 二进制程序称为 apache2。由于使用了环境变量，默认配置下需要使用
+#   /etc/init.d/apache2 或 apache2ctl 来启动/停止 apache2。直接调用 /usr/bin/apache2
+#   在默认配置下不可用。
+
+
+# 全局配置
+#
+
+#
+# ServerRoot: 定义服务器配置、错误和日志文件所在的顶级目录。
+#
+# 注意！如果此路径位于 NFS 或其他网络挂载文件系统上，请阅读 Mutex 文档（参见
+# <URL:http://httpd.apache.org/docs/2.4/mod/core.html#mutex>）。
+# 这样可以避免许多麻烦。
+#
+# 不要在路径末尾添加斜杠。
+#
+#ServerRoot "/etc/apache2"
+
+#
+# 接收锁文件必须存储在本地磁盘。
+#
+Mutex file:${APACHE_LOCK_DIR} default
+
+#
+# 运行时共享内存文件和其他临时文件的存储目录。
+#
+DefaultRuntimeDir ${APACHE_RUN_DIR}
+
+#
+# PidFile: 记录服务器进程 ID 的文件路径。
+# 需要在 /etc/apache2/envvars 中设置。
+#
+PidFile ${APACHE_PID_FILE}
+
+#
+# Timeout: 发送和接收超时时间（秒）。
+#
+Timeout 300
+
+#
+# KeepAlive: 是否允许持久连接（一个连接多次请求）。
+# 设置为 "Off" 关闭此功能。
+#
+KeepAlive On
+
+#
+# MaxKeepAliveRequests: 在一个持久连接中允许的最大请求数。
+# 设置为 0 表示无限制。建议将此数值设为较大以优化性能。
+#
+MaxKeepAliveRequests 100
+
+#
+# KeepAliveTimeout: 等待同一客户端在同一连接上的下一次请求的秒数。
+#
+KeepAliveTimeout 5
+
+
+# 这些值需要在 /etc/apache2/envvars 中设置。
+User ${APACHE_RUN_USER}
+Group ${APACHE_RUN_GROUP}
+
+#
+# HostnameLookups: 记录客户端的主机名或仅记录其 IP 地址。
+# 例如，www.apache.org（开启）或 204.62.129.132（关闭）。
+# 默认设置为关闭，因为开启此功能会导致每个客户端请求至少触发一次 DNS 查询。
+#
+HostnameLookups Off
+
+# ErrorLog: 错误日志文件的位置。
+# 如果没有在 <VirtualHost> 容器内指定 ErrorLog 指令，
+# 该虚拟主机的错误信息将记录在此处。
+# 如果为 <VirtualHost> 容器定义了错误日志文件，则仅记录到那里。
+#
+ErrorLog ${APACHE_LOG_DIR}/error.log
+
+#
+# LogLevel: 控制记录到 error_log 中消息的严重性。
+# 可用值：trace8, ..., trace1, debug, info, notice, warn,
+# error, crit, alert, emerg。
+# 也可以为特定模块设置日志级别，例如："LogLevel info ssl:warn"
+#
+LogLevel warn
+
+# 包含模块配置：
+IncludeOptional mods-enabled/*.load
+IncludeOptional mods-enabled/*.conf
+
+# 包含监听端口的配置文件
+Include ports.conf
+
+
+# 设置 Apache2 HTTPD 服务器的默认安全模型。
+# 这里的配置禁止访问 /usr/share 和 /var/www 以外的根文件系统。
+# /usr/share 通常用于 Debian 软件包中的 Web 应用程序，
+# /var/www 可用于本地 Web 目录。如果系统从 /srv 子目录提供内容，
+# 必须在此处或相关虚拟主机中允许访问。
+<Directory />
+    Options FollowSymLinks
+    AllowOverride None
+    Require all denied
+</Directory>
+
+<Directory /usr/share>
+    AllowOverride None
+    # Require all granted
+	Require all denied
+</Directory>
+
+<Directory 【$SET_HTTP_SERVER_ROOT】>
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+#<Directory /srv/>
+#    Options Indexes FollowSymLinks
+#    AllowOverride None
+#    Require all granted
+#</Directory>
+
+#
+# AccessFileName: 指定查找每个目录中附加配置指令的文件名称。
+# 另见 AllowOverride 指令。
+#
+AccessFileName .htaccess
+
+#
+# 以下配置行禁止 Web 客户端查看 .htaccess 和 .htpasswd 文件。
+#
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+#
+# 下面的指令定义了一些用于 CustomLog 指令的格式别名。
+#
+# 这些格式与常见日志格式定义有所不同，使用 %O（包括头部在内的实际发送字节数）
+# 代替 %b（请求文件大小），因为后者无法检测部分请求。
+#
+# 注意，不推荐使用 %{X-Forwarded-For}i 代替 %h，
+# 应使用 mod_remoteip 模块。
+#
+LogFormat "%v:%p %h %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" vhost_combined
+LogFormat "%h %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" combined
+LogFormat "%h %l %u %t \"%r\" %>s %O" common
+LogFormat "%{Referer}i -> %U" referer
+LogFormat "%{User-agent}i" agent
+
+# 包括配置片段，忽略编辑器和 dpkg 的备份文件。
+# 详情参阅 README.Debian。
+
+# 包括常规配置片段
+IncludeOptional conf-enabled/*.conf
+
+# 包括虚拟主机配置
+IncludeOptional sites-enabled/*.conf

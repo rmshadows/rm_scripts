@@ -1,0 +1,91 @@
+# Enhanced Apache server configuration for improved security.
+# Updated based on your existing configuration with added security settings.
+
+# ServerRoot 
+ServerRoot "/etc/apache2"
+
+# Lock and PID files
+Mutex file:${APACHE_LOCK_DIR} default
+PidFile ${APACHE_PID_FILE}
+DefaultRuntimeDir ${APACHE_RUN_DIR}
+
+# Timeout Settings
+Timeout 60
+KeepAlive On
+MaxKeepAliveRequests 50
+KeepAliveTimeout 2
+
+# User and Group Settings
+User ${APACHE_RUN_USER}
+Group ${APACHE_RUN_GROUP}
+
+# Hostname Lookups
+HostnameLookups Off
+
+# Logging
+ErrorLog ${APACHE_LOG_DIR}/error.log
+LogLevel warn
+
+# Module and port configurations
+IncludeOptional mods-enabled/*.load
+IncludeOptional mods-enabled/*.conf
+Include ports.conf
+
+# Allow /usr/share Access
+<Directory /usr/share>
+	AllowOverride None
+	# Require all granted
+	Require all denied
+</Directory>
+
+# HTTP Server Root (Customize to your path)
+<Directory 【$SET_HTTP_SERVER_ROOT】>
+	Options -Indexes +FollowSymLinks
+	AllowOverride None
+	Require all granted
+</Directory>
+
+# Restrict Root Directory Access
+<Directory />
+	Options FollowSymLinks
+	AllowOverride None
+	Require all denied
+</Directory>
+
+# Limit HTTP Methods
+<Directory 【$SET_HTTP_SERVER_ROOT】>
+	<LimitExcept GET POST HEAD>
+		Require all denied
+	</LimitExcept>
+</Directory>
+
+# Access Control for Sensitive Files
+<FilesMatch "\.(bak|config|dist|ini|log|sh|sql|swp|yaml)$">
+	Require all denied
+</FilesMatch>
+
+# Prevent .ht* Files Access
+<FilesMatch "^\.ht">
+	Require all denied
+</FilesMatch>
+
+# Log Formats
+LogFormat "%v:%p %h %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" vhost_combined
+LogFormat "%h %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" combined
+LogFormat "%h %l %u %t \"%r\" %>s %O" common
+LogFormat "%{Referer}i -> %U" referer
+LogFormat "%{User-agent}i" agent
+
+# Include Configuration Directories
+IncludeOptional conf-enabled/*.conf
+IncludeOptional sites-enabled/*.conf
+
+# Secure Headers
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+# Hide Apache Version Information
+ServerSignature Off
+ServerTokens Prod

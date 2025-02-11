@@ -1,0 +1,29 @@
+# OpenSSL 配置文件
+
+[ req ]
+default_bits       = 2048
+default_keyfile    = privkey.pem
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_ca
+
+# 默认设置
+string_mask        = utf8only
+
+[ req_distinguished_name ]
+countryName                = 国家（2位字母）
+countryName_default        = US
+stateOrProvinceName        = 省/州名称
+stateOrProvinceName_default= Some-State
+localityName               = 城市
+organizationName           = 组织名称
+organizationName_default   = My Organization
+commonName                 = 公共名称（例如：域名或用户）
+commonName_max             = 64
+emailAddress               = 邮箱地址
+emailAddress_max           = 64
+
+[ v3_ca ]
+basicConstraints           = critical,CA:true
+keyUsage                   = cRLSign, keyCertSign
+subjectKeyIdentifier       = hash
+authorityKeyIdentifier     = keyid,issuer

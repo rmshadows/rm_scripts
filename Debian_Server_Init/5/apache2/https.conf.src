@@ -1,0 +1,72 @@
+<VirtualHost *:443>
+    # 服务器管理员的电子邮件地址
+    ServerAdmin webmaster@localhost
+
+    # 网站根目录路径
+    DocumentRoot 【$SET_HTTP_SERVER_ROOT】
+
+    # 可用的日志级别：trace8, ..., trace1, debug, info, notice, warn,
+    # error, crit, alert, emerg。可以为特定模块单独设置日志级别。
+    #LogLevel info ssl:warn
+
+    # 错误日志路径
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    # 访问日志路径
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+    # 启用 SSL 功能
+    SSLEngine on
+
+    # SSL 证书文件路径
+    SSLCertificateFile      /etc/ssl/【$SET_SERVER_NAME】.pem
+    # SSL 证书密钥文件路径
+    SSLCertificateKeyFile   /etc/ssl/【$SET_SERVER_NAME】.key
+
+    # 安全设置：禁用不安全的 SSL/TLS 协议版本，只使用 TLS 1.2 和 1.3
+    SSLProtocol -All +TLSv1.2 +TLSv1.3
+    # 禁用弱加密算法
+    SSLCipherSuite HIGH:!aNULL:!MD5:!3DES
+    SSLHonorCipherOrder on
+
+    # 强制使用 HTTP Strict Transport Security (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # 禁止浏览器猜测 MIME 类型，防止 MIME 类型混淆攻击
+    Header always set X-Content-Type-Options "nosniff"
+    # 防止点击劫持攻击
+    Header always set X-Frame-Options "DENY"
+    # 启用 XSS 过滤器
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # 禁止访问敏感文件
+    <FilesMatch "\.(bak|config|dist|ini|log|sh|sql|swp|yaml|pem|key)$">
+        Require all denied
+    </FilesMatch>
+    <FilesMatch "^\.ht">
+        Require all denied
+    </FilesMatch>
+
+    # 禁用目录索引以防止显示文件列表
+    <Directory 【$SET_HTTP_SERVER_ROOT】>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    # 限制请求方法，仅允许 GET、POST 和 HEAD
+    <LimitExcept GET POST HEAD>
+        Require all denied
+    </LimitExcept>
+
+    # 设置用于 CGI 和其他脚本的环境变量
+    <FilesMatch "\.(cgi|shtml|phtml|php)$">
+        SSLOptions +StdEnvVars
+    </FilesMatch>
+    <Directory /usr/lib/cgi-bin>
+        SSLOptions +StdEnvVars
+    </Directory>
+
+    # 隐藏 Apache 版本信息
+    ServerSignature Off
+    ServerTokens Prod
+</VirtualHost>

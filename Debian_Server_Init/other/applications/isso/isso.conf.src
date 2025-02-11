@@ -1,0 +1,38 @@
+[general]
+dbpath = 【$HOME】/Applications/isso/comments.db
+name = default
+host = "【$DOMAIN_N】"
+#notify = smtp
+log-file = 【$HOME】/Logs/isso/isso.log
+
+[server]
+listen = http://localhost:【$RUN_PORT】/
+
+#[moderation]
+#enabled = true
+#purge-after = 30d
+
+#[smtp]
+#username = x.com
+#password = m
+#host = 127.0.0.1
+#port = 587
+#security = starttls
+#to = @.com
+#from = "Isso Comment"<username@example.com>
+#timeout = 10
+
+[markup]
+options = strikethrough, superscript, autolink
+
+[guard]
+enabled = true
+ratelimit = 5
+direct-reply = 30
+reply-to-self = true
+require-author = true
+require-email = true
+
+[hash]
+salt = Eech7co8Ohloopo9Ol6baimi
+algorithm = pbkdf2

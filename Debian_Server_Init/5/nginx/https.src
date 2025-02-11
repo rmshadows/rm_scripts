@@ -1,0 +1,183 @@
+# generated 2025-01-16, Mozilla Guideline v5.7, nginx 1.14.2 (UNSUPPORTED; end-of-life), OpenSSL 1.1.1d (UNSUPPORTED; end-of-life), modern config
+# https://ssl-config.mozilla.org/#server=nginx&version=1.14.2&config=modern&openssl=1.1.1d&guideline=5.7
+
+http {
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+        # 域名
+        server_name 【$SET_SERVER_NAME】;
+        ssl_certificate /etc/ssl/【$SET_SERVER_NAME】.pem;
+        ssl_certificate_key /etc/ssl/【$SET_SERVER_NAME】.key;
+
+        # access_log off;
+
+        # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+        add_header Strict-Transport-Security "max-age=63072000" always;
+
+        # 站点目录
+        root 【$SET_HTTP_SERVER_ROOT】;
+        # 错误页
+        error_page 301 302 403 404 502 https://【$SET_SERVER_NAME】/404.html; #错误页
+
+        # 不是GET POST HEAD就返回空响应
+        if ($request_method !~ ^(GET|HEAD|POST|DELETE)$) {
+            return 444;
+        }
+
+        # 主页
+        location / {
+            access_log 【$HOME_INDEX】/Logs/nginx/https.log;
+            error_log 【$HOME_INDEX】/Logs/nginx/https_error.log;
+            proxy_pass http://127.0.0.1:8000/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            expires 1d;
+        }
+
+        # 用户分享的文件
+        location /nres {
+            autoindex on;
+            autoindex_exact_size off;
+            autoindex_localtime off;
+        }
+        # 加密的目录
+        location /res {
+            autoindex on;
+            # 突发请求不超过10个
+            limit_req zone=one burst=10;
+            auth_basic "Passwd required"; #提示信息(自定义)
+            auth_basic_user_file 【$HOME_INDEX】/nginx_res_login; #生成的密码文件
+        }
+
+        # preset
+        # location /preset/ {
+        #     access_log 【$HOME_INDEX】/Logs/nginx/preset.log;
+        #     error_log 【$HOME_INDEX】/Logs/nginx/preset_error.log;
+        #     proxy_pass http://127.0.0.1:8001/;
+        #     proxy_set_header Host $host;
+        #     proxy_set_header X-Real-IP $remote_addr;
+        #     expires 1d;
+        # }
+
+        # preset资源文件
+        # location /share/ {
+        #     root 【$SET_HTTP_SERVER_ROOT】/preset;
+        #     # rewrite ^/www/(.*)$ /preset/share/$1;
+        #     # autoindex on;
+        # }
+        # Hack chat 8002 8003
+        # location /hc/ {
+        #     access_log 【$HOME_INDEX】/Logs/nginx/hackchat.log;
+        #     error_log 【$HOME_INDEX】/Logs/nginx/hackchat_error.log;
+        #     proxy_set_header Host $host;
+        #     proxy_set_header X-Real-IP $remote_addr;
+        #     #rewrite /$1 ^/hackchat(.*);
+        #     proxy_pass http://127.0.0.1:8002/;
+        #     #proxy_redirect http://$proxy_host/ $scheme://$host:$server_port/hackchat/;
+        #     #sub_filter 'href="/' 'href="/hackchat';
+        # }
+        # location /hc-wss {
+        #     proxy_pass http://127.0.0.1:8003;
+        #     proxy_http_version 1.1;
+        #     proxy_set_header Upgrade $http_upgrade;
+        #     proxy_set_header Connection "Upgrade";
+        # }
+        # isso 评论系统 8004
+        # location /isso {
+        #     access_log 【$HOME_INDEX】/Logs/nginx/isso.log;
+        #     error_log 【$HOME_INDEX】/Logs/nginx/isso_error.log;
+        #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        #     proxy_set_header X-Script-Name /isso;
+        #     proxy_set_header Host $host;
+        #     proxy_set_header X-Real-IP $remote_addr;
+        #     proxy_set_header X-Forwarded-Proto $scheme;
+        #     proxy_pass http://127.0.0.1:8004;
+        # }
+        # file pizza 8005
+        # location /filepizza/ {
+        #     proxy_pass http://127.0.0.1:8005/;
+        # }
+        # 负载均衡
+        # location  ~*^.+$ {
+        #    proxy_pass  http://mysvr;  #请求转向mysvr 定义的服务器列表
+        # }
+    }
+
+    # modern configuration
+    ssl_protocols TLSv1.3;
+    ssl_ecdh_curve X25519:prime256v1:secp384r1;
+    ssl_prefer_server_ciphers off;
+
+    # uncomment to enable if ssl_protocols includes TLSv1.2 or earlier;
+    # see also ssl_session_ticket_key alternative to stateful session cache
+    # ssl_session_timeout 1d;
+    # ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
+
+    # verify chain of trust of OCSP response using Root CA and Intermediate certs
+    # ssl_trusted_certificate /path/to/root_CA_cert_plus_intermediates;
+
+    # replace with the IP address of your resolver;
+    # async 'resolver' is important for proper operation of OCSP stapling
+    resolver 127.0.0.1;
+
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    # If certificates are marked OCSP Must-Staple, consider managing the
+    # OCSP stapling cache with an external script, e.g. certbot-ocsp-fetcher
+
+    # HSTS
+    server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        return 301 https://$host$request_uri;
+    }
+
+    # 主页
+    server {
+        listen 8000;#监听端口
+        server_name 【$SET_SERVER_NAME】;#域名
+        index index.html index.htm index.php;
+        root 【$SET_HTTP_SERVER_ROOT】/home_page;#站点目录
+        error_page 301 302 403 404 502 https://【$SET_SERVER_NAME】/404.html; #错误页
+
+        # 不是GET POST HEAD就返回空响应
+        if ($request_method !~ ^(GET|HEAD|POST)$) {
+            return 444;
+        }
+
+        location ~* ^/sample.html {
+            return 301 /404.html;
+        }
+
+        location ~* \.(ini|php|cfg|sh|py|conf)$ {
+            return 301 /404.html;
+            deny all;
+        }
+
+        # 根目录下的部分文件夹全为404
+        location ~* ^/(.git) {
+            return 301 /404.html;
+        }
+    }
+
+
+    # preset
+    # server {
+    #   listen 8001;#监听端口
+    #   server_name 【$SET_SERVER_NAME】;#域名
+    #   index index.html index.htm index.php;
+    #   root 【$HOME_INDEX】/nginx/preset;#站点目录
+    #   error_page 301 302 502 403 404 https://【$SET_SERVER_NAME】/404.html; #错误页
+    #   # 不是GET POST HEAD就返回空响应
+    #   if ($request_method !~ ^(GET|HEAD|POST)$) {
+    #     return 444;
+    #   }
+    #   location ~ ^/(.git) {
+    #     return 301 /404.html;
+    #   }
+    # }
+}

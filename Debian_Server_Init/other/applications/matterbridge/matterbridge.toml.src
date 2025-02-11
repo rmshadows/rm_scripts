@@ -1,0 +1,60 @@
+[general]
+# 如果你有自己的媒体服务器
+# MediaDownloadPath="【$HOME】/nginx/matterbridge"
+# MediaServerDownload="【$DOMAIN_MEDIA】/matterbridge"
+LogFile="【$HOME】/Logs/matterbridge/matterbridge.log"
+# ShowJoinPart=true
+
+[telegram.mytelegram]
+#See https://core.telegram.org/bots#6-botfather 你的Telegram机器人Token
+#and https://www.linkedin.com/pulse/telegram-bots-beginners-marco-frau
+Token=""
+RemoteNickFormat="({PROTOCOL}) {NICK} "
+MessageFormat="HTMLNick"
+# QuoteLengthLimit=5000
+# DisableWebPagePreview=false
+# Don't bridge bot commands (as the responses will not be bridged)
+# IgnoreMessages="^/"
+
+[irc.myirc]
+# 比如你是Libera IRC
+Server="irc.libera.chat:6697"
+Nick="nickname6543"
+UseTLS=true
+RemoteNickFormat="[{PROTOCOL}] <{NICK}> "
+RejoinDelay=4
+ColorNicks=true
+# Flood control. Delay in milliseconds between each message send to the IRC server.
+MessageDelay=1500
+MessageSplit=true
+# MessageLength=5000
+# NickServNick="nickserv"
+# NickServPassword="secret"
+# NickServUsername="username"
+# UseSASL=true
+# VerboseJoinPart=true
+Charset="utf-8"
+# MessageClipped="<Next Msg>"
+MessageClipped="          "
+MessageQueue=1000
+# IgnoreMessages="^~~ badword"
+# NoSendJoinPart=false
+# IgnoreNicks="ircspammer1 ircspammer2"
+# JoinDelay=1000
+
+
+[[gateway]]
+name="gateway-irc-tg"
+enable=true
+
+# IRC Gateway
+[[gateway.inout]]
+account="irc.myirc"
+channel="#channel"
+# options = { key="password" }
+
+# Telegram Gateway
+[[gateway.inout]]
+account="telegram.mytelegram"
+# 你的Telegram群组id(一个负值)
+channel="-1xxxxxxxxxxx"
