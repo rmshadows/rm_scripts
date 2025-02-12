@@ -14,8 +14,9 @@ find . -type f -name "setup.log" | while read -r file; do
     # 创建新的文件名，格式为 上级文件夹名称-setup.log
     new_filename="$timestamp/$parent_dir-setup.log"
 
-    # 复制并重命名文件
-    cp "$file" "$new_filename"
+    # 移动并重命名文件
+    # cp "$file" "$new_filename"
+    mv "$file" "$new_filename"
     echo "已复制: $file -> $new_filename"
 done
 
