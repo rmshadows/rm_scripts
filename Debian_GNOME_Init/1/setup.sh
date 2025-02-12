@@ -22,7 +22,7 @@ fi
 # 是sudoer的，但没有免密码的，要设置免密码的
 if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ]; then
     prompt -x "设置用户 $CURRENT_USER sudo免密码"
-    TEMPORARILY_SUDOER_STRING="$USER ALL=(ALL)NOPASSWD:ALL"
+    TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
     doAsRoot "echo '$TEMPORARILY_SUDOER_STRING' >> /etc/sudoers"
     # 检查状态
     if [ $? -ne 0 ]; then

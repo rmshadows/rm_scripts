@@ -102,7 +102,7 @@ fi
 # 是sudoer的，但没有免密码的，要设置免密码的
 if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ]; then
     prompt -x "设置用户 $CURRENT_USER sudo免密码"
-    TEMPORARILY_SUDOER_STRING="$USER ALL=(ALL)NOPASSWD:ALL"
+    TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
     doAsRoot "echo '$TEMPORARILY_SUDOER_STRING' >> /etc/sudoers"
     # 检查状态
     if [ $? -ne 0 ]; then
@@ -118,9 +118,8 @@ fi
 # 修改zshrc中用户名
 # replace_username "$ZSHRC_CONFIG"
 replace_placeholders_with_values "$ZSHRC_CONFIG"
-# 去掉后面的.src
+# 去掉后面的.src zshrc.src -> zshrc
 ZSHRC_CONFIG="${ZSHRC_CONFIG%.src}"
-
 
 # 卸载vim-tiny，安装vim-full
 if [ "$SET_VIM_TINY_TO_FULL" -eq 0 ];then

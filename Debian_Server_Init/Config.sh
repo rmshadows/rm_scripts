@@ -107,7 +107,7 @@ SET_DOCKER_PURGE_REINSTALL=1
 # Manage Docker as a non-root user?
 SET_DOCKER_NON_ROOT=0
 # 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1
-SET_DOCKER_CE_REPO=1
+SET_DOCKER_CE_REPO=0
 # 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_DOCKER_CE=0
 
