@@ -1,6 +1,6 @@
 # Debian12_GNOME.sh
 
->Current Version: 0.0.8
+>Current Version: 0.0.9
 
 ## 目录结构
 
@@ -481,6 +481,9 @@
 - zsh-autosuggestions——zsh插件
 
 ## 更新日志
+
+- 2025年2月12日——0.0.9
+  - 重构优化结构
 
 - 2024年12月26日——0.0.8
   - 新增Shorewall防火墙配置

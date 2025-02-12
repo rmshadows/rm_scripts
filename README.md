@@ -33,6 +33,9 @@
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2025年2月12日
+  - 重构了Debian_GNOME_Init和Debian_Server_Init
+
 - 2024年7月6日
   - 更新了Office模块
 

@@ -3,7 +3,7 @@
 # https://www.debian.org/releases/stable/amd64/release-notes/ch-information.zh-cn.html
 
 :<<!说明
-Version：0.0.8
+Version：0.0.9
 ！！！！关于Debian 12.0.0: 建议使用前卸载raspi-firmware，否则可能apt升级出错，请使用purge ！
 sudo apt purge raspi-firmware
 预设参数（在这里修改预设参数, 谢谢）

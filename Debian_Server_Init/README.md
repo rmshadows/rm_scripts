@@ -1,6 +1,6 @@
 # Debian12_Server.sh
 
->Current Version: 0.0.4
+>Current Version: 0.1.2
 
 ## 目录结构
 
@@ -213,6 +213,9 @@
 ## 更新日志
 
 >dev: Not available yet.
+
+- 2025.02.12——0.1.2
+  - 重构优化
 
 - 2025.01.18——0.1.1
   - 重构
