@@ -215,5 +215,5 @@ if [ "$SET_GIT_EMAIL" -eq 0 ];then
 fi
 # SSH
 if [ "$SET_SSH_KEY_COMMENT" -eq 0 ];then
-    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian 11_GNOME_Deploy_Script"
+    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian_GNOME_Deploy_Script"
 fi

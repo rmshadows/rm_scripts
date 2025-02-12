@@ -149,7 +149,7 @@ SET_SSH_KEY_SOURCE=0
 SET_SSH_KEY_NAME=id_rsa
 # 新生成的SSH密钥密码 Preset=""
 SET_NEW_SSH_KEY_PASSWD=""
-# 新密钥的备注 默认："A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian11_GNOME_Deploy_Script" Preset=0 （0就是默认备注！）
+# 新密钥的备注 默认："A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian_Deploy_Script" Preset=0 （0就是默认备注！）
 SET_SSH_KEY_COMMENT=0
 # 存放已存在的SSH密钥文件夹名称(SET_SSH_KEY_SOURCE=1时有效) 1:从文件夹导入
 SET_EXISTED_SSH_KEY_SRC=SSH_KEY
@@ -203,7 +203,7 @@ if [ "$SET_GIT_EMAIL" -eq 0 ]; then
 fi
 # SSH
 if [ "$SET_SSH_KEY_COMMENT" -eq 0 ]; then
-    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian 11_GNOME_Deploy_Script"
+    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian_Deploy_Script"
 fi
 # HTTP ROOT
 if [ "$SET_HTTP_SERVER_ROOT" -eq 0 ]; then
