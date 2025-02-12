@@ -110,20 +110,22 @@ cancelTempSudoer() {
 # 以root身份运行
 # 工作目录:/root
 doAsRoot() {
-  if [ "$ROOT_PASSWD" == "" ] && [ "$IS_SUDOER" -ne 1 ]; then
+  # 如果当前是 root 用户，直接执行命令
+  if [ "$(whoami)" == "root" ]; then
+    eval "$1"
+    return
+  fi
+  # 如果没有定义 root 密码且当前用户不是 sudo 用户，提示输入密码
+  if [ -z "$ROOT_PASSWD" ] && [ "$IS_SUDOER" -ne 1 ]; then
     prompt -w "未在脚本里定义root用户密码，请输入root用户密码: "
     read -r input
     ROOT_PASSWD=$input
   fi
-  # 检查密码
+  # 检查 root 密码的有效性
   checkRootPasswd
-  FIRST_DO_AS_ROOT=0
-  if [ "$(whoami)" != "root" ]; then
-    echo "Not root, switching to root user..."
-    echo "$ROOT_PASSWD" | su -c "$1" -l
-  else
-    eval "$1"
-  fi
+  # 如果当前用户不是 root，切换为 root 用户执行命令
+  echo "当前不是 root，正在切换为 root 用户..."
+  echo "$ROOT_PASSWD" | su -c "$1" -l
 }
 
 # 检查root密码是否正确
@@ -420,6 +422,23 @@ backupFile_1.0() {
   else
     # 如果不存在要备份的文件,不执行
     prompt -e "没有$1文件，不做备份"
+  fi
+}
+
+doAsRoot2.0() {
+  if [ "$ROOT_PASSWD" == "" ] && [ "$IS_SUDOER" -ne 1 ]; then
+    prompt -w "未在脚本里定义root用户密码，请输入root用户密码: "
+    read -r input
+    ROOT_PASSWD=$input
+  fi
+  # 检查密码
+  checkRootPasswd
+  FIRST_DO_AS_ROOT=0
+  if [ "$(whoami)" != "root" ]; then
+    echo "Not root, switching to root user..."
+    echo "$ROOT_PASSWD" | su -c "$1" -l
+  else
+    eval "$1"
   fi
 }
 

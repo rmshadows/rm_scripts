@@ -21,8 +21,6 @@ SET_USER=1
 SET_USER_NAME="admin"
 # User password(要新建的用户密码) Preset="passwd" SET_USER=1时生效
 SET_USER_PASSWD="passwd"
-# Set hostname(设置HostName) Preset=0
-SET_HOST_NAME=0
 # 是否加入sudo组 Preset:1
 SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
