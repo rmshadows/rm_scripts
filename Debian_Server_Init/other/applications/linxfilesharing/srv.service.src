@@ -10,7 +10,8 @@ ExecStart=/home/【$USER】/Services/【$SRV_NAME】/start_【$SRV_NAME】.sh
 # 服务停止时执行的命令 
 # ExecStop=/home/【$USER】/Services/【$SRV_NAME】/stop_【$SRV_NAME】.sh    
 # 启动方式，通常使用 forking 类型（适用于后台启动的服务）
-Type=forking                       
+# Type=forking                       
+Type=simple
 # 启用私有临时目录，服务的临时目录不与系统共享，提升安全性
 PrivateTmp=true                    
 User=www-data

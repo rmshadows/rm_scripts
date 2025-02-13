@@ -14,6 +14,9 @@ RUN_PORT=3000
 # 反向代理的端口
 REVERSE_PROXY_URL=/hc/
 
+# 域名
+YOUR_DOMAIN="example.com"
+
 # 是否配置中文首页 Preset=0
 CN_INDEX=0
 
@@ -34,7 +37,7 @@ CN_INDEX_CONFIG="var frontpage = [\n	\"                            _           _
 	\"\",
 	\"欢迎使用hack.chat，这是一个迷你的、无干扰的加密聊天应用程序。\",
 	\"频道是通过url创建、加入和共享的，通过更改问号后的文本来创建自己的频道(请使用英文字母)。\",
-	\"如果您希望频道名称(房间名)为：‘ hello ’,请在浏览器地址栏输入： https://网址/?hello\",
+	\"如果您希望频道名称(房间名)为：‘ hello ’,请在浏览器地址栏输入： https://$YOUR_DOMAIN/?hello\",
 	\"这里没有公开频道列表，因此你可以使用秘密的频道名称(也就是别人都猜不到的房间名)进行私人讨论。在这里，聊天记录不会被记录，聊天信息传输也是加密的(除非你不是用的https访问本站，或者你的电脑遭到攻击)。\",
 	\"下面是预设的房间：休息室、元数据、数学、物理、化学、科技、编程、游戏、香蕉\",
 	\"\",
@@ -143,10 +146,8 @@ if ! [ -d $HOME/Applications/hackchat ]; then
     exit 1
 fi
 
-cd -
 cd "$HOME/Applications/hackchat"
 npm install
-cd -
 
 ### 服务生成
 # 创建应用专门的服务文件夹
@@ -156,6 +157,7 @@ if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
 fi
 # 生成服务
 prompt -x "Making Service..."
+cd "$SET_DIR"
 replace_placeholders_with_values srv.service.src
 sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
 # 安装服务
@@ -170,6 +172,8 @@ sudo cp start.sh /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
 sudo cp stop.sh /home/$USER/Services/$SRV_NAME/stop_"$SRV_NAME".sh
 sudo chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
+
+cd "$HOME/Applications/hackchat"
 # 修改端口号
 if [ "$RUN_PORT" -ne 3000 ]; then
     prompt -x "Change web page port at $RUN_PORT"
@@ -177,7 +181,9 @@ if [ "$RUN_PORT" -ne 3000 ]; then
     # pwd
     # pm2.config.js
     sed -i s/client\ -p\ 3000\ -o/client\ -p\ $RUN_PORT\ -o/g pm2.config.js
-    cd -
+	# 针对不是pm2的启动方式
+	cd /home/$USER/Services/$SRV_NAME/
+	replace_placeholders_with_values start_"$SRV_NAME".sh
 fi
 # 修改主页
 if [ "$CN_INDEX" -eq 1 ]; then
@@ -227,3 +233,5 @@ replace_placeholders_with_values reverse_proxy.txt.src
 prompt -i "========================================================"
 cat reverse_proxy.txt
 prompt -i "========================================================"
+
+prompt -w "如果使用ｎｇｉｎｘ代理，记得检查ｃｌｉｅｎｔ.ｊｓ里的ｗｓｓ　ｐａｔｈ有没有修改"

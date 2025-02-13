@@ -72,8 +72,8 @@ replace_placeholders_with_values removeServices.sh
 # 回到配置目录
 cd "$SET_DIR"
 replace_placeholders_with_values live.sh.src
-sudo mv live.sh {$new_srv_path}/{$new_srv_name}.sh
+sudo mv live.sh $new_srv_path/$new_srv_name.sh
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service /lib/systemd/system/{$new_srv_name}.service
+sudo mv srv.service /lib/systemd/system/$new_srv_name.service
 sudo systemctl daemon-reload
 
