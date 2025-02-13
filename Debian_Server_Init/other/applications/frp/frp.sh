@@ -6,6 +6,11 @@ source "../GlobalVariables.sh"
 source "../Lib.sh"
 source "../ServiceInit.sh"
 
+# 保存当前目录
+SET_DIR=$(pwd)
+# 返回之前的目录
+# cd "$SET_DIR"
+
 #### CONF
 # 服务名(一个服务端一个客户端)
 SRV_NAME_A=frp-client
@@ -18,7 +23,7 @@ SRV_NAME=${SRV_NAME_B}
 
 # Docs: https://gofrp.org/docs/
 FRP_DOWNLOAD="https://github.com/fatedier/frp/releases/download/v0.54.0/frp_0.54.0_linux_amd64.tar.gz"
-# 本地压缩包（tar.gz）注意：需要将上面设置为0
+# 本地压缩包（tar.gz）注意：需要将上面设置为空
 LOCAL_FRP=0
 
 #### 正文
@@ -37,8 +42,9 @@ fi
 
 # 安装
 cd "$HOME/Applications/"
-# 不等于0
-if [ "$FRP_DOWNLOAD" -ne 0 ]; then
+
+if [ -n "$FRP_DOWNLOAD" ]; then
+    # 非空
     # 下载安装包
     prompt -x "Downloading frp...."
     wget "$FRP_DOWNLOAD" -O frp.tar.gz
@@ -53,8 +59,10 @@ else
         mv "$LOCAL_FRP" ./frp.tar.gz
     else
         prompt -e "未指定本地frp压缩包"
+        exit 1
     fi
 fi
+
 prompt -x "Unzip frp...."
 # 解压
 tar xzvf frp.tar.gz
@@ -63,7 +71,7 @@ prompt -x "Rename...."
 mv frp*amd64 frp
 rm frp.tar.gz
 # 返回之前的目录
-cd -
+cd $SET_DIR
 # pwd
 # 拷贝配置文件
 prompt -x "Set up server and client sample..."
@@ -93,6 +101,7 @@ sudo mv frp-server.service /home/$USER/Services/$SRV_NAME_B.service
 prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
+cd $SET_DIR
 # 拷贝启动和停止的脚本
 prompt -x "Make start and stop script..."
 # Start and stop script

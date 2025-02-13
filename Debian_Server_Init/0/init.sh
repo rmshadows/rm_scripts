@@ -16,4 +16,14 @@ elif [ $choice == 2 ]; then
     prompt -w "感谢您的关注！——  https://github.com/rmshadows"
     exit 0
 fi
-
+t_pkg="acl"
+if ! command -v setfacl &>/dev/null; then
+    echo -e "\033[31m$t_pkg not found! Installing $t_pkg...\033[0m" # 输出红色提示
+    sudo apt update && sudo apt install -y $t_pkg                   # 更新包列表并安装
+    if [ $? -ne 0 ]; then
+        echo -e "\033[31mFailed to install $t_pkg. Please check your package manager.\033[0m"
+        exit 1
+    fi
+else
+    echo -e "\033[32m$t_pkg is already installed.\033[0m" # 输出绿色提示
+fi

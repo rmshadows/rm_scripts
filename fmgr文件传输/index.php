@@ -2349,7 +2349,7 @@ $all_files_size = 0;
             </div>
             <div class="col-3 d-none d-sm-block"><a href="https://tinyfilemanager.github.io" target="_blank" class="float-right text-muted">Tiny File Manager <?php echo VERSION; ?></a></div>
         <?php else: ?>
-            <div class="col-12"><a href="https://tinyfilemanager.github.io" target="_blank" class="float-right text-muted">Tiny File Manager <?php echo VERSION; ?></a></div>
+            <div class="col-12"><a href="uploader.php" target="_blank" class="float-right text-muted">登录-上传 <?php echo VERSION; ?></a></div>
         <?php endif; ?>
     </div>
 </form>

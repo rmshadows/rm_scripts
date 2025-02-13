@@ -44,8 +44,8 @@ fi
 sudo mv fmgr "$SERVER_ROOT"/fmgr
 cd "$SERVER_ROOT"/fmgr
 # 设置权限
-sudo chown -R www-data:www-data fmgr/files
-sudo chown -R www-data:www-data fmgr/readonly
+sudo chown -R www-data:www-data files
+sudo chown -R www-data:www-data readonly
 
 sudo setfacl -m u:www-data:rx index.php
 sudo setfacl -m u:www-data:rx uploader.php
@@ -55,7 +55,6 @@ prompt -w "If user www-data still cannot write, try acl(e.g: setfacl -m u:www-da
 ### 反向代理配置
 prompt -i "Check manully and setting up reverse proxy by yourself."
 prompt -i "========================================================"
-cd "$SET_DIR"
 cat NginxSetup/http
 prompt -i "========================================================"
 

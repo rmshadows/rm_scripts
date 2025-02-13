@@ -40,6 +40,18 @@ server
       include fastcgi.conf;
     }
 
+	# 处理 /fmgr 路径
+    location /fmgr/ {
+        # 如果你需要做重写操作
+        rewrite ^/fmgr/(.*)$ /fmgr/$1 break;
+        
+        # 文件目录代理
+        root /home/jessie/nginx;  # 假设 fmgr 文件夹在此路径下
+        autoindex on;              # 允许自动索引
+        autoindex_exact_size off;  # 不显示文件大小
+        autoindex_localtime off;   # 不显示本地时间
+    }
+
     location /x {
         rewrite ^/x(/|/index\.html)?$ /fmgr/index.php;
     }
