@@ -49,6 +49,7 @@ if ! [ -d "$HOME/Services/$SRV_NAME" ];then
     sudo mkdir "$HOME/Services/$SRV_NAME"
 fi
 # 生成服务
+cd "$SET_DIR"
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
 sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
@@ -57,6 +58,7 @@ prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
 # 拷贝启动和停止的脚本
+cd "$SET_DIR"
 prompt -x "Make start and stop script..."
 # Start and stop script
 replace_placeholders_with_values start.sh.src
@@ -64,6 +66,7 @@ sudo cp start.sh /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
 sudo chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
 ### 反向代理配置
+cd "$SET_DIR"
 prompt -i "Check manully and setting up reverse proxy by yourself."
 replace_placeholders_with_values reverse_proxy.txt.src
 prompt -i "========================================================"

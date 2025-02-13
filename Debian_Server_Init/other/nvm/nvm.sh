@@ -1,6 +1,8 @@
 #!/bin/bash
 # 安装配置 NVM
 # 来源: https://github.com/nvm-sh/nvm
+SET_INSTALL_NVM=1
+
 if [ "$SET_INSTALL_NVM" -eq 1 ]; then
     # 安装 NVM
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash

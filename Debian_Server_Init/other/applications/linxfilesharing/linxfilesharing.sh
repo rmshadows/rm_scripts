@@ -19,7 +19,7 @@ RUN_PORT=8087
 # 你的域名
 YOUR_DOMAIN="example.com"
 # 运行的共享文件目录
-LFSS_ROOT="$HOME/lfss-file-share"
+LFSS_ROOT="/home/lfss-file-share"
 # LFSS仓库
 LFSS_REPO="https://github.com/ZizzyDizzyMC/linx-server"
 
@@ -36,7 +36,9 @@ fi
 t_pkg="go"
 if ! command -v $t_pkg &>/dev/null; then
     echo -e "\033[31m$t_pkg not found! Install $t_pkg first!\033[0m"  # 输出红色提示
-    sudo apt update && sudo apt install golang  # 更新包列表并安装
+    # sudo apt update && sudo apt install golang  # 更新包列表并安装
+    echo "See https://go.dev/dl/"
+    exit 1
 fi
 t_pkg="acl"
 if ! command -v setfacl &>/dev/null; then
@@ -52,11 +54,11 @@ fi
 
 ### 安装软件
 if ! [ -d $HOME/Applications ];then
-    mkdir $HOME/Applications
+    sudo mkdir $HOME/Applications
 fi
 # 建立ROOT文件夹
 if ! [ -d "$LFSS_ROOT" ];then
-    mkdir -p "$LFSS_ROOT"
+    sudo mkdir -p "$LFSS_ROOT"
 fi
 
 # 安装
@@ -73,19 +75,19 @@ else
 fi
 
 # 编译
-# 主文件
+# 主文件 
 go build
 # 编译清理文件
 mv ./linx-cleanup/ ./linx-cleanup-export/
 cd ./linx-cleanup-export/
 go build
-cp ./linx-cleanup ./../
+cp ./linx-cleanup-export ./../linx-cleanup
 cd ./../
 # 编译API Key文件
 mv ./linx-genkey/ ./linx-genkey-export/
 cd ./linx-genkey-export/
 go build
-cp ./linx-genkey ./../
+cp ./linx-genkey-export ./../linx-genkey
 cd ./../
 # 设置可执行
 chmod +x ./linx-server
@@ -102,10 +104,10 @@ cd "$SET_DIR"
 replace_placeholders_with_values linx-server.conf.src
 sudo cp linx-server.conf "$LFSS_ROOT"/linx-server.conf
 
-sudo chown www-date "$LFSS_ROOT"
-sudo chown www-date "$LFSS_ROOT"/*
-sudo chgrp www-date "$LFSS_ROOT"
-sudo chgrp www-date "$LFSS_ROOT"/*
+sudo chown www-data "$LFSS_ROOT"
+sudo chown www-data "$LFSS_ROOT"/*
+sudo chgrp www-data "$LFSS_ROOT"
+sudo chgrp www-data "$LFSS_ROOT"/*
 
 ### 服务生成
 cd "$SET_DIR"
@@ -122,6 +124,7 @@ sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
 prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
+cd "$SET_DIR"
 # 拷贝启动和停止的脚本
 prompt -x "Make start and stop script..."
 # Start and stop script

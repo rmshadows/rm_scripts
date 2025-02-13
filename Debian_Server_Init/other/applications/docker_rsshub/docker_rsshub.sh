@@ -14,6 +14,12 @@ SRV_NAME=rsshub
 # 反向代理的地址
 REVERSE_PROXY_URL=/rsshub/
 
+
+# 保存当前目录
+SET_DIR=$(pwd)
+# 返回之前的目录
+# cd "$SET_DIR"
+
 #### 正文
 # 检查命令
 if ! [ -x "$(command -v docker)" ]; then
@@ -48,7 +54,7 @@ cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
 
 sudo chmod +x /home/$USER/Services/$SRV_NAME/*.sh
-
+cd "$SET_DIR"
 prompt -i "Check manully and setting up reverse proxy by yourself."
 replace_placeholders_with_values reverse_proxy.txt.src
 prompt -i "========================================================"

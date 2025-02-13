@@ -47,6 +47,7 @@ sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
 prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Servces.sh
+cd "$SET_DIR"
 # 拷贝启动和停止的脚本
 prompt -x "Make start and stop script..."
 # Start and stop script
