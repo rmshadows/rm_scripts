@@ -171,13 +171,40 @@ fi
 
 # 安装配置SSH
 if [ "$SET_INSTALL_OPENSSH" -eq 1 ]; then
+    sshdc="/etc/ssh/sshd_config"
     doApt install openssh-server
-    if [ "$SET_ENABLE_SSH" -eq 1 ]; then
-        prompt -x "配置SSH服务开机自启"
-        sudo systemctl enable ssh.service
-    elif [ "$SET_ENABLE_SSH" -eq 0 ]; then
-        prompt -x "禁用SSH服务开机自启"
-        sudo systemctl disable ssh.service
+    if [ -f "$sshdc" ]; then
+        check_file="$sshdc"
+        backupFile "$check_file"
+        check_var="^ClientAliveInterval"
+        if sudo cat "$check_file" | grep "$check_var" >/dev/null; then
+            echo -e "\e[1;34m请检查文件内容：
+===============================================================\e[0m"
+            sudo cat "$check_file"
+            prompt -w "ClientAliveInterval 似乎已启用（如上所列），不做处理。"
+        else
+            echo "# server每隔60秒发送一次请求给client，然后client响应，从而保持连接 
+ClientAliveInterval 60" | sudo tee -a "$sshdc"
+        fi
+        check_var="^ClientAliveCountMax"
+        if sudo cat "$check_file" | grep "$check_var" >/dev/null; then
+            echo -e "\e[1;34m请检查文件内容：
+===============================================================\e[0m"
+            sudo cat "$check_file"
+            prompt -w "ClientAliveCountMax 似乎已启用（如上所列），不做处理。"
+        else
+            echo "# server发出请求后，client没有响应次数达到3，就自动断开连接，一般client会响应。
+ClientAliveCountMax 3" | sudo tee -a "$sshdc"
+        fi
+        if [ "$SET_ENABLE_SSH" -eq 1 ]; then
+            prompt -x "配置SSH服务开机自启"
+            sudo systemctl enable ssh.service
+        elif [ "$SET_ENABLE_SSH" -eq 0 ]; then
+            prompt -x "禁用SSH服务开机自启"
+            sudo systemctl disable ssh.service
+        fi
+    else
+        prompt -e "请检查SSH是否成功安装！"
     fi
 fi
 
@@ -208,4 +235,3 @@ fi
 if [ "$SET_INSTALL_NODEJS" -eq 1 ]; then
     doApt install nodejs
 fi
-

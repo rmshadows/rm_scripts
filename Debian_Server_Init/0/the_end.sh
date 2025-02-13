@@ -6,10 +6,10 @@
 !说明
 
 # 设置 GRUB os-prober
-if [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 0 ];then
+if [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 0 ]; then
     # 不做处理
     prompt -m "GRUB os-prober 保持默认。"
-elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 2 ];then
+elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 2 ]; then
     # Sample:查找字段整行替换
     # 启用 os-prober
     # 配置/etc/default/grub 参数：GRUB_DISABLE_OS_PROBER=false
@@ -18,8 +18,7 @@ elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 2 ];then
     check_file="/etc/default/grub"
     backupFile "$check_file"
     check_var="^GRUB_DISABLE_OS_PROBER=true"
-    if sudo cat "$check_file" | grep "$check_var" > /dev/null
-    then
+    if sudo cat "$check_file" | grep "$check_var" >/dev/null; then
         echo -e "\e[1;34m请检查文件内容：
 ===============================================================\e[0m"
         sudo cat "$check_file"
@@ -27,18 +26,18 @@ elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 2 ];then
     else
         check_var="^GRUB_DISABLE_OS_PROBER="
         # 获取行号
-        idx=`sudo cat "$check_file" | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+        idx=$(sudo cat "$check_file" | grep -n ^$check_var | gawk '{print $1}' FS=":")
         # 找到的Index
         idxl=($idx)
-        idxlen=${#idxl[@]}  
+        idxlen=${#idxl[@]}
         # echo $idxlen
         I_STRING="GRUB_DISABLE_OS_PROBER=true"
-        if [ $idxlen -eq 1 ];then
+        if [ $idxlen -eq 1 ]; then
             # 删除行
             sed -i "$idx d" "$check_file"
             # 在前面插入
             sed -i "$idx i $I_STRING" "$check_file"
-        elif [ $idxlen -eq 0 ];then
+        elif [ $idxlen -eq 0 ]; then
             prompt -w "Setting not found in "$check_file"!"
             echo $I_STRING | sudo tee -a "$check_file"
         else
@@ -47,7 +46,7 @@ elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 2 ];then
         fi
         sudo update-grub
     fi
-elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 1 ];then
+elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 1 ]; then
     # 启用 os-prober
     # 配置/etc/default/grub 参数：GRUB_DISABLE_OS_PROBER=false
     prompt -m "启用 GRUB os-prober 。"
@@ -55,8 +54,7 @@ elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 1 ];then
     check_file="/etc/default/grub"
     backupFile "$check_file"
     check_var="^GRUB_DISABLE_OS_PROBER=false"
-    if sudo cat "$check_file" | grep "$check_var" > /dev/null
-    then
+    if sudo cat "$check_file" | grep "$check_var" >/dev/null; then
         echo -e "\e[1;34m请检查文件内容：
 ===============================================================\e[0m"
         sudo cat "$check_file"
@@ -64,18 +62,18 @@ elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 1 ];then
     else
         check_var="^GRUB_DISABLE_OS_PROBER="
         # 获取行号
-        idx=`sudo cat "$check_file" | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+        idx=$(sudo cat "$check_file" | grep -n ^$check_var | gawk '{print $1}' FS=":")
         # 找到的Index
         idxl=($idx)
-        idxlen=${#idxl[@]}  
+        idxlen=${#idxl[@]}
         # echo $idxlen
         I_STRING="GRUB_DISABLE_OS_PROBER=false"
-        if [ $idxlen -eq 1 ];then
+        if [ $idxlen -eq 1 ]; then
             # 删除行
             sed -i "$idx d" "$check_file"
             # 在前面插入
             sed -i "$idx i $I_STRING" "$check_file"
-        elif [ $idxlen -eq 0 ];then
+        elif [ $idxlen -eq 0 ]; then
             prompt -w "Setting not found in "$check_file"!"
             echo $I_STRING | sudo tee -a "$check_file"
         else
@@ -86,10 +84,16 @@ elif [ "$SET_ENABLE_GRUB_OS_PROBER" -eq 1 ];then
     fi
 fi
 
-
 # 设置用户目录权限
-if [ "$SET_USER_HOME" -eq 1 ];then
+if [ "$SET_USER_HOME" -eq 1 ]; then
     prompt -x "设置用户目录权限"
     sudo chown $CURRENT_USER -hR /home/$CURRENT_USER
     sudo chmod 700 /home/$CURRENT_USER
+    if [ -f "/home/$CURRENT_USER/nginx" ]; then
+        sudo setfacl -m u:www-data:rx /home/$CURRENT_USER
+        sudo setfacl -R -m u:www-data:rx /home/$CURRENT_USER/nginx
+    elif [ -f "/home/$CURRENT_USER/apache2" ]; then
+        sudo setfacl -m u:www-data:rx /home/$CURRENT_USER
+        sudo setfacl -R -m u:www-data:rx /home/$CURRENT_USER/apache2
+    fi
 fi

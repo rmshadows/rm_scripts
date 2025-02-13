@@ -38,12 +38,6 @@ server
     #     root /home/HTML;
     # }
 
-    # 当前对静态文件的匹配规则中，使用了 .*\.(gif|jpg|...)，这种正则表达式会带来性能损耗，建议改用更高效的 location 块：
-    # location ~* \.(?:gif|jpg|jpeg|png|bmp|swf|ico|js|css)$ {
-    #     expires max;
-    #     access_log off;
-    # }
-
     location ~ \.php$ {
         include fastcgi_params;
         fastcgi_pass 127.0.0.1:9000;  # 或者 unix:/run/php/php7.4-fpm.sock;
@@ -62,20 +56,6 @@ server
     # 不是GET POST HEAD就返回空响应(一些情况可能需要注释掉)
     if ($request_method !~ ^(GET|HEAD|POST)$) {
         return 444;
-    }
-
-  
-    # 图片过期
-    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|ico)$
-    {
-      expires 30d;
-      # access_log off;
-    }
-    # js css文件过期
-    location ~ .*\.(js|css)?$
-    {
-      expires 15d;
-      # access_log off;
     }
 
     # 若站点需要保护某些资源，可使用 IP 访问控制，限制到特定用户。

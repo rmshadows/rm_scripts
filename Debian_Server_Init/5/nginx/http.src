@@ -87,23 +87,6 @@ server {
         return 403;
     }
 
-    # 静态文件
-    # 当前对静态文件的匹配规则中，使用了 .*\.(gif|jpg|...)，这种正则表达式会带来性能损耗，建议改用更高效的 location 块：
-    # location ~* \.(?:gif|jpg|jpeg|png|bmp|swf|ico|js|css)$ {
-    #     expires max;
-    #     access_log off;
-    # }
-    # 图片过期
-    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|ico)$ {
-        expires 30d;
-        # access_log off;
-    }
-    # js css文件过期
-    location ~ .*\.(js|css)?$ {
-        expires 15d;
-        # access_log off;
-    }
-
     # preset
     # location /preset/ {
     #     access_log 【$HOME_INDEX】/Logs/nginx/preset.log;
