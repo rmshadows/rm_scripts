@@ -1,0 +1,23 @@
+[Unit]
+Description=Artalk 查看日志：journalctl -u artalk --no-pager | less +G
+Documentation=https://artalk.js.org 
+After=network.target network-online.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+User=artalk
+Group=artalk
+# 使用参数 -w 来指定工作目录，它通常是一个「绝对路径」
+ExecStart=/home/artalk/artalk server -w /home/artalk -c /home/artalk/artalk.yml
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+LimitNPROC=512
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
