@@ -72,7 +72,8 @@ http:
   # Body size limit (unit: MB)
   body_limit: 100
   # Proxy Header (fill `X-Forwarded-For` to get user real IP if behind a trusted reverse proxy or CDN)
-  proxy_header: "X-Forwarded-For"
+  # proxy_header: "X-Forwarded-For"
+  proxy_header: "X-Real-IP"
 
 # IP 属地
 # https://artalk.js.org/zh/guide/frontend/ip-region.html#%E8%8E%B7%E5%8F%96%E5%87%86%E7%A1%AE%E7%9A%84-ip-%E5%9C%B0%E5%9D%80
