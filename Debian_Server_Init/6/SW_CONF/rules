@@ -19,3 +19,4 @@ Invalid(DROP)  net    	        $FW		tcp
 
 ?COMMENT 自定义规则
 Ping(ACCEPT)	net		$FW
+SSH(ACCEPT)	net		$FW
