@@ -89,10 +89,10 @@ if [ "$SET_USER_HOME" -eq 1 ]; then
     prompt -x "设置用户目录权限"
     sudo chown $CURRENT_USER -hR /home/$CURRENT_USER
     sudo chmod 700 /home/$CURRENT_USER
-    if [ -f "/home/$CURRENT_USER/nginx" ]; then
+    if [ -d "/home/$CURRENT_USER/nginx" ]; then
         sudo setfacl -m u:www-data:rx /home/$CURRENT_USER
         sudo setfacl -R -m u:www-data:rx /home/$CURRENT_USER/nginx
-    elif [ -f "/home/$CURRENT_USER/apache2" ]; then
+    elif [ -d "/home/$CURRENT_USER/apache2" ]; then
         sudo setfacl -m u:www-data:rx /home/$CURRENT_USER
         sudo setfacl -R -m u:www-data:rx /home/$CURRENT_USER/apache2
     fi
