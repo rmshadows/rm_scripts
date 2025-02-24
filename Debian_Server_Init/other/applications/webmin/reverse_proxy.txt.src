@@ -1,0 +1,16 @@
+# Reverse Proxy 反向代理
+
+server {
+    listen 【某端口】;
+    server_name 【xxx_server】;
+  
+    access_log 【$HOME】/Logs/nginx/【$SRV_NAME】.log;
+    proxy_pass http://127.0.0.1:【$NEW_PORT】/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    expires 1d;
+
+    # SSL setting
+    # ssl_certificate /etc/ssl/xxx.pem;
+    # ssl_certificate_key /etc/ssl/xxx.key;
+}

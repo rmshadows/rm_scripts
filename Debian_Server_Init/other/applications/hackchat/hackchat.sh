@@ -13,12 +13,17 @@ SRV_NAME=hackchat
 RUN_PORT=3000
 # 反向代理的端口
 REVERSE_PROXY_URL=/hc/
+# wss的反向代理路径，单独作为变量
+REVERSE_PROXY_PATH="/hc-wss"
 
 # 域名
 YOUR_DOMAIN="example.com"
 
 # 是否配置中文首页 Preset=0
 CN_INDEX=0
+
+# 指定 client.js 文件路径
+CLIENT_JS_PATH="client/client.js"
 
 SET_DIR=$(pwd)
 # 返回之前的目录
@@ -174,7 +179,34 @@ sudo chmod +x /home/$USER/Services/$SRV_NAME/*.sh
 
 
 cd "$HOME/Applications/hackchat"
-# 修改端口号
+# 修改client/client.js 的　wsPath　用于配置反向代理
+# 确保文件存在
+if [ ! -f "$CLIENT_JS_PATH" ]; then
+    echo "文件 $CLIENT_JS_PATH 未找到，退出！"
+    exit 1
+fi
+
+# 修改 wsPath 配置
+echo "正在修改 WebSocket 配置..."
+# 查找 wsPath 变量并注释掉原来的配置
+sed -i '/var wsPath =/s/^/\/\//g' "$CLIENT_JS_PATH"
+# 查找文件中第一行包含 'var wsPath' 的位置，确定插入新配置的行号
+line_number=$(grep -n 'var wsPath =' "$CLIENT_JS_PATH" | head -n 1 | cut -d: -f1)
+# 如果找到了 'var wsPath =' 这一行
+if [ -n "$line_number" ]; then
+    # 在下一行插入新的 wsPath 配置
+    sed -i "${line_number}a \	\	var wsPath = '$REVERSE_PROXY_PATH';" "$CLIENT_JS_PATH"
+else
+    # 如果没有找到 'var wsPath =', 直接在文件末尾添加新配置
+    echo "未找到 wsPath 配置，正在文件末尾添加新的配置..."
+    echo "var wsPath = '$REVERSE_PROXY_PATH';" >> "$CLIENT_JS_PATH"
+fi
+
+# 输出修改结果
+echo "WebSocket 配置已更新："
+grep "wsPath" "$CLIENT_JS_PATH"
+
+# 修改pm2端口号
 if [ "$RUN_PORT" -ne 3000 ]; then
     prompt -x "Change web page port at $RUN_PORT"
     cd $HOME/Applications/hackchat
