@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# 配置：选择使用 xclip 或 xsel
+# 修改为 "xclip" 或 "xsel" 来选择工具
+USE_TOOL="xsel" 
+
+# 检查是否安装所选工具
+if [ "$USE_TOOL" == "xclip" ]; then
+    if ! command -v xclip &>/dev/null; then
+        zenity --error --text="xclip is not installed. Please install it first."
+        exit 1
+    fi
+elif [ "$USE_TOOL" == "xsel" ]; then
+    if ! command -v xsel &>/dev/null; then
+        zenity --error --text="xsel is not installed. Please install it first."
+        exit 1
+    fi
+else
+    zenity --error --text="Invalid tool selected. Please check the script."
+    exit 1
+fi
+
+# 读取文件内容并复制到剪贴板
+if [ "$USE_TOOL" == "xclip" ]; then
+    cat "$1" | xclip --clipboard --input
+elif [ "$USE_TOOL" == "xsel" ]; then
+    cat "$1" | xsel --clipboard --input
+fi
+
+# 可选：使用通知告诉用户复制成功
+zenity --info --text="File content copied to clipboard using $USE_TOOL."
+

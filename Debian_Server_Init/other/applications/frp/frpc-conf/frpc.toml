@@ -1,0 +1,13 @@
+serverAddr = "x.x.x.x"
+serverPort = 7000
+auth.method = "token"
+auth.token = "passwd"
+
+[[proxies]]
+name = "name"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 80
+remotePort = 6000
+transport.useEncryption = true
+transport.useCompression = true
