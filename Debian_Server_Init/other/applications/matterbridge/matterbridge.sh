@@ -36,7 +36,9 @@ if ! [ -d $HOME/Logs/matterbridge/ ];then
 fi
 
 # 安装
-wget -O matterbridge-linux https://github.com/42wim/matterbridge/releases/download/v1.25.2/matterbridge-1.25.2-linux-64bit
+wget -O matterbridge-linux https://github.com/42wim/matterbridge/releases/download/v1.26.0/matterbridge-1.26.0-linux-64bit
+chmod +x matterbridge-linux
+mv matterbridge-linux $HOME/Applications/matterbridge/
 # 配置文件
 replace_placeholders_with_values matterbridge.toml.src
 sudo cp matterbridge.toml "$HOME/Applications/matterbridge/matterbridge.toml"
