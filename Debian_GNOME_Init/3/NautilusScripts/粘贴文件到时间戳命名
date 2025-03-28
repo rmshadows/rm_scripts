@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# 获取当前时间戳（格式: YYYYMMDD_HHMMSS）
+timestamp=$(date +"%Y%m%d_%H%M%S")
+
+# 获取剪贴板中的文件（使用 `xclip` 和 `xsel` 兼容不同系统）
+files=$(xclip -selection clipboard -o 2>/dev/null || xsel --clipboard --output 2>/dev/null)
+
+# 确保获取到文件路径
+if [ -z "$files" ]; then
+    zenity --error --text="剪贴板中没有文件或文件夹！"
+    exit 1
+fi
+
+# 目标目录（当前目录）
+target_dir=$(pwd)
+
+# 处理每个文件
+for file in $files; do
+    # 确保文件存在
+    if [ ! -e "$file" ]; then
+        zenity --error --text="文件不存在: $file"
+        continue
+    fi
+
+    # 获取原文件/文件夹名
+    base_name=$(basename "$file")
+    ext=""
+    
+    # 如果是文件，保留扩展名
+    if [ -f "$file" ]; then
+        ext=".${base_name##*.}"
+    fi
+
+    # 生成新的文件名（去除空格）
+    new_name="${timestamp}${ext}"
+    new_name=$(echo "$new_name" | tr -d ' ')
+
+    # 复制文件/文件夹到当前目录
+    cp -r "$file" "$target_dir/$new_name"
+
+    echo "已粘贴: $file -> $target_dir/$new_name"
+done
+

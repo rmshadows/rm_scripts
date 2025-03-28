@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# 获取当前时间戳
+timestamp=$(date +"%Y%m%d_%H%M%S")
+
+# 目标目录（当前工作目录）
+target_dir=$(pwd)
+
+# 目标文件（不含空格）
+target_file="${target_dir}/${timestamp}.txt"
+
+# 获取剪贴板内容
+clipboard_content=$(xclip -selection clipboard -o 2>/dev/null || xsel --clipboard --output 2>/dev/null)
+
+# 检查剪贴板是否为空
+if [ -z "$clipboard_content" ]; then
+    zenity --error --text="剪贴板为空，无法创建文件！"
+    exit 1
+fi
+
+# 将剪贴板内容写入文件
+echo "$clipboard_content" > "$target_file"
+
+# 提示完成
+zenity --info --text="剪贴板内容已保存至 $target_file"
+

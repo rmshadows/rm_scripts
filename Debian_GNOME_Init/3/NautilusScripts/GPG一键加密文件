@@ -1,0 +1,5 @@
+#!/bin/bash
+for file in "$@"; do
+    gpg -c --cipher-algo AES256 "$file"
+done
+
