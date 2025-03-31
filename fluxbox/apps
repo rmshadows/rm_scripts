@@ -1,4 +1,8 @@
+! 配置 fbrun 应用的窗口行为
 [app] (name=fbrun)
+  ! 让 fbrun 居中显示
   [Position]	(WINCENTER)	{0 0}
+  ! 设置窗口层级为 2（普通窗口层级）
   [Layer]	{2}
 [end]
+
