@@ -17,7 +17,13 @@ session.screen0.menuDelay:	200  ! 右键菜单（menu）打开的延迟（毫秒
 session.slitlistFile:	~/.fluxbox/slitlist  ! Slit（小程序停靠区）列表文件
 
 ! 日期和时间格式
-session.screen0.strftimeFormat:	%d %b, %a %02k:%M:%S  
+! session.screen0.strftimeFormat:	%d %b, %a %02k:%M:%S  
+!2025年04月01日 星期一 下午 02:30:45
+session.screen0.strftimeFormat:	%Y年%m月%d日 %A %p %I:%M:%S
+! 2025年04月01日 星期一 14:30:45
+!session.screen0.strftimeFormat:	%Y年%m月%d日 %A %H:%M:%S
+! 04月01日 14:30
+!session.screen0.strftimeFormat:	%m月%d日 %H:%M
 ! 配置 Fluxbox 显示日期和时间的格式  
 ! %d - 日期（两位数）  
 ! %b - 月份的缩写（例如 Apr）  
@@ -81,25 +87,27 @@ session.screen0.tabFocusModel:	ClickToTabFocus  ! 点击切换标签页
 session.screen0.noFocusWhileTypingDelay:	0  ! 输入时不更改窗口焦点
 
 ! 任务栏（Iconbar）和窗口管理
-session.screen0.windowPlacement:	RowMinOverlapPlacement  ! 按行排列窗口，最小化重叠
+! session.screen0.windowPlacement:	RowMinOverlapPlacement  ! 按行排列窗口，最小化重叠
+session.screen0.windowPlacement:	SmartPlacement ! 这样窗口不会堆叠，而是自动找空位。
 session.screen0.rowPlacementDirection:	LeftToRight  ! 窗口从左到右排列
 session.screen0.colPlacementDirection:	TopToBottom  ! 窗口从上到下排列
 
 ! 窗口最大化行为
-session.screen0.fullMaximization:	false  ! 禁止窗口覆盖工具栏等区域
+session.screen0.fullMaximization:	false  ! 禁止窗口覆盖工具栏等区域（false（默认）：窗口最大化时，不会覆盖工具栏、Slit（如任务栏或系统托盘），而是适应可用的屏幕区域。）
 session.screen0.maxIgnoreIncrement:	true  ! 忽略窗口的大小增量
 session.screen0.maxDisableMove:	false  ! 允许最大化的窗口移动
 session.screen0.maxDisableResize:	false  ! 允许最大化的窗口调整大小
 
 ! 边界和吸附行为
-session.screen0.edgeSnapThreshold:	10  ! 窗口吸附的阈值（像素）
+session.screen0.edgeSnapThreshold:	5  ! 窗口吸附的阈值（像素）默认10
 session.screen0.workspacewarping:	true  ! 允许鼠标移动到屏幕边缘切换工作区
 session.screen0.showwindowposition:	false  ! 拖动窗口时不显示位置提示
 session.screen0.allowRemoteActions:	false  ! 禁止远程控制窗口操作
 
 ! 工作区设置
 session.screen0.workspaces:	4  ! 设定 4 个工作区
-session.screen0.workspaceNames:	\345\267\245\344\275\234\345\214\272 1,\345\267\245\344\275\234\345\214\272 2,\345\267\245\344\275\234\345\214\272 3,\345\267\245\344\275\234\345\214\272 4,  ! 工作区名称
+session.screen0.workspaceNames:	\345\267\245\344\275\234\345\214\272 1,\345\267\245\344\275\234\345\214\272 2,\345\267\245\344\275\234\345\214\272 3,\345\267\245\344\275\234\345\214\272 4,  
+!session.screen0.workspaceNames: "工作区 1, 工作区 2, 工作区 3, 工作区 4"
 
 ! Fluxbox 主题与菜单配置
 session.styleFile:	~/.fluxbox/styles/Font-14  ! 主题样式文件

@@ -1,0 +1,268 @@
+[begin] (FluxBox)
+    [submenu] (Development)
+        [exec] (Eclipse) {/home/jessie/Prog/Application/eclipse/eclipse}
+        [exec] (Guile 3.0) {gnome-terminal -- guile-3.0}
+        [exec] (Kompare) {kompare}
+        [exec] (Sublime Text) {/home/jessie/Prog/Application/sublime_text_3/sublime_text}
+    [end]
+    [submenu] (Editors)
+        [exec] (gedit) {gedit}
+        [exec] (hspell-gui) {hspell-gui}
+        [exec] (hspell-gui [Hebrew UI]) {hspell-gui-heb}
+        [exec] (Nano) {gnome-terminal -- nano}
+        [exec] (Pico) {gnome-terminal -- pico}
+        [exec] (Text Editor) {gnome-text-editor}
+        [exec] (Vi) {gnome-terminal -- vi}
+        [exec] (Vim) {gnome-terminal -- vim}
+        [exec] (Xedit) {xedit}
+    [end]
+    [submenu] (Games)
+        [submenu] (Amusement)
+            [exec] (Oclock) {oclock}
+            [exec] (Xclock [analog]) {xclock -analog}
+            [exec] (Xclock [digital]) {xclock -digital -update 1}
+            [exec] (Xeyes) {xeyes}
+            [exec] (Xlogo) {xlogo}
+        [end]
+        [submenu] (Arcade)
+            [exec] (Extreme Tux Racer) {etr}
+            [exec] (Nibbles) {gnome-nibbles}
+            [exec] (Robots) {gnome-robots}
+            [exec] (SuperTuxKart) {supertuxkart}
+        [end]
+        [submenu] (Board)
+            [exec] (Chess) {gnome-chess}
+            [exec] (Mahjongg) {gnome-mahjongg}
+            [exec] (Reversi) {iagno}
+        [end]
+        [submenu] (Card)
+            [exec] (AisleRiot Solitaire) {sol}
+            [exec] (Tali) {tali}
+        [end]
+        [submenu] (Puzzle)
+            [exec] (Five or More) {five-or-more}
+            [exec] (Four-in-a-row) {four-in-a-row}
+            [exec] (Hitori) {hitori}
+            [exec] (Klotski) {gnome-klotski}
+            [exec] (Lights Off) {lightsoff}
+            [exec] (Mines) {gnome-mines}
+            [exec] (Quadrapassel) {quadrapassel}
+            [exec] (Sudoku) {gnome-sudoku}
+            [exec] (Swell Foop) {swell-foop}
+            [exec] (Taquin) {gnome-taquin}
+            [exec] (Tetravex) {gnome-tetravex}
+        [end]
+        [submenu] (Simulation)
+            [exec] (TORCS) {torcs}
+        [end]
+        [exec] (2048) {gnome-2048}
+        [exec] (Liftoff) {steam steam://rungameid/410340}
+        [exec] (X-Plane 12) {steam steam://rungameid/2014780}
+    [end]
+    [submenu] (Graphics)
+        [exec] (Document Scanner) {simple-scan}
+        [exec] (dotty) {dotty}
+        [exec] (Drawing) {drawing}
+        [exec] (GNU Image Manipulation Program) {gimp-2.10}
+        [exec] (Image Viewer) {eog}
+        [exec] (ImageMagick [color depth=q16]) {display-im6.q16}
+        [exec] (lefty) {lefty}
+        [exec] (Shotwell) {shotwell}
+        [exec] (Xditview) {xditview}
+    [end]
+    [submenu] (Multimedia)
+        [exec] (ALSA mixer) {gnome-terminal -- alsamixer}
+        [exec] (Audacity) {audacity}
+        [exec] (Audacity) {env GDK_BACKEND=x11 audacity}
+        [exec] (Cheese) {cheese}
+        [exec] (HandBrake) {ghb}
+        [exec] (K3b) {k3b}
+        [exec] (Kdenlive) {kdenlive}
+        [exec] (NetEase Cloud Music) {netease-cloud-music}
+        [exec] (OBS Studio) {obs}
+        [exec] (OSD Lyrics) {osdlyrics}
+        [exec] (Sound Recorder) {gnome-sound-recorder}
+        [exec] (Videos) {totem}
+        [exec] (VLC media player) {vlc}
+    [end]
+    [submenu] (Network)
+        [exec] (AnyDesk) {anydesk}
+        [exec] (Ettercap) {ettercap-pkexec -G}
+        [exec] (FireFox) {firefox}
+        [exec] (Firefox ESR) {firefox-esr}
+        [exec] (Google Chrome) {google-chrome-stable}
+        [exec] (Google Chrome) {google-chrome}
+        [exec] (KDE Connect) {kdeconnect-app}
+        [exec] (KDE Connect Indicator) {kdeconnect-indicator}
+        [exec] (KDE Connect SMS) {kdeconnect-sms}
+        [exec] (Konversation) {konversation}
+        [exec] (Lynx) {gnome-terminal -- lynx}
+        [exec] (QQ) {qq}
+        [exec] (scrcpy) {sh -c "\"\\$SHELL\" -i -c scrcpy"}
+        [exec] (Steam) {steam}
+        [exec] (Telegram Desktop) {/home/jessie/Prog/Application/Telegram/Telegram}
+        [exec] (Transmission) {transmission-gtk}
+        [exec] (W3m) {gnome-terminal -- w3m}
+        [exec] (w3m) {gnome-terminal -- w3m /usr/share/doc/w3m/MANUAL.html}
+        [exec] (Wireshark) {wireshark}
+    [end]
+    [submenu] (Office)
+        [exec] (Calendar) {gnome-calendar}
+        [exec] (Contacts) {gnome-contacts}
+        [exec] (Document Viewer) {evince}
+        [exec] (GnuCash) {gnucash}
+        [exec] (Hdate) {ghcal}
+        [exec] (LibreOffice Start Center) {libreoffice}
+        [exec] (Typora) {/home/jessie/Prog/Application/Typora-linux-x64/Typora}
+        [exec] (WPS PDF) {wpspdf}
+        [exec] (WPS Presentation) {wpp}
+        [exec] (WPS Spreadsheets) {et}
+        [exec] (WPS Writer) {wps}
+        [exec] (Xbiff) {xbiff}
+    [end]
+    [submenu] (Other)
+        [exec] (android-studio) {gnome-terminal -- /home/jessie/Prog/Application/android-studio/bin/studio.sh}
+        [exec] (appimg-kdenlive) {/home/jessie/Prog/Application/kdenlive-x86_x64.AppImage}
+        [exec] (arduino_1.0) {gnome-terminal -- /home/jessie/Prog/Application/DigisparkArduino-Linux64/Digispark-Arduino-1.0.4/arduino}
+        [exec] (arduino_2.0) {gnome-terminal -- /home/jessie/Prog/Application/arduino-ide/arduino-ide}
+        [exec] (Burp Suite) {gnome-terminal -- java -jar /home/jessie/Prog/Application/Burpsuite-1.5/BurpLoader.jar}
+        [exec] (Deadbeef音乐播放器) {/home/jessie/Prog/Application/deadbeef-1.9.5/deadbeef}
+        [exec] (FreeCAD) {/home/jessie/Prog/Application/FreeCAD_0.18-16146-Linux-Conda_Py3Qt5_glibc2.12-x86_64.AppImage}
+        [exec] (JD) {java -jar /home/jessie/Prog/Application/jd-gui-1.6.6.jar}
+        [exec] (JDisk_report) {gnome-terminal -- java -jar /home/jessie/Prog/Application/JDiskReportor/jdiskreport-1.3.1.jar}
+        [exec] (Joffice) {gnome-terminal -- /home/jessie/Prog/Application/JavaOffice/launcher.sh}
+        [exec] (Ksnip截屏工具) {gnome-terminal -- /home/jessie/Prog/Application/Ksnip/ksnip-1.7.3-x86_64.AppImage}
+        [exec] (marktext) {/home/jessie/Prog/Application/marktext-x64/marktext}
+        [exec] (PyCharm) {/home/jessie/Prog/Application/pycharm-community/bin/pycharm.sh}
+        [exec] (SceneBuilder) {/home/jessie/Prog/Application/SceneBuilder2.0/JavaFXSceneBuilder2.0}
+        [exec] (TextSend-3.1.2) {gnome-terminal -- /home/jessie/Prog/Application/TextSend-3.1.2_for_linux/Linux_launcher.sh}
+        [exec] (TimedPoweroff) {/home/jessie/Prog/Application/TimedPoweroff_2.0_for_Linux/bin/StartTimedPoweroff}
+        [exec] (TreeholeOCR) {gnome-terminal -- /home/jessie/Prog/Application/TreeholeOCR/StartTreeholeOCR}
+        [exec] (V2RayA) {gnome-terminal -- bash -c "/home/jessie/Prog/Application/v2raya_linux_x64 --lite; exec bash"}
+        [exec] (VSCode) {/home/jessie/Prog/Application/VSCode-linux-x64/bin/code}
+        [exec] (Xonotic) {gnome-terminal -- /home/jessie/Prog/Application/xonotic-0.8.2/Xonotic/xonotic-linux-glx.sh}
+        [exec] (yed) {java -jar /home/jessie/Prog/Application/yed-3.20.1/yed.jar}
+    [end]
+    [submenu] (Shells)
+        [exec] (Bash) {gnome-terminal -- bash --login}
+        [exec] (Dash) {gnome-terminal -- dash -i}
+        [exec] (Files) {nautilus}
+        [exec] (GIT) {gnome-terminal -- git}
+        [exec] (Multilingual Terminal) {mlterm}
+        [exec] (Oracle VM VirtualBox) {VirtualBox}
+        [exec] (Sh) {gnome-terminal -- sh --login}
+        [exec] (Terminal) {gnome-terminal}
+        [exec] (Zsh) {gnome-terminal -- zsh}
+    [end]
+    [submenu] (System)
+        [submenu] (Settings)
+            [submenu] (GNOME)
+                [exec] (Advanced Network Configuration) {nm-connection-editor}
+                [exec] (Firewall Configuration) {gufw}
+                [exec] (GPaste) {/usr/libexec/gpaste/gpaste-ui}
+                [exec] (GPaste Preferences) {/usr/libexec/gpaste/gpaste-preferences}
+                [exec] (Settings) {gnome-control-center}
+                [exec] (Software & Updates) {software-properties-gtk}
+                [exec] (Tweaks) {gnome-tweaks}
+            [end]
+            [exec] (Fcitx 5 Configuration) {fcitx5-configtool}
+            [exec] (Fcitx 5 Migration Wizard) {fcitx5-migrator}
+            [exec] (Grub Customizer) {grub-customizer}
+            [exec] (IBus Preferences) {ibus-setup}
+            [exec] (Input Method) {uim-pref-gtk}
+            [exec] (Input Method) {im-config}
+            [exec] (KDE Connect Settings) {kdeconnect-settings}
+            [exec] (KDE System Settings) {systemsettings5}
+            [exec] (Mozc Setup) {/usr/lib/mozc/mozc_tool --mode=config_dialog}
+            [exec] (Passwords and Keys) {seahorse}
+            [exec] (Qt5 Settings) {qt5ct}
+            [exec] (Synaptic Package Manager) {synaptic-pkexec}
+            [exec] (System Settings) {systemsettings}
+            [exec] (Xfontsel) {xfontsel}
+            [exec] (Xvidtune) {xvidtune}
+        [end]
+        [exec] (BleachBit) {bleachbit}
+        [exec] (BleachBit [as root]) {pkexec bleachbit}
+        [exec] (Color Profile Viewer) {gcm-viewer}
+        [exec] (conky) {conky --daemonize --pause=1}
+        [exec] (dconf Editor) {dconf-editor}
+        [exec] (Disk Usage Analyzer) {baobab}
+        [exec] (Editres) {editres}
+        [exec] (Fcitx 5) {fcitx5}
+        [exec] (GNOME System Monitor) {gnome-system-monitor}
+        [exec] (Hardware Locality lstopo) {lstopo}
+        [exec] (Htop) {gnome-terminal -- htop}
+        [exec] (Logs) {gnome-logs}
+        [exec] (Parental Controls) {malcontent-control}
+        [exec] (Pstree) {gnome-terminal -- pstree.x11}
+        [exec] (Software) {gnome-software}
+        [exec] (Timeshift) {timeshift-launcher}
+        [exec] (uTools) {utools}
+        [exec] (Xclipboard) {xclipboard}
+        [exec] (Xev) {x-terminal-emulator -e xev}
+        [exec] (Xkill) {xkill}
+        [exec] (Xload) {xload}
+        [exec] (Xrefresh) {xrefresh}
+    [end]
+    [submenu] (Utilities)
+        [exec] (Archive Manager) {file-roller}
+        [exec] (Bc) {gnome-terminal -- bc}
+        [exec] (Calculator) {gnome-calculator}
+        [exec] (Characters) {gnome-characters}
+        [exec] (Clocks) {gnome-clocks}
+        [exec] (Debian Reference) {debian-reference}
+        [exec] (Disks) {gnome-disks}
+        [exec] (Extensions) {gnome-extensions-app --gapplication-service}
+        [exec] (Fonts) {gnome-font-viewer}
+        [exec] (Help) {yelp}
+        [exec] (Keyboard layout viewer) {kbd-layout-viewer5}
+        [exec] (Maps) {gapplication launch org.gnome.Maps}
+        [exec] (Weather) {gapplication launch org.gnome.Weather}
+        [exec] (Xcalc) {xcalc}
+        [exec] (Xman) {xman}
+    [end]
+    [separator]
+    [submenu] (FluxBox)
+        [workspaces] (Workspaces)
+        [submenu] (Styles)
+            [stylesdir] (~/.fluxbox/styles)
+        [end]
+        [config] (Configure)
+        [reconfig] (Reconfig)
+        [restart] (Restart)
+        [separator]
+        [exit] (Exit)
+    [end]
+    [submenu] (Appearance)
+    [config] (Configure)
+     [submenu] (Menu size) {Choose Size...}
+     [stylesdir] (~/.fluxbox/styles)
+     [restart] (Apply style)
+     [end]
+    [submenu] (Conky size) {Choose Size...}
+     [exec] (kill conky) {pkill conky}
+     [exec] (reset conky) {~/.fluxbox/scripts/conky/conky-default}
+     [exec] (size 10) {~/.fluxbox/scripts/conky/conky-10}
+     [exec] (size 12) {~/.fluxbox/scripts/conky/conky-12}
+     [exec] (size 14) {~/.fluxbox/scripts/conky/conky-14}
+     [exec] (size 16) {~/.fluxbox/scripts/conky/conky-16}
+     [exec] (size 18) {~/.fluxbox/scripts/conky/conky-18}
+     [exec] (size 20) {~/.fluxbox/scripts/conky/conky-20}
+     [exec] (size 22) {~/.fluxbox/scripts/conky/conky-22}
+     [exec] (size 24) {~/.fluxbox/scripts/conky/conky-24}
+     [exec] (size 26) {~/.fluxbox/scripts/conky/conky-26}
+     [exec] (size 28) {~/.fluxbox/scripts/conky/conky-28}
+     [exec] (size 30) {~/.fluxbox/scripts/conky/conky-30}
+     [exec] (size 32) {~/.fluxbox/scripts/conky/conky-32}
+     [exec] (Desktop) {~/.fluxbox/scripts/conky/conky-Desktop}
+     [exec] (Laptop) {~/.fluxbox/scripts/conky/conky-Laptop}
+    [end]
+      [exec] (Theme & Font) {lxappearance}
+    [end]
+    [separator] 
+      [restart] (Restart Fluxbox)
+      [exit] (Exit Session) 
+      [exec] (Reboot) {sudo shutdown -r now}
+      [exec] (Poweroff) {sudo shutdown -P now}
+    [end]
+[end]

@@ -1,61 +1,50 @@
-! fluxbox-update_configs added '(workspace=[current])' to (Next|Prev)(Window|Group)
-! check lines marked by 'FBCV13' if they are correctly updated
-!mouse actions added by fluxbox-update_configs
+# 鼠标操作配置
+# fluxbox-update_configs added '(workspace=[current])' to (Next|Prev)(Window|Group)
+# check lines marked by 'FBCV13' if they are correctly updated
+# mouse actions added by fluxbox-update_configs
+# 标题栏左键单击：聚焦窗口、置顶窗口、激活标签页
 OnTitlebar Mouse1 :MacroCmd {Focus} {Raise} {ActivateTab}
-!mouse actions added by fluxbox-update_configs
+# 标题栏拖动：移动窗口
 OnTitlebar Move1 :StartMoving
+# 左侧窗口角拖动：调整窗口大小（向左下角）
 OnLeftGrip Move1 :StartResizing bottomleft
+# 右侧窗口角拖动：调整窗口大小（向右下角）
 OnRightGrip Move1 :StartResizing bottomright
+# 窗口边框拖动：移动窗口
 OnWindowBorder Move1 :StartMoving
-
-! fluxbox-update_configs added '(workspace=[current])' to (Next|Prev)(Window|Group)
-! check lines marked by 'FBCV13' if they are correctly updated
-!mouse actions added by fluxbox-update_configs
-OnTitlebar Mouse1 :MacroCmd {Focus} {Raise} {ActivateTab}
-!mouse actions added by fluxbox-update_configs
-OnTitlebar Move1 :StartMoving
-OnLeftGrip Move1 :StartResizing bottomleft
-OnRightGrip Move1 :StartResizing bottomright
-OnWindowBorder Move1 :StartMoving
-
-!mouse actions added by fluxbox-update_configs
-# 鼠标标题栏中键 移动
+# 标题栏中键点击：合并窗口标签（Tabbing）
 OnTitlebar Mouse2 :StartTabbing
-
-!mouse actions added by fluxbox-update_configs
-# 鼠标标题栏双击收起
+# 标题栏双击：收起窗口（Shade）
 OnTitlebar Double Mouse1 :Shade
-# 鼠标标题栏右击
+# 标题栏右键点击：弹出窗口菜单
 OnTitlebar Mouse3 :WindowMenu
-
-!mouse actions added by fluxbox-update_configs
+# 按住 Alt 并拖动左键：移动窗口
 OnWindow Mod1 Mouse1 :MacroCmd {Raise} {Focus} {StartMoving}
+# 按住 Alt 并拖动右键：调整窗口大小（从右下角调整）
 OnWindow Mod1 Mouse3 :MacroCmd {Raise} {Focus} {StartResizing BottomRight}
-
-!mouse actions added by fluxbox-update_configs
+# 桌面左键点击：隐藏菜单
 OnDesktop Mouse1 :hideMenus
+# 桌面中键点击：弹出工作区菜单
 OnDesktop Mouse2 :workspaceMenu
+# 桌面右键点击：弹出主菜单
 OnDesktop Mouse3 :rootMenu
 
-# Alt + Tab 切换窗口
-Mod1 Tab :NextWindow (workspace=[current]) (workspace=[current]) !! FBCV13 !! !! FBCV13 !!
-Mod1 Shift Tab :PrevWindow (workspace=[current]) (workspace=[current]) !! FBCV13 !! !! FBCV13 !!
 
-# Alt + 1-6 切换工作区
-Mod1 1 :Workspace 1
-Mod1 2 :Workspace 2
-Mod1 3 :Workspace 3
-Mod1 4 :Workspace 4
-Mod1 5 :Workspace 5
-Mod1 6 :Workspace 6
+# 窗口切换
+# Alt + Tab 切换到下一个窗口（在当前工作区）
+Mod1 Tab :NextWindow (workspace=[current])
+# Alt + Shift + Tab 切换到上一个窗口（在当前工作区）
+Mod1 Shift Tab :PrevWindow (workspace=[current])
 
-# Alt + Esc最大化窗口
-# Mod1 Escape :MaximizeWindow
 
-# 打开主菜单
-Mod1 F1 :RootMenu
-# Mod1 Shift m :RootMenu
-
+# 工作区切换
+# Alt + 1-6 切换到对应的工作区
+Mod1 Shift 1 :Workspace 1
+Mod1 Shift 2 :Workspace 2
+Mod1 Shift 3 :Workspace 3
+Mod1 Shift 4 :Workspace 4
+# Mod1 Shift 5 :Workspace 5
+# Mod1 Shift 6 :Workspace 6
 # change to a specific workspace
 #Mod1 1 :ExecCommand wmctrl -s 0
 #Mod1 2 :ExecCommand wmctrl -s 1
@@ -64,101 +53,101 @@ Mod1 F1 :RootMenu
 #Mod1 5 :ExecCommand wmctrl -s 4
 #Mod1 6 :ExecCommand wmctrl -s 5
 
-##### 自定义的快捷键 - Customized
-### 这里是Alt键(打开终端)
-Mod1 q :ExecCommand gnome-terminal
-Mod1 Shift q :ExecCommand xfce4-terminal
-# 系统资源监视
-# Mod1 Shift w :ExecCommand htop
-Mod1 Shift w :ExecCommand gnome-system-monitor
-# 文件管理
-# Mod1 Shift e :ExecCommand thunar
-Mod1 Shift e :ExecCommand nautilus
-# 打开浏览器
-Mod1 Shift r :ExecCommand firefox
-# 打开虚拟机
-# Mod1 Shift t :ExecCommand virtualbox
-# 杀死应用：
-Mod1 Shift k :Kill
-# 窗口全屏、关闭窗口
-Mod1 Shift f :Fullscreen
-Mod1 F4 :Close
-# 窗口装饰条
-Mod1 F2 :ToggleDecor
-# 取消打印 Cancel Print
-Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
-
-# 重启fluxbox(Alt + Win + r)
-Mod1 Mod4 r :Restart
-# 退出fluxbox
-Mod1 Mod4 Escape :Exit
-
-### 这里是Super(开始键)键
-# 显示桌面
-Mod4 d :ShowDesktop
 
 # 窗口管理
-# Alt + 上/下  最大化、最小化窗口
-Mod1 Up :MaximizeWindow
-Mod1 Down :MinimizeWindow
-# 收起、放下窗口
-Mod1 Left :ShadeOn
-Mod1 Right :ShadeOff
-# Alt + H/V 水平、垂直最大化
-Mod1 h :MaximizeHorizontal
-Mod1 v :MaximizeVertical
-
-# 窗口位置
-# Win + 上下左右 窗口半屏上下左右
-# Example of macro commands
-# Position and resize windows to half of the screen in various positions
-Mod4 Up :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Up}
-Mod4 Left :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Left}
-Mod4 Right :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Right}
-Mod4 Down :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Bottom}
-# 窗口1/4
-# Win + Shift + qwas
-# As before but only use a quarter of the screen
-# 左上
-Mod4 Shift q :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 00% Up}
-# 右上
-Mod4 Shift w :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 00% Up}
-# 右下
-Mod4 Shift a :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 50% Up}
-# 左下
-Mod4 Shift s :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 50% Up}
-# 窗口排列方式
-# Example of the simple tiling features
-Mod4 1 :ArrangeWindows
-Mod4 2 :ArrangeWindowsVertical
-Mod4 3 :ArrangeWindowsHorizontal
-Mod4 4 :ArrangeWindowsHorizontal (Name=[current])
-Mod4 5 :ArrangeWindowsVertical (Name=[current])
+# Alt + F4 关闭窗口
+Mod1 F4 :Close
+# Win + Shift + f 全屏窗口
+Mod4 Shift f :Fullscreen
+# Alt + F2 切换窗口装饰（边框、标题栏）
+Mod1 F2 :ToggleDecor
+# Win + Shift + k 关闭窗口（Kill）
+Mod1 Shift k :Kill
+# Win + 上/下 最大化、最小化窗口
+Mod4 Up :MaximizeWindow
+Mod4 Down :MinimizeWindow
+# Win + 左/右 收起/展开窗口
+Mod4 Left :ShadeOn
+Mod4 Right :ShadeOff
+# Win + h/v 水平/垂直最大化窗口
+Mod4 h :MaximizeHorizontal
+Mod4 v :MaximizeVertical
 
 
-# 锁屏 Win + L
-# Xfce4锁屏:
-# Mod4 l :ExecCommand dm-tool lock
-Mod4 l :ExecCommand i3lock
-# sudo apt install xfce4-appfinder
-Mod4 a :ExecCommand xfce4-appfinder
+# Fluxbox 控制
+# Alt + Win + r 重新启动 Fluxbox
+Mod1 Mod4 r :Restart
+# Alt + Win + Esc 退出 Fluxbox
+Mod1 Mod4 Escape :Exit
+# Alt + F1 打开主菜单
+Mod1 F1 :RootMenu
+# Mod1 Shift m :RootMenu
 
-# 亮度调整(brightnessctl set +10%)
+
+# 应用程序快捷键
+# Alt + q 打开终端（Gnome Terminal）
+Mod1 q :ExecCommand gnome-terminal
+# Alt + Shift + q 打开 Xfce4 终端
+Mod1 Shift q :ExecCommand xfce4-terminal
+# Alt + Shift + w 打开系统监视器
+Mod1 Shift w :ExecCommand gnome-system-monitor
+# Alt + Shift + e 打开文件管理器（Nautilus）
+Mod1 Shift e :ExecCommand nautilus
+# Alt + Shift + r 打开浏览器（Firefox）
+Mod1 Shift r :ExecCommand firefox
+# Alt + Shift + l 取消所有打印任务
+Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
+
+
+# 窗口布局
+# Win + 上下左右：窗口半屏排列
+Mod4 Shift Up :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Up}
+Mod4 Shift Left :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Left}
+Mod4 Shift Right :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Right}
+Mod4 Shift Down :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Bottom}
+
+# Win + Shift + q/w/a/s：窗口四分之一排列
+Mod4 Shift q :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 00% Up}  # 左上
+Mod4 Shift w :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 00% Up}  # 右上
+Mod4 Shift a :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 50% Up}  # 左下
+Mod4 Shift s :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 50% Up}  # 右下
+
+
+# 屏幕亮度控制
+# (brightnessctl set +10%)
 # sudo apt install brightnessctl
 # Control Mod4 Left :ExecCommand brightnessctl set 5%-
 # Control Mod4 Right :ExecCommand brightnessctl set +5%
-# 通过xrandr:
+# 使用 xrandr 调整亮度
 Control Mod4 Left :ExecCommand ~/.fluxbox/scripts/brightnessControl/xrandrBrightnessControl.sh 0
 Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/brightnessControl/xrandrBrightnessControl.sh 1
+# 使用ddcutil
 # Control Mod4 Left :ExecCommand ~/.fluxbox/scripts/brightnessControl/ddcutilBrightnessControl.sh 0
 # Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/brightnessControl/ddcutilBrightnessControl.sh 1
 
-# prtsc截屏，请安装scrot截屏 
-# sudo apt install ksnip
-Print :ExecCommand ksnip
+# 截屏
+# Print 截屏（使用 ksnip）
+# 或者scrot
+# Print :ExecCommand ksnip
+Print :ExecCommand scrot
 
 
+# Win + L 锁屏（使用 i3lock）
+Mod4 l :ExecCommand i3lock
+# Mod4 l :ExecCommand dm-tool lock
 
 
+# 窗口自动排列
+# Win + 1-5 不同排列方式
+Mod4 1 :ArrangeWindows  # 自动排列窗口
+Mod4 2 :ArrangeWindowsVertical  # 垂直排列
+Mod4 3 :ArrangeWindowsHorizontal  # 水平排列
+Mod4 4 :ArrangeWindowsHorizontal (Name=[current])  # 仅排列当前窗口组
+Mod4 5 :ArrangeWindowsVertical (Name=[current])  # 仅排列当前窗口组（垂直）
 
 
+# 其他
+# Win + d 显示桌面
+Mod4 d :ShowDesktop
+# Win + a 打开应用程序查找器（Xfce4 App Finder）
+Mod4 a :ExecCommand xfce4-appfinder
