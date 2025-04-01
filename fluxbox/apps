@@ -1,8 +1,12 @@
 ! 配置 fbrun 应用的窗口行为
 [app] (name=fbrun)
-  ! 让 fbrun 居中显示
-  [Position]	(WINCENTER)	{0 0}
+  ! 设置 fbrun 居中显示
+  [Position] (WINCENTER) {0 0}
   ! 设置窗口层级为 2（普通窗口层级）
-  [Layer]	{2}
+  [Layer] {2}
+  ! 设置窗口的默认大小（根据你的需求，可以调整这里的大小）
+  [Geometry] {600x400}  
+  ! 确保窗口不会被最大化
+  [Maximized] {false}
 [end]
 
