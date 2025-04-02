@@ -32,12 +32,16 @@ OnDesktop Mouse3 :rootMenu
 
 # 窗口切换
 # Alt + Tab 切换到下一个窗口（在当前工作区）
+# Mod1 Tab :Exec rofi -show windowcd
 Mod1 Tab :NextWindow (workspace=[current])
 # Alt + Shift + Tab 切换到上一个窗口（在当前工作区）
 Mod1 Shift Tab :PrevWindow (workspace=[current])
 
 
 # 工作区切换
+# Ctrl Alt 左/右
+Mod1 Control Left :PrevWorkspace
+Mod1 Control Right :NextWorkspace
 # Alt + 1-6 切换到对应的工作区
 Mod1 Shift 1 :Workspace 1
 Mod1 Shift 2 :Workspace 2
@@ -92,7 +96,8 @@ Mod1 Shift q :ExecCommand xfce4-terminal
 # Alt + Shift + w 打开系统监视器
 Mod1 Shift w :ExecCommand gnome-system-monitor
 # Alt + Shift + e 打开文件管理器（Nautilus）
-Mod1 Shift e :ExecCommand nautilus
+# Mod1 Shift e :ExecCommand nautilus
+Mod1 Shift e :ExecCommand nautilus --no-desktop
 # Alt + Shift + r 打开浏览器（Firefox）
 Mod1 Shift r :ExecCommand firefox
 # Alt + Shift + l 取消所有打印任务
@@ -105,17 +110,15 @@ Mod4 Shift Up :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Up}
 Mod4 Shift Left :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Left}
 Mod4 Shift Right :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Right}
 Mod4 Shift Down :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Bottom}
-# (相同表达)窗口平铺到左/右/上/下
-#Mod4 Shift Left  :MoveTo 0 0 :ResizeTo 50% 100%  # 左半屏
-#Mod4 Shift Right :MoveTo 50% 0 :ResizeTo 50% 100%  # 右半屏
-#Mod4 Shift Up  :MoveTo 0 0 :ResizeTo 100% 50%  # 上半屏
-#Mod4 Shift Down  :MoveTo 0 50% :ResizeTo 100% 50%  # 下半屏
 
 # Win + Shift + Q/W/A/S ：窗口移动到四个角落并缩放到 1/4 屏幕大小
-Mod4 Shift Q :MoveTo 0 0 :ResizeTo 50% 50%  # 左上角
-Mod4 Shift W :MoveTo 50% 0 :ResizeTo 50% 50%  # 右上角
-Mod4 Shift A :MoveTo 0 50% :ResizeTo 50% 50%  # 左下角
-Mod4 Shift S :MoveTo 50% 50% :ResizeTo 50% 50%  # 右下角
+Mod4 Shift Q :MacroCmd {MoveTo 0 0} {ResizeTo 50% 50%}
+Mod4 Shift w :MacroCmd {MoveTo 50% 0} {ResizeTo 50% 50%}
+Mod4 Shift a :MacroCmd {MoveTo 0 50%} {ResizeTo 50% 50%}
+Mod4 Shift s :MacroCmd {MoveTo 50% 50%} {ResizeTo 50% 50%}
+
+# 缩小居中
+Mod4 Shift c :MacroCmd {MoveTo 30% 30%} {ResizeTo 50% 50%}
 
 # 窗口自动排列 Win + 1-5: 不同排列方式
 Mod4 1 :ArrangeWindows  # 自动排列窗口
@@ -129,7 +132,6 @@ Mod4 Mod1 Left  :Resize -10% 0
 Mod4 Mod1 Right :Resize +10% 0
 Mod4 Mod1 Up    :Resize 0 -10%
 Mod4 Mod1 Down  :Resize 0 +10%
-
 
 # 屏幕亮度控制
 # (brightnessctl set +10%)
@@ -160,3 +162,5 @@ Mod4 l :ExecCommand i3lock
 Mod4 d :ShowDesktop
 # Win + a 打开应用程序查找器（Xfce4 App Finder）
 Mod4 a :ExecCommand xfce4-appfinder
+
+

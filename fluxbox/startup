@@ -21,6 +21,13 @@ pgrep -x nm-applet > /dev/null || nm-applet &
 # 启动蓝牙管理器（避免重复运行）
 # pgrep -x blueman-applet > /dev/null || blueman-applet &
 
+# 音量控制
+# 启动 pasystray pulse
+# pasystray &
+# 启动 volumeicon alsa
+# volumeicon &
+
+
 # 启动conky
 # conky&
 
@@ -30,6 +37,64 @@ setxkbmap us &
 # setxkbmap -layout cn,us &
 # 设置带有国际字符支持的美国英语键盘布局
 # setxkbmap us -variant intl & # 在 us 键盘中添加特殊字符支持 (类似 éóíáú) 
+
+# 启动gvfs
+#/usr/libexec/gvfsd &
+#/usr/libexec/gvfs-udisks2-volume-monitor &
+
+# 启动独立的 D-Bus 会话
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval $(dbus-launch --sh-syntax --exit-with-session)
+    export DBUS_SESSION_BUS_ADDRESS
+fi
+# echo $DBUS_SESSION_BUS_ADDRESS
+# dbus-launch nautilus
+
+# 认证
+# sudo apt install lxpolkit
+lxpolkit &
+# 或者GNOME的 sudo usermod -aG plugdev $USER
+# /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+
+
+# 启动 PolicyKit 认证代理（根据你的发行版选择）
+#if command -v /usr/libexec/polkit-gnome-authentication-agent-1 >/dev/null 2>&1; then
+#    /usr/libexec/polkit-gnome-authentication-agent-1 &
+#elif command -v /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 >/dev/null 2>&1; then
+#    /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+#elif command -v lxpolkit >/dev/null 2>&1; then
+#    lxpolkit &
+#fi
+
+
+# 启动剪贴板管理器（可选）
+# if command -v parcellite >/dev/null 2>&1; then
+#     parcellite &
+# elif command -v clipit >/dev/null 2>&1; then
+#     clipit &
+# fi
+
+# 启动文件管理器的自动挂载支持（可选）
+# if command -v thunar >/dev/null 2>&1; then
+#     thunar --daemon &
+# elif command -v pcmanfm >/dev/null 2>&1; then
+#     pcmanfm -d &
+# fi
+
+# 自动解锁密钥环
+if [ -z "$GNOME_KEYRING_PID" ]; then
+    eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
+    export SSH_AUTH_SOCK
+fi
+
+# 如果你用 lightdm，可以让它在登录时自动解锁密钥环
+# sudo apt install libpam-gnome-keyring
+# sudo nano /etc/pam.d/lightdm
+# 找到@include common-auth
+# 下面添加
+# auth optional pam_gnome_keyring.so
+# session optional pam_gnome_keyring.so auto_start
+
 
 # 使用 numlockx 工具来控制小键盘状态。
 # sudo apt install numlockx  # Debian/Ubuntu
@@ -55,4 +120,4 @@ command -v fbautostart >/dev/null && fbautostart &
 # 最后，我们启动 Fluxbox。因为它是最后运行的应用程序，你必须在它前面加上 exec。
 # exec fluxbox
 # 如果你想要保存日志:
-exec fluxbox -log "~/.fluxbox/log"
+exec fluxbox -log "/home/jessie/.fluxbox/log"

@@ -9,4 +9,11 @@ sudo apt install thunar
 sudo apt install nautilus
 sudo apt install gnome-terminal
 sudo apt install gnome-settings-daemon
+sudo apt install setxkbmap
+sudo apt install numlockx
+sudo apt install scrot
+sudo apt install rofi
+sudo apt install pasystray
+sudo apt install volumeicon-alsa
+sudo apt install lxpolkit
 

@@ -1,140 +1,225 @@
 ! 窗口标签（Tabs）配置
-session.screen0.tab.placement:	TopLeft  ! 标签放置在窗口的左上角
-session.screen0.tab.width:	64  ! 设置标签的宽度
-session.screen0.tabs.usePixmap:	true  ! 启用标签背景图片
-session.screen0.tabs.maxOver:	false  ! 禁止标签重叠
-session.screen0.tabs.intitlebar:	true  ! 在窗口标题栏中显示标签
+! 标签放置在窗口的左上角
+session.screen0.tab.placement:	TopLeft
+! 设置标签的宽度
+session.screen0.tab.width:	64
+! 启用标签背景图片
+session.screen0.tabs.usePixmap:	true
+! 禁止标签重叠
+session.screen0.tabs.maxOver:	false
+! 在窗口标题栏中显示标签
+session.screen0.tabs.intitlebar:	true
+
 
 ! Slit（小程序停靠区）配置
-session.screen0.slit.layer:	Dock  ! 停靠窗口的层级
-session.screen0.slit.placement:	RightBottom  ! 停靠在屏幕右下角
-session.screen0.slit.autoHide:	false  ! 不自动隐藏 Slit
-session.screen0.slit.alpha:	255  ! 不透明度设置（255 代表完全不透明）
-/home/jessie/.fluxbox/menusession.screen0.slit.maxOver:	false  ! 禁止 Slit 覆盖其他窗口
-session.screen0.slit.acceptKdeDockapps:	true  ! 允许 KDE 停靠应用
-session.screen0.slit.onhead:	0  ! Slit 显示在哪个屏幕上（0 代表主屏）
-session.screen0.menuDelay:	200  ! 右键菜单（menu）打开的延迟（毫秒）
-session.slitlistFile:	~/.fluxbox/slitlist  ! Slit（小程序停靠区）列表文件
+! 停靠窗口的层级
+session.screen0.slit.layer:	Dock
+! 停靠在屏幕右下角
+session.screen0.slit.placement:	RightBottom
+! 不自动隐藏 Slit
+session.screen0.slit.autoHide:	false
+! 不透明度设置（255 代表完全不透明）
+session.screen0.slit.alpha:	255
+! 禁止 Slit 覆盖其他窗口
+session.screen0.slit.maxOver:	false
+! 允许 KDE 停靠应用
+session.screen0.slit.acceptKdeDockapps:	true
+! Slit 显示在哪个屏幕上（0 代表主屏）
+session.screen0.slit.onhead:	0
+! 右键菜单（menu）打开的延迟（毫秒）
+session.screen0.menuDelay:	200
+
 
 ! 日期和时间格式
-! session.screen0.strftimeFormat:	%d %b, %a %02k:%M:%S  
-!2025年04月01日 星期一 下午 02:30:45
+! 配置 Fluxbox 显示日期和时间的格式
+! %d - 日期（两位数）
+! %b - 月份的缩写（例如 Apr）
+! %a - 星期的缩写（例如 Mon）
+! %02k - 24 小时制小时，补零（00-23）
+! %M - 分钟
+! %S - 秒
+! 默认(英文)
+! session.screen0.strftimeFormat:	%d %b, %a %02k:%M:%S
+! 2025年04月01日 星期一 下午 02:30:45
 session.screen0.strftimeFormat:	%Y年%m月%d日 %A %p %I:%M:%S
 ! 2025年04月01日 星期一 14:30:45
-!session.screen0.strftimeFormat:	%Y年%m月%d日 %A %H:%M:%S
+! session.screen0.strftimeFormat:	%Y年%m月%d日 %A %H:%M:%S
 ! 04月01日 14:30
-!session.screen0.strftimeFormat:	%m月%d日 %H:%M
-! 配置 Fluxbox 显示日期和时间的格式  
-! %d - 日期（两位数）  
-! %b - 月份的缩写（例如 Apr）  
-! %a - 星期的缩写（例如 Mon）  
-! %02k - 24 小时制小时，补零（00-23）  
-! %M - 分钟  
-! %S - 秒  
+! session.screen0.strftimeFormat:	%m月%d日 %H:%M
+
 
 ! 图标栏（Iconbar）设置
-session.screen0.iconbar.mode:	{static groups} (workspace)  ! 仅显示当前工作区的应用
-session.screen0.iconbar.iconWidth:	128  ! 图标宽度
-session.screen0.iconbar.usePixmap:	true  ! 允许使用图标图片
-session.screen0.iconbar.alignment:	Relative  ! 图标居中对齐
-session.screen0.iconbar.iconTextPadding:	10  ! 图标文字的内边距
+! 仅显示当前工作区的应用
+session.screen0.iconbar.mode:	{static groups} (workspace)
+! 图标宽度
+session.screen0.iconbar.iconWidth:	128
+! 允许使用图标图片
+session.screen0.iconbar.usePixmap:	true
+! 图标居中对齐
+session.screen0.iconbar.alignment:	Relative
+! 图标文字的内边距
+session.screen0.iconbar.iconTextPadding:	10
+
 
 ! 窗口焦点与外观
-session.screen0.clientMenu.usePixmap:	true  ! 使用图片背景的客户端菜单
-session.screen0.window.focus.alpha:	183  ! 窗口获得焦点时的透明度
-session.screen0.window.unfocus.alpha:	210  ! 窗口失去焦点时的透明度
-session.screen0.titlebar.left:	Stick  ! 左侧标题栏按钮（固定窗口）
-session.screen0.titlebar.right:	Minimize Maximize Close  ! 右侧标题栏按钮（最小化、最大化、关闭）
+! 使用图片背景的客户端菜单
+session.screen0.clientMenu.usePixmap:	true
+! 窗口获得焦点时的透明度
+session.screen0.window.focus.alpha:	183
+! 窗口失去焦点时的透明度
+session.screen0.window.unfocus.alpha:	210
+! 左侧标题栏按钮（固定窗口）
+session.screen0.titlebar.left:	Stick
+! 右侧标题栏按钮（最小化、最大化、关闭）
+session.screen0.titlebar.right:	Minimize Maximize Close
 ! 拖动窗口时是否实时渲染
-session.screen0.opaqueMove:	true  
-! true - 窗口拖动时实时显示整个窗口  
-! false - 拖动窗口时只显示轮廓（更节省资源）  
-! 多显示器环境下窗口焦点行为
-session.screen0.focusSameHead:	false  
-! true - 窗口焦点只能在当前显示器之间切换  
-! false - 窗口焦点可跨显示器切换
+! true - 窗口拖动时实时显示整个窗口
+! false - 拖动窗口时只显示轮廓（更节省资源）
+session.screen0.opaqueMove:	true
 
+! 多显示器环境下窗口焦点行为
+! true - 窗口焦点只能在当前显示器之间切换
+! false - 窗口焦点可跨显示器切换
+session.screen0.focusSameHead:	false
 
 ! 窗口装饰风格
-session.screen0.defaultDeco:	NORMAL  
-! NORMAL - 默认窗口装饰  
-! NONE - 无边框无标题栏（无装饰模式）  
-! TINY - 仅标题栏，没有边框  
-! BORDER - 仅边框，没有标题栏  
+! NORMAL - 默认窗口装饰
+! NONE - 无边框无标题栏（无装饰模式）
+! TINY - 仅标题栏，没有边框
+! BORDER - 仅边框，没有标题栏
+session.screen0.defaultDeco:	NORMAL
 
 
 ! 主菜单（Menu）透明度
-session.screen0.menu.alpha:	219  ! 菜单的透明度
+! 菜单的透明度
+session.screen0.menu.alpha:	219
+
 
 ! 工具栏（Toolbar）设置
-session.screen0.toolbar.alpha:	255  ! 工具栏透明度（255 表示不透明）
-session.screen0.toolbar.autoHide:	false  ! 工具栏不自动隐藏
-session.screen0.toolbar.widthPercent:	100  ! 工具栏宽度占屏幕 100%
-session.screen0.toolbar.onhead:	1  ! 工具栏显示在屏幕 1
-session.screen0.toolbar.height:	0  ! 工具栏高度（0 代表默认）
-session.screen0.toolbar.layer:	Dock  ! 工具栏层级
-session.screen0.toolbar.tools:	prevworkspace, workspacename, nextworkspace, clock, prevwindow, nextwindow, iconbar, systemtray  ! 工具栏包含的组件
-session.screen0.toolbar.placement:	BottomCenter  ! 工具栏放在屏幕底部居中
-session.screen0.toolbar.visible:	true  ! 显示工具栏
-session.screen0.toolbar.maxOver:	false  ! 禁止工具栏覆盖窗口
+! 工具栏透明度（255 表示不透明）
+session.screen0.toolbar.alpha:	255
+! 工具栏不自动隐藏
+session.screen0.toolbar.autoHide:	false
+! 工具栏宽度占屏幕 100%
+session.screen0.toolbar.widthPercent:	100
+! 工具栏显示在屏幕 1
+session.screen0.toolbar.onhead:	1
+! 工具栏高度（0 代表默认）
+session.screen0.toolbar.height:	0
+! 工具栏层级
+session.screen0.toolbar.layer:	Dock
+! 工具栏包含的组件
+session.screen0.toolbar.tools:	prevworkspace, workspacename, nextworkspace, clock, prevwindow, nextwindow, iconbar, systemtray
+! 工具栏放在屏幕底部居中
+session.screen0.toolbar.placement:	BottomCenter
+! 显示工具栏
+session.screen0.toolbar.visible:	true
+! 禁止工具栏覆盖窗口
+session.screen0.toolbar.maxOver:	false
+
 
 ! 窗口焦点模式
-session.screen0.focusModel:	ClickFocus  ! 需要点击窗口才能获取焦点
-session.screen0.focusNewWindows:	true  ! 新窗口自动获取焦点
-session.screen0.autoRaise:	true  ! 获取焦点的窗口自动置顶
-session.screen0.clickRaises:	true  ! 点击窗口后窗口置顶
-session.screen0.tabFocusModel:	ClickToTabFocus  ! 点击切换标签页
-session.screen0.noFocusWhileTypingDelay:	0  ! 输入时不更改窗口焦点
+! 需要点击窗口才能获取焦点
+session.screen0.focusModel:	ClickFocus
+! 新窗口自动获取焦点
+session.screen0.focusNewWindows:	true
+! 获取焦点的窗口自动置顶
+session.screen0.autoRaise:	true
+! 点击窗口后窗口置顶
+session.screen0.clickRaises:	true
+! 点击切换标签页
+session.screen0.tabFocusModel:	ClickToTabFocus
+! 输入时不更改窗口焦点
+session.screen0.noFocusWhileTypingDelay:	0
+
 
 ! 任务栏（Iconbar）和窗口管理
-! session.screen0.windowPlacement:	RowMinOverlapPlacement  ! 按行排列窗口，最小化重叠
+! 按行排列窗口，最小化重叠
+! session.screen0.windowPlacement:	RowMinOverlapPlacement
 session.screen0.windowPlacement:	SmartPlacement ! 这样窗口不会堆叠，而是自动找空位。
-session.screen0.rowPlacementDirection:	LeftToRight  ! 窗口从左到右排列
-session.screen0.colPlacementDirection:	TopToBottom  ! 窗口从上到下排列
+
+! 窗口从左到右排列
+session.screen0.rowPlacementDirection:	LeftToRight
+! 窗口从上到下排列
+session.screen0.colPlacementDirection:	TopToBottom
 
 ! 窗口最大化行为
-session.screen0.fullMaximization:	false  ! 禁止窗口覆盖工具栏等区域（false（默认）：窗口最大化时，不会覆盖工具栏、Slit（如任务栏或系统托盘），而是适应可用的屏幕区域。）
-session.screen0.maxIgnoreIncrement:	true  ! 忽略窗口的大小增量
-session.screen0.maxDisableMove:	false  ! 允许最大化的窗口移动
-session.screen0.maxDisableResize:	false  ! 允许最大化的窗口调整大小
+! 禁止窗口覆盖工具栏等区域（false（默认）：窗口最大化时，不会覆盖工具栏、Slit（如任务栏或系统托盘），而是适应可用的屏幕区域。）
+session.screen0.fullMaximization:	false
+! 忽略窗口的大小增量
+session.screen0.maxIgnoreIncrement:	true
+! 允许最大化的窗口移动
+session.screen0.maxDisableMove:	false
+! 允许最大化的窗口调整大小
+session.screen0.maxDisableResize:	false
+
 
 ! 边界和吸附行为
-session.screen0.edgeSnapThreshold:	5  ! 窗口吸附的阈值（像素）默认10
-session.screen0.workspacewarping:	true  ! 允许鼠标移动到屏幕边缘切换工作区
-session.screen0.showwindowposition:	false  ! 拖动窗口时不显示位置提示
-session.screen0.allowRemoteActions:	false  ! 禁止远程控制窗口操作
+! 窗口吸附的阈值（像素）默认10
+session.screen0.edgeSnapThreshold:	5
+! 允许鼠标移动到屏幕边缘切换工作区
+session.screen0.workspacewarping:	true
+! 拖动窗口时不显示位置提示
+session.screen0.showwindowposition:	false
+! 禁止远程控制窗口操作
+session.screen0.allowRemoteActions:	false
+
 
 ! 工作区设置
-session.screen0.workspaces:	4  ! 设定 4 个工作区
-session.screen0.workspaceNames:	\345\267\245\344\275\234\345\214\272 1,\345\267\245\344\275\234\345\214\272 2,\345\267\245\344\275\234\345\214\272 3,\345\267\245\344\275\234\345\214\272 4,  
+! 设定 4 个工作区
+session.screen0.workspaces:	4
+session.screen0.workspaceNames:	\345\267\245\344\275\234\345\214\272 1,\345\267\245\344\275\234\345\214\272 2,\345\267\245\344\275\234\345\214\272 3,\345\267\245\344\275\234\345\214\272 4,
 !session.screen0.workspaceNames: "工作区 1, 工作区 2, 工作区 3, 工作区 4"
 
 ! Fluxbox 主题与菜单配置
-session.styleFile:	~/.fluxbox/styles/Font-14  ! 主题样式文件
-session.styleOverlay:	~/.fluxbox/overlay  ! 主题覆盖文件
-session.menuFile:	~/.fluxbox/menu  ! 菜单配置文件
-session.windowMenu:	~/.fluxbox/windowmenu  ! 窗口菜单配置
-session.keyFile:	~/.fluxbox/keys  ! 键盘快捷键配置
-session.appsFile:	~/.fluxbox/apps  ! 窗口管理规则
+! 主题样式文件
+session.styleFile:	~/.fluxbox/styles/Font-14
+! 主题覆盖文件
+session.styleOverlay:	~/.fluxbox/overlay
+! 菜单配置文件
+session.menuFile:	~/.fluxbox/menu
+! 窗口菜单配置
+session.screen0.windowMenu:	~/.fluxbox/windowmenu
+! session.windowMenu:	~/.fluxbox/windowmenu
+! 键盘快捷键配置
+session.keyFile:	~/.fluxbox/keys
+! 窗口管理规则
+session.appsFile:	~/.fluxbox/apps
+! Slit（小程序停靠区）列表文件
+session.slitlistFile:	~/.fluxbox/slitlist
+
 
 ! 透明度与性能优化
-session.forcePseudoTransparency:	true  ! 启用伪透明
-session.cacheMax:	200  ! 缓存最大值
-session.cacheLife:	5  ! 缓存寿命
-session.configVersion:	13  ! 配置文件版本
+! 启用伪透明
+session.forcePseudoTransparency:	true
+! 缓存最大值
+session.cacheMax:	200
+! 缓存寿命
+session.cacheLife:	5
+! 配置文件版本
+session.configVersion:	13
+
 
 ! 其他设置
-session.doubleClickInterval:	250  ! 双击间隔（毫秒）
-session.tabPadding:	0  ! 标签页之间的间距
-session.ignoreBorder:	false  ! 是否忽略窗口边框
-session.autoRaiseDelay:	250  ! 自动置顶的延迟时间（毫秒）
-session.tooltipDelay:	500  ! 提示框延迟（毫秒）
+! 双击间隔（毫秒）
+session.doubleClickInterval:	250
+! 标签页之间的间距
+session.tabPadding:	0
+! 是否忽略窗口边框
+session.ignoreBorder:	false
+! 自动置顶的延迟时间（毫秒）
+session.autoRaiseDelay:	250
+! 提示框延迟（毫秒）
+session.screen0.tooltipDelay:	500
+! session.tooltipDelay:	500
+
 ! 颜色通道的精度
-session.colorsPerChannel:	4  
-! 设置每个颜色通道使用的颜色数量（影响 UI 渲染）  
-! 一般 4 已足够，过高会占用更多显存  
+! 设置每个颜色通道使用的颜色数量（影响 UI 渲染）
+! 一般 4 已足够，过高会占用更多显存
 ! 标签页附加区域
-session.tabsAttachArea:	Window  
-! Window - 标签附着在整个窗口  
-! Titlebar - 标签只附着在窗口标题栏  
+session.colorsPerChannel:	4
+! Window - 标签附着在整个窗口
+! Titlebar - 标签只附着在窗口标题栏
+session.tabsAttachArea:	Window
+
 
