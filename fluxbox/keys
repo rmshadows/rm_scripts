@@ -100,17 +100,35 @@ Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_Al
 
 
 # 窗口布局
-# Win + 上下左右：窗口半屏排列
+# Win + Shift + 上下左右：窗口半屏排列
 Mod4 Shift Up :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Up}
 Mod4 Shift Left :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Left}
 Mod4 Shift Right :MacroCmd {ResizeTo 50% 100%} {MoveTo 00 00 Right}
 Mod4 Shift Down :MacroCmd {ResizeTo 100% 50%} {MoveTo 00 00 Bottom}
+# (相同表达)窗口平铺到左/右/上/下
+#Mod4 Shift Left  :MoveTo 0 0 :ResizeTo 50% 100%  # 左半屏
+#Mod4 Shift Right :MoveTo 50% 0 :ResizeTo 50% 100%  # 右半屏
+#Mod4 Shift Up  :MoveTo 0 0 :ResizeTo 100% 50%  # 上半屏
+#Mod4 Shift Down  :MoveTo 0 50% :ResizeTo 100% 50%  # 下半屏
 
-# Win + Shift + q/w/a/s：窗口四分之一排列
-Mod4 Shift q :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 00% Up}  # 左上
-Mod4 Shift w :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 00% Up}  # 右上
-Mod4 Shift a :MacroCmd {ResizeTo 50% 50%} {MoveTo 00% 50% Up}  # 左下
-Mod4 Shift s :MacroCmd {ResizeTo 50% 50%} {MoveTo 50% 50% Up}  # 右下
+# Win + Shift + Q/W/A/S ：窗口移动到四个角落并缩放到 1/4 屏幕大小
+Mod4 Shift Q :MoveTo 0 0 :ResizeTo 50% 50%  # 左上角
+Mod4 Shift W :MoveTo 50% 0 :ResizeTo 50% 50%  # 右上角
+Mod4 Shift A :MoveTo 0 50% :ResizeTo 50% 50%  # 左下角
+Mod4 Shift S :MoveTo 50% 50% :ResizeTo 50% 50%  # 右下角
+
+# 窗口自动排列 Win + 1-5: 不同排列方式
+Mod4 1 :ArrangeWindows  # 自动排列窗口
+Mod4 2 :ArrangeWindowsVertical  # 垂直排列
+Mod4 3 :ArrangeWindowsHorizontal  # 水平排列
+Mod4 4 :ArrangeWindowsHorizontal (Name=[current])  # 仅当前窗口组
+Mod4 5 :ArrangeWindowsVertical (Name=[current])  # 仅当前窗口组（垂直）
+
+# Win + Shift + 方向键 调整当前窗口大小
+Mod4 Mod1 Left  :Resize -10% 0
+Mod4 Mod1 Right :Resize +10% 0
+Mod4 Mod1 Up    :Resize 0 -10%
+Mod4 Mod1 Down  :Resize 0 +10%
 
 
 # 屏幕亮度控制
@@ -135,15 +153,6 @@ Print :ExecCommand scrot
 # Win + L 锁屏（使用 i3lock）
 Mod4 l :ExecCommand i3lock
 # Mod4 l :ExecCommand dm-tool lock
-
-
-# 窗口自动排列
-# Win + 1-5 不同排列方式
-Mod4 1 :ArrangeWindows  # 自动排列窗口
-Mod4 2 :ArrangeWindowsVertical  # 垂直排列
-Mod4 3 :ArrangeWindowsHorizontal  # 水平排列
-Mod4 4 :ArrangeWindowsHorizontal (Name=[current])  # 仅排列当前窗口组
-Mod4 5 :ArrangeWindowsVertical (Name=[current])  # 仅排列当前窗口组（垂直）
 
 
 # 其他

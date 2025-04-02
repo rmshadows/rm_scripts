@@ -10,7 +10,7 @@ session.screen0.slit.layer:	Dock  ! 停靠窗口的层级
 session.screen0.slit.placement:	RightBottom  ! 停靠在屏幕右下角
 session.screen0.slit.autoHide:	false  ! 不自动隐藏 Slit
 session.screen0.slit.alpha:	255  ! 不透明度设置（255 代表完全不透明）
-session.screen0.slit.maxOver:	false  ! 禁止 Slit 覆盖其他窗口
+/home/jessie/.fluxbox/menusession.screen0.slit.maxOver:	false  ! 禁止 Slit 覆盖其他窗口
 session.screen0.slit.acceptKdeDockapps:	true  ! 允许 KDE 停靠应用
 session.screen0.slit.onhead:	0  ! Slit 显示在哪个屏幕上（0 代表主屏）
 session.screen0.menuDelay:	200  ! 右键菜单（menu）打开的延迟（毫秒）
