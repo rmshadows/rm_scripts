@@ -32,11 +32,10 @@ OnDesktop Mouse3 :rootMenu
 
 # 窗口切换
 # Alt + Tab 切换到下一个窗口（在当前工作区）
-# Mod1 Tab :Exec rofi -show windowcd
 Mod1 Tab :NextWindow (workspace=[current])
 # Alt + Shift + Tab 切换到上一个窗口（在当前工作区）
 Mod1 Shift Tab :PrevWindow (workspace=[current])
-
+Mod4 Tab :Exec rofi -show window
 
 # 工作区切换
 # Ctrl Alt 左/右
@@ -150,12 +149,14 @@ Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/brightnessControl/xrandrBrigh
 # 或者scrot
 # Print :ExecCommand ksnip
 Print :ExecCommand scrot
-
+# Mod1 Shift s :ExecCommand kylin-screenshot gui
 
 # Win + L 锁屏（使用 i3lock）
 Mod4 l :ExecCommand i3lock
 # Mod4 l :ExecCommand dm-tool lock
 
+# 挂载
+# Mod1 Shift m :ExecCommand gnome-terminal -- "/home/ryan/.mountBA"
 
 # 其他
 # Win + d 显示桌面
