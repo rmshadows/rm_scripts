@@ -5,7 +5,7 @@ Description=【$SRV_NAME】服务，使用ffmpeg推流
 After=network.target            
 
 [Service]
-WorkingDirectory=【$new_srv_path】  # 替换为实际路径
+# WorkingDirectory=【$new_srv_path】  # 替换为实际路径
 ExecStart=【$new_srv_path】/【$new_srv_name】.sh
 
 # 启动方式，通常使用 forking 类型（适用于后台启动的服务）

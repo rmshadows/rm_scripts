@@ -5,7 +5,7 @@ Description=【$SRV_NAME】服务
 After=network.target               
 
 [Service]
-WorkingDirectory=【$new_srv_path】  # 替换为实际路径
+# WorkingDirectory=【$new_srv_path】  # 替换为实际路径
 ExecStartPre=source kconfig.sh && ./kplayer -c "$KCONF" play stop
 ExecStart=source kconfig.sh && ./kplayer -c "$KCONF" play start -d
 
