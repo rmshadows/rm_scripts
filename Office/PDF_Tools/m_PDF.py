@@ -179,7 +179,7 @@ def image2pdf(directory, output_pdf_name, content:bool=True, order=None, removeP
             # img = Image.merge("RGB", (r, g, b))
             img = Image.open(imgf)
             if img.mode == "RGBA":
-                img.convert("RGB")
+                img = img.convert("RGB")
             #     def editFilename(src, dst, prefix=None, suffix=None, ext=None):
             to_save_path = m_System.editFilename(imgf, None, None, None, ".jpg")
             img.save(to_save_path)
