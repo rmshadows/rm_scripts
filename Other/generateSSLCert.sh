@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # 设置证书的基本信息
 COUNTRY="CN"
 STATE="Beijing"
