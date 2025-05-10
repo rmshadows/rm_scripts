@@ -18,7 +18,12 @@ readMount="/media/bitlockermount"
 keyMode=0
 # Bitlocker磁盘密码(可选) 没有请注释
 # keyPass=""
+# 可选指定 dislocker 路径（适用于 UOS arm64，系统自带 dislocker 可能有问题）
+# DISLOCKER_CUSTOM="./UOS-arm64/dislocker"
+# DISLOCKER_CUSTOM="./amd64/dislocker"
 
+# 内部参数
+DISLOCKER_BIN=""
 source Profile.sh
 if [ "$?" -ne 0 ]; then
     echo "\033[0;31m Source Profile.sh: An error occurred and exited. \033[0m"
@@ -98,16 +103,35 @@ mountBitlockerDisk() {
         # 获取用户名
         USERNAME="$USER"
 
-        ## 检查命令是否安装dislocker、fuse
-        cmdToCheck="dislocker"
-        if ! [ -x "$(command -v "$cmdToCheck")" ]; then
-            # echo "Error: "$cmdToCheck" is not installed." >&2
-            prompt -w "WARN: "$cmdToCheck" is not installed, try apt install."
-            sudo apt install "$cmdToCheck" -y
+        # 判断是否存在自定义 dislocker
+        if [[ -x "$DISLOCKER_CUSTOM" ]]; then
+            DISLOCKER_BIN="$DISLOCKER_CUSTOM"
+            echo "[INFO] 使用指定的 dislocker: $DISLOCKER_BIN"
+        elif command -v dislocker &>/dev/null; then
+            DISLOCKER_BIN=$(command -v dislocker)
+            echo "[INFO] 使用系统自带的 dislocker: $DISLOCKER_BIN"
         else
-            # echo "Command found! : "$cmdToCheck"" >&1
-            prompt -i "Command found! : "$cmdToCheck""
+            echo "[ERROR] 未找到 dislocker 工具。"
+            cmdToCheck="dislocker"
+            if ! [ -x "$(command -v "$cmdToCheck")" ]; then
+                # echo "Error: "$cmdToCheck" is not installed." >&2
+                prompt -w "WARN: "$cmdToCheck" is not installed, try apt install."
+                sudo apt install "$cmdToCheck" -y
+            else
+                # echo "Command found! : "$cmdToCheck"" >&1
+                prompt -i "Command found! : "$cmdToCheck""
+            fi
+            # 再次检查
+            if command -v dislocker &>/dev/null; then
+                DISLOCKER_BIN=$(command -v dislocker)
+                echo "[INFO] 安装成功，使用系统 dislocker: $DISLOCKER_BIN"
+            else
+                echo "[FATAL] 安装失败，仍未找到 dislocker。"
+                exit 1
+            fi
         fi
+
+        ## 检查命令是否安装dislocker、fuse
         cmdToCheck="fusermount"
         if ! [ -x "$(command -v "$cmdToCheck")" ]; then
             # echo "Error: "$cmdToCheck" is not installed." >&2
@@ -183,18 +207,21 @@ mountBitlockerDisk() {
         ## 开始挂载
         # sudo dislocker /dev/sdb4 -u -- /home/bitlocker
         # sudo umount /home/bitlocker
-        prompt -x "Try to mount (sudo dislocker "$pdev" -u -- "$dislockMount") ..."
+        # prompt -x "Try to mount (sudo dislocker "$pdev" -u -- "$dislockMount") ..."
+        prompt -x "Try to mount (sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount") ..."
         if [ "$keyMode" -eq 0 ]; then
             prompt -m "Decryption with password (-u)."
             # 判断是否提供了密码
             if [ -n "$keyPass" ]; then
                 # 如果提供了密码，则使用提供的密码解锁
                 echo "Using provided Bitlocker password..."
-                sudo dislocker "$pdev" -u"$keyPass" "$dislockMount"
+                # sudo dislocker "$pdev" -u"$keyPass" "$dislockMount"
+                sudo "$DISLOCKER_BIN" "$pdev" -u"$keyPass" "$dislockMount"
             else
                 # 如果未提供密码，则手动输入密码
                 echo "Enter Bitlocker password when prompted..."
-                sudo dislocker "$pdev" -u -- "$dislockMount"
+                # sudo dislocker "$pdev" -u -- "$dislockMount"
+                sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount"
             fi
         elif [ "$keyMode" -eq 1 ]; then
             prompt -m "Decryption with recovery key (-p)."
@@ -203,11 +230,13 @@ mountBitlockerDisk() {
             if [ -n "$keyPass" ]; then
                 # 如果使用的恢复密钥：
                 echo "Using provided Bitlocker recovery key..."
-                sudo dislocker "$pdev" -p"$keyPass" "$dislockMount"
+                # sudo dislocker "$pdev" -p"$keyPass" "$dislockMount"
+                sudo "$DISLOCKER_BIN" "$pdev" -p"$keyPass" "$dislockMount"
             else
                 # 如果未提供密码，则手动输入密码
                 echo "Enter Bitlocker password when prompted..."
-                sudo dislocker "$pdev" -p -- "$dislockMount"
+                # sudo dislocker "$pdev" -p -- "$dislockMount"
+                sudo "$DISLOCKER_BIN" "$pdev" -p -- "$dislockMount"
             fi
         else
             prompt -e "Error: Wrong decryption method selection (0~1, but $keyMode) ."

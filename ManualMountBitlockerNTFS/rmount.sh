@@ -18,6 +18,9 @@ readMount="/media/bitlockermount"
 keyMode=0
 # Bitlocker磁盘密码(可选) 没有请注释
 # keyPass=""
+# 指定dislocker
+DISLOCKER_BIN="dislocker"
+# DISLOCKER_BIN="./UOS-arm64/dislocker"
 
 source Profile.sh
 if [ "$?" -ne 0 ]; then
@@ -111,20 +114,20 @@ else
   fi
 fi
 ## 开始挂载
-# sudo dislocker /dev/sdb4 -u -- /home/bitlocker
+# sudo "$DISLOCKER_BIN" /dev/sdb4 -u -- /home/bitlocker
 # sudo umount /home/bitlocker
-prompt -x "Try to mount (sudo dislocker "$pdev" -u -- "$dislockMount") ..."
+prompt -x "Try to mount (sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount") ..."
 if [ "$keyMode" -eq 0 ]; then
   prompt -m "Decryption with password (-u)."
   # 判断是否提供了密码
   if [ -n "$keyPass" ]; then
     # 如果提供了密码，则使用提供的密码解锁
     echo "Using provided Bitlocker password..."
-    sudo dislocker "$pdev" -u"$keyPass" "$dislockMount"
+    sudo "$DISLOCKER_BIN" "$pdev" -u"$keyPass" "$dislockMount"
   else
     # 如果未提供密码，则手动输入密码
     echo "Enter Bitlocker password when prompted..."
-    sudo dislocker "$pdev" -u -- "$dislockMount"
+    sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount"
   fi
 elif [ "$keyMode" -eq 1 ]; then
   prompt -m "Decryption with recovery key (-p)."
@@ -133,11 +136,11 @@ elif [ "$keyMode" -eq 1 ]; then
   if [ -n "$keyPass" ]; then
     # 如果使用的恢复密钥：
     echo "Using provided Bitlocker recovery key..."
-    sudo dislocker "$pdev" -p"$keyPass" "$dislockMount"
+    sudo "$DISLOCKER_BIN" "$pdev" -p"$keyPass" "$dislockMount"
   else
     # 如果未提供密码，则手动输入密码
     echo "Enter Bitlocker password when prompted..."
-    sudo dislocker "$pdev" -p -- "$dislockMount"
+    sudo "$DISLOCKER_BIN" "$pdev" -p -- "$dislockMount"
   fi
 else
   prompt -e "Error: Wrong decryption method selection (0~1, but $keyMode) ."

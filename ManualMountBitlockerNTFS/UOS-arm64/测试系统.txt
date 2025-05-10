@@ -1,0 +1,17 @@
+   ht-706@ht-706-PC 
+       #######          ---------------- 
+       ##O#O##          OS: UOS Desktop 20 Professional aarch64 
+       #######          Host: TR1252 1.00 
+     ###########        Kernel: 4.19.0-arm64-desktop 
+    #############       Uptime: 2 days, 21 hours, 7 mins 
+   ###############      Packages: 2045 (dpkg) 
+   ################     Shell: bash 5.0.3 
+  #################     Resolution: 1920x1080 
+#####################   DE: Deepin 
+#####################   WM: KWin 
+  #################     Theme: deepin [GTK2/3] 
+                        Icons: infiniteuniverse.ff3410b3 [GTK2/3] 
+                        Terminal: deepin-terminal 
+                        CPU: FT-2000/4 (4) @ 2.600GHz 
+                        GPU: AMD ATI Radeon HD 6450/7450/8450 / R5 230 OEM 
+                        Memory: 2940MiB / 7892MiB 
