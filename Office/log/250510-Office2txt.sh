@@ -17,31 +17,34 @@ if ! [ -x "$(command -v "$cmdToCheck")" ]; then
     echo "Error: "$cmdToCheck" is not installed." >&2
     sudo apt-get install libreoffice
     sudo apt-get install libreoffice-java-common
+else
+    echo "Command found! : "$cmdToCheck"" >&1
 fi
 
 # 搜索的文件夹
 # directory_path="src"
+# directory_path1="src"
 # 获取输入参数，默认为 src
 directory_path="${1:-src}"
-
+directory_path1="$directory_path"
 # 搜索的word文件扩展名
-word_extensions=("doc" "docx" "wps")
+file_extensions=("doc" "docx" "wps")
 # 搜索的Excel文件扩展名
-excel_extensions=("xlsx" "xls" "et" "csv")
+file_extensions1=("xlsx" "xls" "et" "csv")
 # 导出的位置
 mirror_out="office_mirror"
 # 去除文件名中的空格(仅导出的文件)
 no_blank_filename=1
 # 如果导出的文件存在是否覆盖
-ooverwrite=1
+ooverwrite=0
 
 function find_files_with_extensions() {
     local directory_path="$1"
-    local extensions=("${@:2}")
+    local file_extensions=("${@:2}")
 
     if [ -d "$directory_path" ]; then
         ffwe_file_list=()
-        for ext in "${extensions[@]}"; do
+        for ext in "${file_extensions[@]}"; do
             mapfile -t files_for_extension < <(find "$directory_path" -type f -iname "*.$ext" -exec readlink -f {} \;)
             ffwe_file_list+=("${files_for_extension[@]}")
         done
@@ -54,14 +57,13 @@ function find_files_with_extensions() {
     fi
 }
 
-# 相对路径
 function find_files_with_extensions1() {
     local directory_path="$1"
-    local extensions=("${@:2}")
+    local file_extensions=("${@:2}")
 
     if [ -d "$directory_path" ]; then
         local files=()
-        for extension in "${extensions[@]}"; do
+        for extension in "${file_extensions[@]}"; do
             while IFS= read -r -d '' file; do
                 files+=("$file")
             done < <(find "$directory_path" -type f -iname "*.$extension" -print0)
@@ -120,12 +122,22 @@ function getFileEncoding() {
     IFS="$OLD_IFS"
     getFileEncoding=${gotArr[1]}
 }
+##########################################################################################
 
+find_files_with_extensions "$directory_path" "${file_extensions[@]}"
 
+# 打印数组内容
+# printf '%s\n' "${ffwe_file_list[@]}"
 
-convert_word_to_txt() {
+# 打印文件列表
+# for file_path in "${ffwe_file_list[@]}"; do
+#     echo "文件路径: \"$file_path\""
+# done
+
+# 打印文件列表
+for file_path in "${ffwe_file_list[@]}"; do
     # 绝对路径转相对路径(构建相对路径)
-    srcfr=$(convert_absolute_to_relative "$1" ".")
+    srcfr=$(convert_absolute_to_relative "$file_path" ".")
     # 获取相对路径的文件夹名
     dstdr=$(get_directory_path "$srcfr")
 
@@ -198,11 +210,17 @@ convert_word_to_txt() {
         fi
 
     fi
-}
+done
 
-convert_excel_to_txt() {
+# Excel转txt
+echo "==========================================================================="
+
+find_files_with_extensions "$directory_path1" "${file_extensions1[@]}"
+
+# 打印文件列表
+for file_path in "${ffwe_file_list[@]}"; do
     # 绝对路径转相对路径(构建相对路径)
-    srcfr=$(convert_absolute_to_relative "$1" ".")
+    srcfr=$(convert_absolute_to_relative "$file_path" ".")
     # 获取相对路径的文件夹名
     dstdr=$(get_directory_path "$srcfr")
 
@@ -277,91 +295,4 @@ convert_excel_to_txt() {
             fi
         fi
     fi
-}
-
-function check_file_type() {
-    local file_path="$1"
-    local extension="${file_path##*.}"
-    extension="${extension,,}"  # 转为小写，避免扩展名大小写不一致
-
-    # 直接引用全局数组
-    local word_exts=("${word_extensions[@]}")
-    local excel_exts=("${excel_extensions[@]}")
-
-    # 检查是否是 Word 文件
-    for ext in "${word_exts[@]}"; do
-        if [[ "$extension" == "$ext" ]]; then
-            echo "Word"
-            return
-        fi
-    done
-
-    # 检查是否是 Excel 文件
-    for ext in "${excel_exts[@]}"; do
-        if [[ "$extension" == "$ext" ]]; then
-            echo "Excel"
-            return
-        fi
-    done
-
-    # 不是 Word 或 Excel 文件
-    echo "Other"
-}
-
-# 如果是文件就直接处理
-if [ -f "$directory_path" ]; then
-    mkdir -p officeTempWS
-    cp "$directory_path" ./officeTempWS/
-    directory_path="./officeTempWS/"
-    # file_type=$(check_file_type "$directory_path")
-    # case "$file_type" in
-    #     "Word")
-    #         echo "处理 Word 文件: $directory_path"
-    #         # 示例：调用处理 Word 的函数或命令
-    #         convert_word_to_txt twp
-    #         exit 0
-    #         ;;
-    #     "Excel")
-    #         echo "处理 Excel 文件: $directory_path"
-    #         # 示例：调用处理 Excel 的函数或命令
-    #         convert_excel_to_txt twp
-    #         exit 0
-    #         ;;
-    #     "Other")
-    #         echo "不支持的文件类型: $directory_path"
-    #         exit 0
-    #         ;;
-    # esac
-fi
-
-
-##########################################################################################
-# 处理word
-find_files_with_extensions "$directory_path" "${word_extensions[@]}"
-
-# 打印数组内容
-# printf '%s\n' "${ffwe_file_list[@]}"
-
-# 打印文件列表
-# for file_path in "${ffwe_file_list[@]}"; do
-#     echo "文件路径: \"$file_path\""
-# done
-
-# 打印文件列表
-for file_path in "${ffwe_file_list[@]}"; do
-    convert_word_to_txt "$file_path"
 done
-
-# Excel转txt
-echo "==========================================================================="
-
-find_files_with_extensions "$directory_path" "${excel_extensions[@]}"
-
-# 打印文件列表
-for file_path in "${ffwe_file_list[@]}"; do
-    convert_excel_to_txt "$file_path"
-done
-
-if [ -d "officeTempWS" ];then
-    rm -r officeTempWS
-fi

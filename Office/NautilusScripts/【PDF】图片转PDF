@@ -2,7 +2,7 @@
 source ~/.zshrc
 # 获取当前脚本所在目录
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-LIB_DIR="$SCRIPT_DIR/../lib/PDF_Tools"
+LIB_DIR="$SCRIPT_DIR/../lib/Office/PDF_Tools"
 
 # 获取第一个PDF所在目录作为目标目录
 TARGET_DIR="$(dirname "$1")"
@@ -14,24 +14,24 @@ rm -rf "$TMP_PDF_DIR"
 # 复制 PDF_Tools 到目标目录并重命名为 PDF_Tools_WP
 cp -r "$LIB_DIR" "$TMP_PDF_DIR"
 
-# 创建 pdfPages 子目录
-mkdir -p "$TMP_PDF_DIR/pdfPages"
+# 创建 images 子目录
+mkdir -p "$TMP_PDF_DIR/images"
 
 # 复制选中的 PDF 文件进去
 for pdf in "$@"; do
-    cp "$pdf" "$TMP_PDF_DIR/pdfPages/"
+    cp "$pdf" "$TMP_PDF_DIR/images/"
 done
 
 # 切换到 PDF_Tools_WP 执行合并
 cd "$TMP_PDF_DIR"
 
-if python3 MergePdf.py; then
+if python3 image2Pdf.py; then
     # 成功则复制合并结果到目标目录
-    cp output.pdf ../"$TARGET_DIR/合并结果.pdf"
-    notify-send "✅ 合并完成" "已保存：$TARGET_DIR/合并结果.pdf"
+    cp *.pdf ../"$TARGET_DIR/图片转PDF.pdf"
+    notify-send "✅ 转化完成" "已保存：$TARGET_DIR/图片转PDF.pdf"
 else
     # 如果失败
-    notify-send "❌ 合并失败" "请检查。"
+    notify-send "❌ 转化失败" "请检查。"
     exit 1
 fi
 

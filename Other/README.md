@@ -6,6 +6,7 @@
 - download_deb_with_deps.sh——下载离线安装包
 - Docker-WeChat.sh——安装Docker微信（不再维护）
 - downloadAptPackage.sh——下载APT包及其依赖
+- fix_long_filenames.sh——修复NTFS长文件名
 - generateSSLCert.sh——生成自签名SSL证书（仅Key+PEM）
 - insert_hosts.sh——在Host添加某个主机解析
 - monitor_and_kill.sh——每个一段时间杀死某进程
