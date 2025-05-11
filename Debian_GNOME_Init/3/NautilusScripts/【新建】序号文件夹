@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# 获取目标路径：优先使用 Nautilus 右键选择的第一个路径
+if [ -n "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" ]; then
+    TARGET_DIR=$(echo "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | head -n 1)
+    # 如果选中的是文件夹，则在此文件夹内创建；如果是文件，则取其所在目录
+    [ -d "$TARGET_DIR" ] || TARGET_DIR=$(dirname "$TARGET_DIR")
+else
+    TARGET_DIR=$(pwd)
+fi
+
+# 获取起始与结束序号
+start_num=$(zenity --entry --title="新建文件夹" --text="请输入起始序号：" --entry-text="1") || exit 1
+end_num=$(zenity --entry --title="新建文件夹" --text="请输入结束序号：" --entry-text="10") || exit 1
+
+# 校验合法性
+if ! [[ "$start_num" =~ ^[0-9]+$ && "$end_num" =~ ^[0-9]+$ && "$start_num" -le "$end_num" ]]; then
+    zenity --error --text="请输入有效的数字序号（开始 ≤ 结束）"
+    exit 1
+fi
+
+# 弹出是否补充零的选项
+auto_zero=$(zenity --list --radiolist --column="选择" --column="选项" TRUE "是" FALSE "否" --title="是否补充0" --text="是否补充零（例如 01, 02, ...）？") || exit 1
+
+# 计算需要补齐的位数（按结束序号位数）
+pad_width=${#end_num}
+
+# 根据选择是否补充零
+if [ "$auto_zero" == "是" ]; then
+    # 如果选择补充0，则按结束序号的位数进行补充
+    # pad_width=$((pad_width + 1))
+    pad_width=$((pad_width))
+else
+    # 如果不补充零，使用实际数字长度
+    pad_width=${#start_num}
+fi
+
+# 提示目录信息
+zenity --question --text="将在以下路径创建文件夹：\n$TARGET_DIR\n\n是否继续？" || exit 1
+
+# 执行创建
+for ((i=start_num; i<=end_num; i++)); do
+    folder_name=$(printf "%0${pad_width}d" "$i")
+    mkdir -p "$TARGET_DIR/$folder_name"
+done
+
+# zenity --info --text="文件夹创建完成！"
+
