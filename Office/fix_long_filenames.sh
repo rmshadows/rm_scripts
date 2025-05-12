@@ -1,12 +1,12 @@
 #!/bin/bash
 ############################################################
-# 脚本名称：fix_names.sh
+# 脚本名称：fix_long_filenames.sh
 # 功能说明：处理文件系统中超出 ext4 和 LUKS2 支持长度限制的文件名或目录名。
 #          可从文件名前或后截取，保留扩展名，避免重名。
 #
 # 使用方法：
-#   chmod +x fix_names.sh
-#   ./fix_names.sh [选项]
+#   chmod +x fix_long_filenames.sh
+#   ./fix_long_filenames.sh [选项]
 #
 # 参数说明：
 #   -f    处理文件名（file）
@@ -17,10 +17,10 @@
 #   -r    从文件名末尾截取有效部分（保持正常顺序）
 #
 # 示例：
-#   ./fix_names.sh -a        # 预览所有超长文件名和目录名的修改建议
-#   ./fix_names.sh -f -e     # 执行重命名超长文件名
-#   ./fix_names.sh -d -p     # 预览超长目录名
-#   ./fix_names.sh -f -r -e  # 执行重命名文件名，截取末尾有效部分
+#   ./fix_long_filenames.sh -a        # 预览所有超长文件名和目录名的修改建议
+#   ./fix_long_filenames.sh -f -e     # 执行重命名超长文件名
+#   ./fix_long_filenames.sh -d -p     # 预览超长目录名
+#   ./fix_long_filenames.sh -f -r -e  # 执行重命名文件名，截取末尾有效部分
 #
 # 输出说明：
 #   - 所有变更记录和预览内容将写入 rename_log.txt 日志文件。
