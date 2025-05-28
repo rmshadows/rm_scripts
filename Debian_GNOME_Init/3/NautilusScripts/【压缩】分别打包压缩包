@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# 选择压缩格式
+FORMAT=$(zenity --list --title="选择压缩格式" \
+    --radiolist --column "选择" --column "格式" \
+    TRUE "zip" FALSE "tar.xz" FALSE "7z" FALSE "rar" \
+    --height=300 --width=300)
+
+[ -z "$FORMAT" ] && exit 1
+
+# 如果选择 zip，再弹窗选择编码
+if [ "$FORMAT" = "zip" ]; then
+    ENCODING=$(zenity --list --title="选择 zip 编码" \
+        --radiolist --column "选择" --column "编码" \
+        TRUE "UTF-8（推荐，适用于 7-Zip、Linux）" \
+        FALSE "GBK（兼容 Windows 自带解压）" \
+        --height=250 --width=400)
+    [ -z "$ENCODING" ] && exit 1
+fi
+
+compress_zip_utf8() {
+    zip -r -UN=UTF8 "$1.zip" "$1"
+}
+
+compress_zip_gbk() {
+    TMPNAME=$(mktemp -d)
+    cp -r "$1" "$TMPNAME/"
+    cd "$TMPNAME" || return
+    convmv -f UTF-8 -t GBK -r --notest "$1" >/dev/null
+    zip -r "${OLDPWD}/$1.zip" "$1"
+    cd "$OLDPWD" || return
+    rm -rf "$TMPNAME"
+}
+
+compress_tarxz() {
+    tar -cJf "$1.tar.xz" "$1"
+}
+
+compress_7z() {
+    7z a "$1.7z" "$1"
+}
+
+compress_rar() {
+    if ! command -v rar >/dev/null 2>&1; then
+        zenity --error --text="未安装 rar，请先安装后再试（例如 sudo apt install rar）"
+        exit 1
+    fi
+    rar a "$1.rar" "$1"
+}
+
+# 遍历用户选中的文件或文件夹
+for filepath in "$@"; do
+    dir=$(dirname "$filepath")
+    base=$(basename "$filepath")
+    cd "$dir" || continue
+
+    case "$FORMAT" in
+        zip)
+            if [[ "$ENCODING" == *UTF-8* ]]; then
+                compress_zip_utf8 "$base"
+            else
+                compress_zip_gbk "$base"
+            fi
+            ;;
+        tar.xz)
+            compress_tarxz "$base"
+            ;;
+        7z)
+            compress_7z "$base"
+            ;;
+        rar)
+            compress_rar "$base"
+            ;;
+        *)
+            zenity --error --text="不支持的格式：$FORMAT"
+            exit 1
+            ;;
+    esac
+done
+
+zenity --info --text="压缩完成：共处理 $# 个文件/文件夹。"
+
