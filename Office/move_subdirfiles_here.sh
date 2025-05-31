@@ -1,46 +1,72 @@
 #!/bin/bash
 
-# 函数：递归拷贝文件
+# 函数：递归拷贝文件（所有子目录）
 copy_files_recursive() {
-    # 遍历所有子文件夹并拷贝文件
-    for dir in */; do
-        if [ -d "$dir" ]; then
-            echo "正在处理目录: $dir"
-            # 拷贝目录中的所有文件到当前目录，不包括目录本身
-            find "$dir" -type f -exec mv {} ./ \;
-            # 如果选择递归，继续处理子目录
-            if [ "$1" -eq 1 ]; then
-                copy_files_recursive 1
-            fi
-        fi
-    done
+    echo ">>> 正在递归拷贝所有子目录中的文件到当前目录..."
+    find . -mindepth 2 -type f -exec mv -v {} ./ \;
 }
 
-# 函数：拷贝当前目录下一级文件夹中的文件
+# 函数：非递归拷贝文件（仅一级子目录）
 copy_files_non_recursive() {
-    # 只拷贝当前目录下的文件夹中的文件
+    echo ">>> 正在非递归拷贝一级子目录中的文件到当前目录..."
     for dir in */; do
-        if [ -d "$dir" ]; then
-            echo "正在处理目录: $dir"
-            # 拷贝目录中的所有文件到当前目录，不包括目录本身
-            find "$dir" -type f -exec mv {} ./ \;
-        fi
+        [ -d "$dir" ] || continue
+        find "$dir" -mindepth 1 -maxdepth 1 -type f -exec mv -v {} ./ \;
     done
 }
 
-# 提示用户选择是否递归
-echo "是否递归拷贝（2级及更多子目录）？"
-echo "1: 是"
-echo "2: 否"
-read -p "请输入选择 (1/2): " choice
+# 函数：递归拷贝目录（保留结构）
+copy_dirs_recursive() {
+    echo ">>> 正在递归移动所有子目录到当前目录..."
+    find . -mindepth 1 -type d -exec mv -v {} ./ \;
+}
 
-# 判断用户的选择并执行相应的函数
-if [ "$choice" -eq 1 ]; then
-    copy_files_recursive 1
-elif [ "$choice" -eq 2 ]; then
-    copy_files_non_recursive
+# 函数：非递归拷贝目录（仅一级目录）
+copy_dirs_non_recursive() {
+    echo ">>> 正在非递归移动各一级目录中的子目录..."
+    for parent in */; do
+        [ -d "$parent" ] || continue
+        # 查找该目录中的一级子目录，不递归
+        find "$parent" -mindepth 1 -maxdepth 1 -type d -exec mv -v {} ./ \;
+    done
+}
+
+
+# 用户选择功能
+echo "请选择功能："
+echo "1: 拷贝文件"
+echo "2: 拷贝目录"
+read -p "请输入选择 (1/2): " mode
+
+# 用户选择是否递归
+echo "是否递归处理（多级子目录）？"
+echo "1: 是"
+echo "2: 否（仅一级子目录）"
+read -p "请输入选择 (1/2): " depth
+
+# 执行对应操作
+if [ "$mode" -eq 1 ]; then
+    # 拷贝文件
+    if [ "$depth" -eq 1 ]; then
+        copy_files_recursive
+    elif [ "$depth" -eq 2 ]; then
+        copy_files_non_recursive
+    else
+        echo "无效的选择（递归选项），退出"
+        exit 1
+    fi
+elif [ "$mode" -eq 2 ]; then
+    # 拷贝目录
+    if [ "$depth" -eq 1 ]; then
+        copy_dirs_recursive
+    elif [ "$depth" -eq 2 ]; then
+        copy_dirs_non_recursive
+    else
+        echo "无效的选择（递归选项），退出"
+        exit 1
+    fi
 else
-    echo "无效的选择，请选择 1 或 2."
+    echo "无效的功能选择，退出"
     exit 1
 fi
 
