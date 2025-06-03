@@ -6,6 +6,20 @@ OUTPUT="strace_output.log"
 TRANSLATE_CN=false
 DEFAULT_CMD="ls"
 
+# 脚本用途：
+# 该脚本用于使用 strace 跟踪指定命令执行过程中的文件访问类系统调用（如 openat、execve 等）。
+# 可将输出保存到日志文件中，并可选择将部分系统调用信息翻译为中文以增强可读性。
+#
+# 使用示例：
+#   ./trace_file_access.sh -p "cat /etc/passwd" -o trace.log -c
+#   ./trace_file_access.sh           # 默认跟踪 ls 命令
+#
+# 参数说明：
+#   -p <命令>      指定要执行并跟踪的命令，支持带参数（默认执行 ls）
+#   -o <输出文件>  指定将 strace 输出保存到的文件（默认: strace_output.log）
+#   -c             启用输出内容的中文翻译（仅翻译常见系统调用及错误信息）
+
+
 # 使用说明
 usage() {
     echo "用法: $0 [-p <命令>] [-o <输出文件>] [-c]"

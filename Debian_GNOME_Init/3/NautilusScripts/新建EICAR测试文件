@@ -1,0 +1,19 @@
+#!/bin/bash
+# 脚本：新建EICAR测试文件
+# 用途：在当前文件夹新建 eicar_test.txt，内容为标准测试病毒字符串
+
+EICAR_STRING='X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+
+# 选中的第一个路径作为目标目录（或默认当前目录）
+TARGET_DIR="${NAUTILUS_SCRIPT_CURRENT_URI#file://}"
+TARGET_DIR="$(echo -e "$TARGET_DIR" | sed 's/%20/ /g')"
+
+# 文件路径
+TARGET_FILE="$TARGET_DIR/eicar_test.txt"
+
+# 写入文件
+echo "$EICAR_STRING" > "$TARGET_FILE"
+
+# 通知结果
+notify-send "EICAR 测试文件已创建" "$TARGET_FILE"
+
