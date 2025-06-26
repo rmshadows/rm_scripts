@@ -16,6 +16,8 @@ Github：https://github.com/rmshadows/
 * **Excel/**：处理 Excel 文件的脚本集合目录。
 * **Excel2Csv.sh**：将 Excel 文件批量转换为 CSV 文件的脚本。
 
+* **fix_filenames.py**：修复Windows->Linux系统后，文件名乱码问题。
+
 * **fix\_long\_filenames.sh**：用于修复超出文件系统限制的长文件名或路径的脚本。
 
 * **Gbk2Utf8.sh**：批量将文件从 GBK 编码转换为 UTF-8 编码的脚本。
