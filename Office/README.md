@@ -9,6 +9,7 @@ Github：https://github.com/rmshadows/
 ## 目录
 
 * **aes\_encrypt.sh**：用于对文件进行 AES 加密的脚本。
+* **encdec.sh**：此脚本用于对指定文件进行 AES-256-CBC 加密和解密
 * **ArchiveAndSplit压缩分片/**：用于将大文件压缩并按指定大小进行分片的工具文件夹。
 
 * **CopySearchFile.py**：查找符合条件的文件并复制到指定目录的 Python 脚本。
@@ -35,6 +36,7 @@ Github：https://github.com/rmshadows/
 * **PDF\_Tools/**：PDF 合并、拆分、提取等工具集合目录。
 
 * **README.md**：项目或脚本使用说明文档。
+* **replace_in_files.sh**：此脚本用于批量替换当前目录下指定扩展名文件中的字符串内容。
 * **removeBlankSpaceFilename.py**：用 Python 批量去除文件名中的空格的脚本。
 * **removeBlankSpaceFilename.sh**：用 Bash 去除文件名中空格的脚本。
 * **RenameDirectory/**：目录批量重命名工具目录。
