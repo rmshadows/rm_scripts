@@ -1,0 +1,2 @@
+- x0vncserver：连接到现有X会话
+- x11vnc: `x11vnc -usepw -forever -display :0`连接到现有X会话
