@@ -1,0 +1,62 @@
+#!/bin/bash
+# 依赖：clamav、zenity、nautilus
+
+# 临时文件
+LOG_FILE=$(mktemp /tmp/clamav_scan_XXXX.log)
+CMD_FILE=$(mktemp)
+FIFO=$(mktemp -u)
+mkfifo "$FIFO"
+
+# 汇总扫描目标
+TARGETS=("$@")
+TARGET_LIST=$(printf "%s\n" "${TARGETS[@]}")
+
+# 启动扫描进程，输出重定向到 FIFO 管道
+{
+    for ITEM in "${TARGETS[@]}"; do
+        echo "# 正在扫描：$ITEM"
+        clamscan -r --bell "$ITEM"
+    done
+} >"$FIFO" 2>&1 &
+SCAN_PID=$!
+
+# 监控进度输出，写入日志，同时反馈给 zenity
+{
+    while read -r LINE; do
+        echo "$LINE" >> "$LOG_FILE"
+        echo "$LINE"
+    done < "$FIFO"
+} | zenity --progress \
+          --title="ClamAV 扫描中…" \
+          --text="初始化扫描..." \
+          --pulsate \
+          --auto-close \
+          --auto-kill \
+          --width=480 \
+          --height=100
+
+ZENITY_EXIT=$?
+
+# 如果用户点击了取消按钮
+if [[ $ZENITY_EXIT -ne 0 ]]; then
+    kill "$SCAN_PID" 2>/dev/null
+    notify-send "扫描已取消" "用户手动中断 ClamAV 扫描。"
+    rm -f "$LOG_FILE" "$FIFO"
+    exit 1
+fi
+
+# 分析结果
+INFECTED=$(grep "Infected files:" "$LOG_FILE" | awk '{sum += $3} END {print sum}')
+
+if [[ "$INFECTED" -eq 0 ]]; then
+    notify-send "ClamAV 扫描完成" "🎉 未发现病毒"
+else
+    notify-send "⚠️ ClamAV 警告" "发现 $INFECTED 个病毒！"
+fi
+
+# 打开日志（可换成其他编辑器）
+xdg-open "$LOG_FILE" & disown
+
+# 清理
+rm -f "$FIFO"
+

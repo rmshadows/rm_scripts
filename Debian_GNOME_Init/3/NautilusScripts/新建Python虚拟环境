@@ -1,0 +1,72 @@
+#!/bin/bash
+# Nautilus Script: 新建Python3虚拟环境 + 生成激活脚本（bash/zsh，确保使用虚拟环境Python）
+
+CUR_DIR="$(pwd)"
+if [ -n "$1" ]; then
+    CUR_DIR="$(dirname "$1")"
+fi
+
+cd "$CUR_DIR" || exit 1
+
+# 输入虚拟环境名称
+VENV_NAME=$(zenity --entry \
+    --title="新建 Python 虚拟环境" \
+    --text="请输入虚拟环境名称：" \
+    --entry-text="venv")
+
+[ -z "$VENV_NAME" ] && exit 0
+
+# 检查目录是否已存在
+if [ -d "$VENV_NAME" ]; then
+    zenity --error --text="目录 '$VENV_NAME' 已存在！"
+    exit 1
+fi
+
+# 创建虚拟环境
+python3 -m venv "$VENV_NAME" || {
+    zenity --error --text="创建虚拟环境失败，请检查 Python3 和 venv 模块。"
+    exit 1
+}
+
+# 选择 shell
+SHELL_CHOICE=$(zenity --list \
+    --title="选择 Shell 类型" \
+    --text="请选择激活虚拟环境时使用的 Shell：" \
+    --radiolist \
+    --column "选择" --column "Shell" \
+    TRUE "bash" \
+    FALSE "zsh")
+
+[ -z "$SHELL_CHOICE" ] && SHELL_CHOICE="bash"
+
+# 激活脚本路径
+ACTIVATE_SCRIPT="$CUR_DIR/activate_${VENV_NAME}_${SHELL_CHOICE}.sh"
+
+if [ "$SHELL_CHOICE" = "bash" ]; then
+    cat > "$ACTIVATE_SCRIPT" <<EOF
+#!/bin/bash
+# 激活虚拟环境: $VENV_NAME（确保使用虚拟环境Python）
+
+VENV_DIR="\$(dirname "\$0")/$VENV_NAME"
+export PATH="\$VENV_DIR/bin:\$PATH"
+source "\$VENV_DIR/bin/activate"
+export PS1="($VENV_NAME) \$PS1"
+exec bash
+EOF
+else
+    cat > "$ACTIVATE_SCRIPT" <<EOF
+#!/bin/zsh
+# 激活虚拟环境: $VENV_NAME（确保使用虚拟环境Python）
+
+VENV_DIR="\$(dirname "\$0")/$VENV_NAME"
+export PATH="\$VENV_DIR/bin:\$PATH"
+source "\$VENV_DIR/bin/activate"
+export PS1="($VENV_NAME) \$PS1"
+exec zsh
+EOF
+fi
+
+chmod +x "$ACTIVATE_SCRIPT"
+
+zenity --info --text="虚拟环境已创建：$CUR_DIR/$VENV_NAME\n激活脚本：$ACTIVATE_SCRIPT\nShell：$SHELL_CHOICE"
+

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+source ~/.zshrc 2>/dev/null || true
+
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+LIB_NAME="duplex_print_pdf.sh"
+LIB_PATH="$SCRIPT_DIR/../lib/Office/$LIB_NAME"
+
+TARGET_DIR="$(dirname "$(realpath "$1")")"
+TMP_TOOL_DIR="$TARGET_DIR/${LIB_NAME%.*}_RUN"
+
+FILES=("$@")
+
+if [ ${#FILES[@]} -eq 0 ]; then
+  zenity --error --text="❌ 没有选中文件！"
+  exit 1
+fi
+
+for file in "${FILES[@]}"; do
+  if [ ! -f "$file" ]; then
+    zenity --error --text="❌ 选择的项不是文件：\n$file"
+    exit 1
+  fi
+done
+
+for file in "${FILES[@]}"; do
+  ext="${file##*.}"
+  ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+  if [ "$ext_lower" != "pdf" ]; then
+    zenity --error --text="❌ 文件不是 PDF：\n$file"
+    exit 1
+  fi
+done
+
+if [ ${#FILES[@]} -ne 1 ]; then
+  zenity --error --text="❌ 请只选择一个 PDF 文件"
+  exit 1
+fi
+
+# 创建临时目录
+rm -rf "$TMP_TOOL_DIR"
+mkdir -p "$TMP_TOOL_DIR"
+
+# 复制脚本到临时目录
+cp "$LIB_PATH" "$TMP_TOOL_DIR/"
+cp "${FILES[0]}" "$TMP_TOOL_DIR/"
+
+cd "$TMP_TOOL_DIR" || exit 1
+
+# 绝对路径传递PDF文件，执行脚本
+xfce4-terminal --working-directory="$TMP_TOOL_DIR" -e "bash -c 'source ~/.zshrc 2>/dev/null || true;bash ./\"$LIB_NAME\" \"${FILES[0]}\"; echo \"按任意键关闭终端...\"; read -r -n 1'"
+
+exit
+cd "$TARGET_DIR" || exit 1
+
+# 删除临时目录和脚本
+rm -rf "$TMP_TOOL_DIR"
+

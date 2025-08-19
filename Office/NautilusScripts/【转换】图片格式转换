@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# 检查依赖
+for cmd in convert zenity; do
+    if ! command -v "$cmd" &>/dev/null; then
+        zenity --error --text="请先安装 $cmd 工具。\nsudo apt install imagemagick zenity"
+        exit 1
+    fi
+done
+
+# 选择路径（文件则取其父目录）
+INPUT_PATH=$(echo "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | head -n 1)
+[ -f "$INPUT_PATH" ] && DIR=$(dirname "$INPUT_PATH") || DIR="$INPUT_PATH"
+
+# 格式选项
+FORMAT=$(zenity --list --radiolist --title="选择目标格式" \
+    --column="选择" --column="格式" TRUE "jpg" FALSE "png" FALSE "webp" FALSE "heic") || exit 1
+
+# 是否覆盖已存在目标文件？
+OVERWRITE=$(zenity --question --text="若目标文件已存在，是否覆盖？" --ok-label="覆盖" --cancel-label="跳过"; echo $?)
+
+# 查找所有图片文件（递归）
+mapfile -t FILES < <(find "$DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.bmp" -o -iname "*.gif" -o -iname "*.webp" -o -iname "*.heic" \))
+TOTAL=${#FILES[@]}
+[ "$TOTAL" -eq 0 ] && zenity --info --text="未找到图片文件。" && exit 0
+
+# 临时文件用于传递处理数量
+TMP_COUNT=$(mktemp)
+echo 0 > "$TMP_COUNT"
+
+(
+for i in "${!FILES[@]}"; do
+    file="${FILES[$i]}"
+    dir_path=$(dirname "$file")
+    filename=$(basename "$file")
+    name_no_ext="${filename%.*}"
+    ext="${filename##*.}"
+
+    # 忽略同格式
+    if [[ "${ext,,}" == "$FORMAT" ]]; then
+        continue
+    fi
+
+    new_file="$dir_path/$name_no_ext.$FORMAT"
+    backup_file="$dir_path/src_$filename"
+
+    # 如果目标文件已存在
+    if [[ -f "$new_file" && "$OVERWRITE" -ne 0 ]]; then
+        # 用户选择了“跳过”，则不处理
+        continue
+    fi
+
+    # 转换
+    if convert "$file" "$new_file"; then
+        mv "$file" "$backup_file"
+        COUNT=$(<"$TMP_COUNT")
+        echo $((COUNT + 1)) > "$TMP_COUNT"
+    fi
+
+    percent=$(( (i + 1) * 100 / TOTAL ))
+    echo "# 正在处理：$filename ($((i+1)) / $TOTAL)"
+    echo "$percent"
+done
+) | zenity --progress \
+    --title="批量图片转换" \
+    --text="初始化中..." \
+    --percentage=0 \
+    --auto-close \
+    --auto-kill
+
+# 获取统计结果
+CONVERTED=$(<"$TMP_COUNT")
+rm -f "$TMP_COUNT"
+
+# 最终提示
+if [ $? -eq 0 ]; then
+    zenity --info --text="转换完成，共处理 $CONVERTED 个文件。"
+else
+    zenity --warning --text="转换已取消，已处理 $CONVERTED 个文件。"
+fi
+

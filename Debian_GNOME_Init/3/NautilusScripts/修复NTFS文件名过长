@@ -1,0 +1,140 @@
+#!/bin/bash
+
+source ~/.zshrc
+# 获取当前脚本所在目录
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+LIB_DIR="$SCRIPT_DIR/../lib/Office"
+FSCRIPTS="$LIB_DIR/fix_long_filenames.sh"
+
+# 确保传入的是文件夹
+if [ -d "$1" ]; then
+  DIR="$1"
+  # 预览操作，不实际执行
+  cp "$FSCRIPTS" "$DIR"
+  cd "$DIR" && chmod +x "$(basename "$FSCRIPTS")"
+  # 弹出对话框让用户选择操作
+  ACTION=$(zenity --list --radiolist \
+    --title="选择操作" \
+    --text="选择操作方式" \
+    --width=300 --height=300 \
+    --column="选择" --column="操作" \
+    TRUE "预览" FALSE "执行重命名")
+
+  case "$ACTION" in
+  "预览")
+    # 弹出对话框让用户选择操作
+    OPTIONS1=$(zenity --list --radiolist \
+      --title="选择操作参数" \
+      --text="选择操作类型" \
+      --column="选择" --column="参数" \
+      --width=800 --height=600 \
+      TRUE "处理所有文件和目录 -a" \
+      FALSE "仅处理文件 -f" \
+      FALSE "仅处理目录 -d")
+
+    # 检查是否取消
+    if [ $? -ne 0 ]; then
+      zenity --info --text="已取消操作！"
+      rm -f "$(basename "$FSCRIPTS")"
+      exit 1
+    fi
+
+    # 弹出对话框让用户选择是否截取文件名末尾有效部分
+    OPTIONS2=$(zenity --list --radiolist \
+      --title="是否从文件名末尾截取有效部分" \
+      --text="从文件名末尾截取有效部分 -r" \
+      --column="选择" --column="参数" \
+      --width=800 --height=600 \
+      TRUE "否" FALSE "是")
+
+    # 检查是否取消
+    if [ $? -ne 0 ]; then
+      zenity --info --text="已取消操作！"
+      rm -f "$(basename "$FSCRIPTS")"
+      exit 1
+    fi
+
+    # 如果选择了"是"（即 FALSE），则设置 OPTIONS2 为 "-r"
+    if [ "$OPTIONS1" == "处理所有文件和目录 -a" ]; then
+      OPTIONS1="-a"
+    elif [ "$OPTIONS1" == "仅处理文件 -f" ]; then
+      OPTIONS1="-f"
+    elif [ "$OPTIONS1" == "仅处理目录 -d" ]; then
+      OPTIONS1="-d"
+    else
+      OPTIONS1=""
+    fi
+
+    # 如果选择了"是"（即 FALSE），则设置 OPTIONS2 为 "-r"
+    if [ "$OPTIONS2" == "是" ]; then
+      OPTIONS2="-r"
+    else
+      OPTIONS2=""
+    fi
+
+    # 执行预览操作，加入 -p（仅预览）
+    ./$(basename "$FSCRIPTS") "$OPTIONS1" "$OPTIONS2" -p | zenity --text-info --width=1800 --height=400 --title="预览结果"
+    rm "$(basename "$FSCRIPTS")"
+    ;;
+
+  "执行重命名")
+    # 执行重命名操作
+     # 弹出对话框让用户选择操作
+    OPTIONS1=$(zenity --list --radiolist \
+      --title="选择操作参数" \
+      --text="选择操作类型" \
+      --column="选择" --column="参数" \
+      --width=800 --height=600 \
+      TRUE "处理所有文件和目录 -a" \
+      FALSE "仅处理文件 -f" \
+      FALSE "仅处理目录 -d")
+
+    # 检查是否取消
+    if [ $? -ne 0 ]; then
+      zenity --info --text="已取消操作！"
+      rm -f "$(basename "$FSCRIPTS")"
+      exit 1
+    fi
+
+    # 弹出对话框让用户选择是否截取文件名末尾有效部分
+    OPTIONS2=$(zenity --list --radiolist \
+      --title="是否从文件名末尾截取有效部分" \
+      --text="从文件名末尾截取有效部分 -r" \
+      --column="选择" --column="参数" \
+      --width=800 --height=600 \
+      TRUE "否" FALSE "是")
+
+    # 检查是否取消
+    if [ $? -ne 0 ]; then
+      zenity --info --text="已取消操作！"
+      rm -f "$(basename "$FSCRIPTS")"
+      exit 1
+    fi
+
+    # 如果选择了"是"（即 FALSE），则设置 OPTIONS2 为 "-r"
+    if [ "$OPTIONS1" == "处理所有文件和目录 -a" ]; then
+      OPTIONS1="-a"
+    elif [ "$OPTIONS1" == "仅处理文件 -f" ]; then
+      OPTIONS1="-f"
+    elif [ "$OPTIONS1" == "仅处理目录 -d" ]; then
+      OPTIONS1="-d"
+    else
+      OPTIONS1=""
+    fi
+
+    # 如果选择了"是"（即 FALSE），则设置 OPTIONS2 为 "-r"
+    if [ "$OPTIONS2" == "是" ]; then
+      OPTIONS2="-r"
+    else
+      OPTIONS2=""
+    fi
+
+    # 执行操作，加入 -e
+    ./$(basename "$FSCRIPTS") "$OPTIONS1" "$OPTIONS2" -e | zenity --text-info --width=1800 --height=400 --title="执行结果"
+    rm "$(basename "$FSCRIPTS")"
+    ;;
+  esac
+else
+  # 如果传入的是文件而非文件夹，弹出提示
+  zenity --error --text="请右键点击文件夹来执行此操作！"
+fi

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# 确保选中了文件
+if [[ $# -eq 0 ]]; then
+    zenity --error --text="请先选择一个或多个 GPG 加密文件！"
+    exit 1
+fi
+
+for file in "$@"; do
+    if [[ ! -f "$file" ]]; then
+        zenity --error --text="错误: $file 不是有效文件！"
+        continue
+    fi
+
+    output_file="${file%.gpg}"  # 目标解密文件名
+    temp_file="${output_file}.tmp"  # 临时文件
+
+    # 询问用户输入密码
+    password=$(zenity --password --title="解密 $file")
+
+    if [[ -z "$password" ]]; then
+        zenity --error --text="解密取消: $file"
+        continue
+    fi
+
+    # 解密到临时文件
+    echo "$password" | gpg --batch --yes --passphrase-fd 0 --output "$temp_file" --decrypt "$file" 2>/dev/null
+
+    if [[ $? -eq 0 ]]; then
+        mv "$temp_file" "$output_file"
+        zenity --info --text="✅ 解密成功: $output_file"
+    else
+        rm -f "$temp_file"  # 失败时删除临时文件
+        zenity --error --text="❌ 解密失败: $file"
+    fi
+done
+

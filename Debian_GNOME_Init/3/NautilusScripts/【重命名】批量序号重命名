@@ -2,7 +2,7 @@
 import os
 import sys
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import simpledialog, messagebox
 
 # 获取选中文件或文件夹路径
 paths = sys.argv[1:]
@@ -10,7 +10,7 @@ if not paths:
     print("没有选中文件")
     sys.exit(1)
 
-# 弹出输入框：起始编号
+# 弹出输入框
 root = tk.Tk()
 root.withdraw()
 
@@ -21,15 +21,21 @@ if start_num is None:
 zero_pad = simpledialog.askstring("编号补零", "编号位数（如 2 表示01、02）\n留空则不补零：", initialvalue="2")
 prefix = simpledialog.askstring("文件名前缀", "请输入前缀（可留空）", initialvalue="")
 
+# 是否倒序
+reverse_order = messagebox.askyesno("排序方式", "是否倒序编号？\n（是=倒序，否=正序）")
+
 # 转换补零长度
 pad_len = int(zero_pad) if zero_pad and zero_pad.isdigit() else 0
 
 # 排序以保持稳定命名
 paths = sorted(paths)
 
-# 确保在同一目录下处理，避免跨目录重名错误
+# 倒序处理
+if reverse_order:
+    paths = list(reversed(paths))
+
+# 确保在同一目录下处理
 dir_path = os.path.dirname(paths[0])
-ext_map = {}
 
 for idx, path in enumerate(paths):
     full_path = os.path.abspath(path)
@@ -47,4 +53,6 @@ for idx, path in enumerate(paths):
         continue
 
     os.rename(full_path, new_path)
+
+print("重命名完成 ✅")
 
