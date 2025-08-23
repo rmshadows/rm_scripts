@@ -12,8 +12,13 @@ Github：https://github.com/rmshadows/
 * **encdec.sh**：此脚本用于对指定文件进行 AES-256-CBC 加密和解密
 * **ArchiveAndSplit压缩分片/**：用于将大文件压缩并按指定大小进行分片的工具文件夹。
 
+* **convert2docx**:doc和wps转为docx
+
+* **convert2xlsx**:xls和et转为xlsx
+
 * **CopySearchFile.py**：查找符合条件的文件并复制到指定目录的 Python 脚本。
 
+* **duplex_print_pdf.sh**:银河麒麟系统双面打印PDF文件
 * **Excel/**：处理 Excel 文件的脚本集合目录。
 * **Excel2Csv.sh**：将 Excel 文件批量转换为 CSV 文件的脚本。
 
