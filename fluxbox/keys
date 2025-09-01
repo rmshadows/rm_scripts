@@ -37,10 +37,7 @@ Mod1 Tab :NextWindow (workspace=[current])
 Mod1 Shift Tab :PrevWindow (workspace=[current])
 Mod4 Tab :Exec rofi -show window
 
-# 工作区切换
-# Ctrl Alt 左/右
-Mod1 Control Left :PrevWorkspace
-Mod1 Control Right :NextWorkspace
+
 # Alt + 1-6 切换到对应的工作区
 Mod1 Shift 1 :Workspace 1
 Mod1 Shift 2 :Workspace 2
@@ -102,6 +99,9 @@ Mod1 Shift r :ExecCommand firefox
 # Alt + Shift + l 取消所有打印任务
 Mod1 Shift l :ExecCommand gnome-terminal -- "~/.fluxbox/scripts/custom/Cancel_All_Print_Task.sh"
 
+# Ctrl + Alt 上／下个工作区
+Mod1 Control Left :PrevWorkspace
+Mod1 Control Right :NextWorkspace
 
 # 窗口布局
 # Win + Shift + 上下左右：窗口半屏排列
@@ -150,6 +150,7 @@ Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/brightnessControl/xrandrBrigh
 # Print :ExecCommand ksnip
 Print :ExecCommand scrot
 # Mod1 Shift s :ExecCommand kylin-screenshot gui
+Mod1 Shift s :ExecCommand frameshot gui
 
 # Win + L 锁屏（使用 i3lock）
 Mod4 l :ExecCommand i3lock
@@ -157,6 +158,8 @@ Mod4 l :ExecCommand i3lock
 
 # 挂载
 # Mod1 Shift m :ExecCommand gnome-terminal -- "/home/ryan/.mountBA"
+# 杀死WPS
+# Mod1 Shift n :ExecCommand sudo pkill wps && sudo pkill et
 
 # 其他
 # Win + d 显示桌面

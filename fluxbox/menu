@@ -6,8 +6,8 @@
 
 # 文件管理器
 [submenu] (File Managers - 文件)
-  [exec] (Thunar) {thunar}
   [exec] (Nautilus) {nautilus}
+  [exec] (Thunar) {thunar}
 [end]
 
 # 浏览器
@@ -72,10 +72,14 @@
 #   [exec] (Decrease Volume - 降低音量) {amixer set Master 5%-}
 #   [exec] (Mute - 静音) {amixer set Master toggle}
 # [end]
-# [submenu] (Brightness - 亮度)
-#   [exec] (Increase - 亮度增加) {xbacklight -inc 10}
-#   [exec] (Decrease - 亮度减少) {xbacklight -dec 10}
-# [end]
+[submenu] (Brightness - 亮度)
+    # [exec] (Increase - 亮度增加) {xbacklight -inc 10}
+    # [exec] (Decrease - 亮度减少) {xbacklight -dec 10}
+    # [exec] (Increase - 亮度增加) {~/.fluxbox/scripts/brightnessControl/ddcutilBrightnessControl.sh 1}
+    # [exec] (Decrease - 亮度减少) {~/.fluxbox/scripts/brightnessControl/ddcutilBrightnessControl.sh 0}
+    [exec] (Increase - 亮度增加) {~/.fluxbox/scripts/brightnessControl/xrandrBrightnessControl.sh 1}
+    [exec] (Decrease - 亮度减少) {~/.fluxbox/scripts/brightnessControl/xrandrBrightnessControl.sh 0}
+[end]
 
 [submenu] (Keyboard - 键盘布局)
       [exec] (normal) {setxkbmap us}
@@ -85,6 +89,7 @@
 # 系统管理
 [submenu] (System - 系统)
   # [exec] (Lock Screen - 锁屏) {xscreensaver-command -lock}
+  [exec] (Lock Screen - 锁屏) {i3lock -f -i ~/.fluxbox/backgrounds/1080.png}
   # [exec] (Lock Screen - 锁屏) {i3lock -c 000000}
   [exec] (Reboot - 重启) {sudo shutdown -r now}
   [exec] (Poweroff - 关机) {sudo shutdown -P now}

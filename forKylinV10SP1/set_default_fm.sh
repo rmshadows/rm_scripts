@@ -1,56 +1,24 @@
 #!/bin/bash
-# 设置默认文件管理器
-# 常见文件管理器及其 desktop 文件名
-declare -A FILE_MANAGERS=(
-  [nautilus]="nautilus.desktop"
-  [thunar]="thunar.desktop"
-  [pcmanfm]="pcmanfm.desktop"
-  [dolphin]="org.kde.dolphin.desktop"
-  [nemo]="nemo.desktop"
-)
+set -e
 
-echo "🔍 正在检测系统中已安装的文件管理器..."
+TARGET_FM="org.gnome.Nautilus.desktop"
 
-# 检测安装情况
-AVAILABLE_FM=()
-for fm in "${!FILE_MANAGERS[@]}"; do
-  if command -v "$fm" &>/dev/null || which "$fm" &>/dev/null; then
-    AVAILABLE_FM+=("$fm")
-  fi
-done
+# 1. 查看当前默认文件管理器
+current=$(xdg-mime query default inode/directory)
+echo "当前默认文件管理器: $current"
 
-# 如果一个都没找到
-if [[ ${#AVAILABLE_FM[@]} -eq 0 ]]; then
-  echo "❌ 没有检测到常见的文件管理器，请手动安装后再运行此脚本。"
-  exit 1
-fi
+# 2. 询问是否更改
+read -p "是否将默认文件管理器设置为 Nautilus? (y/N): " choice
 
-echo "✅ 检测到以下可用文件管理器："
-for i in "${!AVAILABLE_FM[@]}"; do
-  echo "  $((i + 1)). ${AVAILABLE_FM[$i]}"
-done
-
-echo
-read -p "请输入你想设为默认的文件管理器编号（例如 1）: " CHOICE
-
-if [[ "$CHOICE" =~ ^[0-9]+$ ]] && (( CHOICE >= 1 && CHOICE <= ${#AVAILABLE_FM[@]} )); then
-  SELECTED="${AVAILABLE_FM[$((CHOICE - 1))]}"
-  DESKTOP_FILE="${FILE_MANAGERS[$SELECTED]}"
-  echo "⚠️ 你选择设置默认文件管理器为：$SELECTED ($DESKTOP_FILE)"
-  read -p "是否确认修改默认文件管理器？[y/N]: " confirm
-  if [[ "$confirm" =~ ^[Yy]$ ]]; then
-    xdg-mime default "$DESKTOP_FILE" inode/directory
-    echo "✅ 默认文件管理器已设置为：$SELECTED"
-  else
-    echo "❌ 已取消修改。"
-  fi
+# 3. 判断并设置
+if [[ "$choice" =~ ^[Yy]$ ]]; then
+    xdg-mime default "$TARGET_FM" inode/directory
+    new_current=$(xdg-mime query default inode/directory)
+    if [[ "$new_current" == "$TARGET_FM" ]]; then
+        echo "✅ 已将默认文件管理器更改为 Nautilus"
+    else
+        echo "❌ 设置失败，当前为 $new_current"
+    fi
 else
-  echo "❌ 输入无效，已退出。"
-  exit 1
-fi
-
-echo
-read -p "是否现在打开当前目录（测试效果）？[y/N]: " open_now
-if [[ "$open_now" =~ ^[Yy]$ ]]; then
-  xdg-open .
+    echo "ℹ️ 已取消更改"
 fi
