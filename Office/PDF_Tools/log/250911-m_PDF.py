@@ -7,13 +7,8 @@ import os.path as op
 import random
 
 from PIL import Image
-# 改成 pypdf
-from pypdf import PdfMerger, PdfReader, PdfWriter
-
-# 如果需要保留原来的别名
-pdf_reader = PdfReader
-pdf_writer = PdfWriter
-
+from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
+from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
 
 from pdf2image import convert_from_path
 
@@ -50,8 +45,6 @@ def mergePdfsOld(directory, output_pdf_file):
     Returns:
         None
     """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
     # 为了避免RecursionError: maximum recursion depth exceeded while calling a Python object > 1000
     sys.setrecursionlimit(1200)
     merger = PdfFileMerger()
@@ -297,8 +290,6 @@ def split_pdf_old(input_pdf_path, output_dir, export_menu=False):
         output_dir: 输出目录路径
         export_menu: 是否导出目录
     """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     input_pdf = PdfFileReader(open(input_pdf_path, "rb"))
@@ -314,25 +305,7 @@ def split_pdf_old(input_pdf_path, output_dir, export_menu=False):
         export_bookmarks(input_pdf_path, os.path.join(output_dir, "menu.txt"))
 
 
-def batch_split_pdf(input_pdf_path, output_folder, pdf_strict=False):
-    """批量拆分 PDF 为单页 PDF"""
-    # pypdf.errors.PdfReadError: Could not read Boolean object
-    # sudo apt install qpdf
-    # qpdf --linearize 原文件.pdf 修复后.pdf
-    pdf_name = os.path.splitext(os.path.basename(input_pdf_path))[0]  # 获取文件名（无扩展名）
-    with open(input_pdf_path, "rb") as pdf_file:
-        reader = pdf_reader(pdf_file, strict=pdf_strict)
-        total_pages = len(reader.pages)
-        for page_num in range(total_pages):
-            writer = pdf_writer()
-            writer.add_page(reader.pages[page_num])
-            output_pdf_path = os.path.join(output_folder, f"{pdf_name}_page{page_num + 1}.pdf")
-            with open(output_pdf_path, "wb") as output_pdf:
-                writer.write(output_pdf)
-            print(f"已拆分: {output_pdf_path}")
-
-
-def split_single_pdf(input_pdf_path, output_dir, export_menu=False):
+def split_pdf(input_pdf_path, output_dir, export_menu=False):
     """
     将PDF拆分成单页的PDF文件
     Args:
@@ -366,8 +339,6 @@ def get_bookmarks_old(pdf_path, outlines=None, parent_name=""):
     Returns:
         bookmarks: 包含页码和标题的书签列表
     """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
     pdf_reader = PdfFileReader(open(pdf_path, "rb"))
 
     if outlines is None:
@@ -420,8 +391,6 @@ def export_bookmarks_old(input_pdf_path, output_txt_path, delimiter="\t", ignore
         delimiter: 分隔符
         ignoreTheSame: true则页面序号不会有重复
     """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
     bookmarks = get_bookmarks(input_pdf_path)
     with open(output_txt_path, "w", encoding="utf-8") as f:
         for page_number in range(1, PdfFileReader(open(input_pdf_path, "rb")).getNumPages() + 1):
@@ -475,8 +444,6 @@ def rotate_pdf_pages_old(directory, rotation_angle):
     Returns:
         None
     """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
     # 获取文件夹中所有PDF文件
     pdf_files = [f for f in os.listdir(directory) if f.endswith('.pdf')]
     for pdf_file in pdf_files:
@@ -536,8 +503,6 @@ def get_pdf_page_sizes_old(pdf_file):
     Returns:
     - page_sizes: 包含每一页大小的列表，每个元素是一个元组 (width, height)。
     """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
     page_sizes = []
     with open(pdf_file, 'rb') as f:
         pdf_reader = PdfFileReader(f)
@@ -601,7 +566,7 @@ def extract_pages_to_pdf(input_pdf_path, output_pdf_path, page_numbers_str):
         page_numbers_str: 要提取的页码字符串 None的话就是全部
     """
     if page_numbers_str is None:
-        split_single_pdf(input_pdf_path, output_pdf_path, False)
+        split_pdf(input_pdf_path, output_pdf_path, False)
     else:
         page_numbers = parse_page_numbers(page_numbers_str)
         page_numbers = set(page_numbers)
