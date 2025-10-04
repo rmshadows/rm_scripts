@@ -1,4 +1,5 @@
-:<<检查点三
+: <<检查点三
+# 注意：其他Office相关脚本请自行配置
 配置自定义的systemtl服务
 配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
 复制模板文件夹内容
@@ -6,7 +7,6 @@
 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
 配置GRUB网卡默认命名方式
 检查点三
-
 
 # 修改customize-autorun.service中用户名 生成customize-autorun.service
 # replace_username "customize_systemd_service/customize-autorun.service.src"
@@ -20,7 +20,7 @@ check_wired_network() {
     echo "Found interfaces: $wired_interfaces"
     # 获取网卡数量
     num_interfaces=$(echo "$wired_interfaces" | wc -l)
-    echo "Number of interfaces: $num_interfaces"  # 打印网卡数量
+    echo "Number of interfaces: $num_interfaces" # 打印网卡数量
     # 如果只有一个有线网卡，返回网卡名；如果没有或有多个，返回 0
     if [ "$num_interfaces" -eq 1 ]; then
         check_wired_network_result="$wired_interfaces"
@@ -30,29 +30,29 @@ check_wired_network() {
 }
 
 # 检查有线网卡数量
-if [ "$SET_WIRED_ALLOW_HOTPLUG" -eq 1 ];then
+if [ "$SET_WIRED_ALLOW_HOTPLUG" -eq 1 ]; then
     check_wired_network
     SET_WIRED_ALLOW_HOTPLUG=$check_wired_network_result
 fi
 
 prompt -i "——————————  检查点三  ——————————"
 # 配置自定义的systemtl服务
-if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ];then
+if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ]; then
     prompt -x "配置自定义的Systemctl服务"
     addFolder /home/$CURRENT_USER/.$CURRENT_USER/
     addFolder /home/$CURRENT_USER/.$CURRENT_USER/scripts/
     prompt -x "复制到 /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh 脚本"
     cp "customize_systemd_service/autorun.sh" "/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh"
     sudo chmod +x /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
-    
+
     prompt -x "复制 /lib/systemd/system/customize-autorun.service 服务"
-    if ! [ -f /lib/systemd/system/customize-autorun.service ];then
+    if ! [ -f /lib/systemd/system/customize-autorun.service ]; then
         sudo cp "customize_systemd_service/customize-autorun.service" "/lib/systemd/system/customize-autorun.service"
     fi
 fi
 
 # 配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
-if [ "$SET_NAUTILUS_MENU" -eq 1 ];then
+if [ "$SET_NAUTILUS_MENU" -eq 1 ]; then
     prompt -x "配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹"
     addFolder /home/$CURRENT_USER/Data
     addFolder /home/$CURRENT_USER/Project
@@ -63,25 +63,28 @@ if [ "$SET_NAUTILUS_MENU" -eq 1 ];then
     prompt -x "创建 Nautilus 右键菜单"
     sudo cp NautilusScripts/* /home/$CURRENT_USER/.local/share/nautilus/scripts/
     sudo chmod +x /home/$CURRENT_USER/.local/share/nautilus/scripts/*
+    bash /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh
+    if [ $? -eq 0 ]; then
+        rm -f /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh
+    else
+        echo "执行失败，保留 /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
+    fi
     # sudo chown $CURRENT_USER -hR /home/$CURRENT_USER
 fi
 
-
 # 复制模板文件夹内容
-if [ "$SET_GNOME_FILE_TEMPLATES" -eq 1 ];then
+if [ "$SET_GNOME_FILE_TEMPLATES" -eq 1 ]; then
     prompt -x "配置GNOME模板文件夹"
     addFolder "/home/$CURRENT_USER/模板"
     cp "模板/*" "/home/$CURRENT_USER/模板/"
 fi
 
-
 # 配置启用NetworkManager、安装net-tools
-if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
+if [ "$SET_NETWORK_MANAGER" -eq 1 ]; then
     prompt -x "配置启用NetworkManager"
     prompt -m "检查NetworkManager /etc/NetworkManager/NetworkManager.conf 是否有激活"
     check_var="managed=true"
-    if sudo cat '/etc/NetworkManager/NetworkManager.conf' | grep "$check_var" > /dev/null
-    then
+    if sudo cat '/etc/NetworkManager/NetworkManager.conf' | grep "$check_var" >/dev/null; then
         echo -e "\e[1;34m请检查文件内容：
 ===============================================================\e[0m"
         sudo cat /etc/NetworkManager/NetworkManager.conf
@@ -90,7 +93,7 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
         prompt -x "启用NetworkManager"
         sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.conf
         prompt -m "重启NetworkManager.service"
-        sudo systemctl enable NetworkManager.service 
+        sudo systemctl enable NetworkManager.service
         sudo systemctl restart NetworkManager.service
     fi
     prompt -x "安装Net-tools"
@@ -98,11 +101,11 @@ if [ "$SET_NETWORK_MANAGER" -eq 1 ];then
 fi
 
 # 设置网卡eth0为热拔插模式以缩短开机时间 Preset=1
-if [ "$SET_WIRED_ALLOW_HOTPLUG" -ne 0 ];then
+if [ "$SET_WIRED_ALLOW_HOTPLUG" -ne 0 ]; then
     prompt -m "设置网卡 $SET_WIRED_ALLOW_HOTPLUG 为热拔插模式以缩短开机时间。"
     # Not /etc/network/interfaces !
     # 如果不存在/etc/network/interfaces.d/setup这个文件就新建
-    if ! [ -f "/etc/network/interfaces.d/setup" ];then
+    if ! [ -f "/etc/network/interfaces.d/setup" ]; then
         prompt -x "没有找到 /etc/network/interfaces.d/setup 文件，新建文件中..."
         echo "# tee by rm_scripts.
 allow-hotplug $SET_WIRED_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/setup
@@ -112,8 +115,7 @@ allow-hotplug $SET_WIRED_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/set
         backupFile /etc/network/interfaces.d/setup
         check_var="allow-hotplug $SET_WIRED_ALLOW_HOTPLUG"
         # 检查是否已经设置热拔插
-        if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
-        then
+        if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" >/dev/null; then
             echo -e "\e[1;34m请检查文件内容：
 ===============================================================\e[0m"
             sudo cat /etc/network/interfaces.d/setup
@@ -123,8 +125,7 @@ allow-hotplug $SET_WIRED_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/set
             prompt -m "检查 /etc/network/interfaces.d/setup 中是否有$SET_WIRED_ALLOW_HOTPLUG 设备..."
             # auto开头加网卡名称
             check_var="^auto $SET_WIRED_ALLOW_HOTPLUG"
-            if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" > /dev/null
-            then
+            if sudo cat '/etc/network/interfaces.d/setup' | grep "$check_var" >/dev/null; then
                 # 如果有auto xxxx 改为 allow-hotplug xxxx
                 # sudo sed -i 's/auto eth0/# auto eth0\nallow-hotplug eth0/g' /etc/network/interfaces.d/setup
                 prompt -x "添加 allow-hotplug $SET_WIRED_ALLOW_HOTPLUG 到 /etc/network/interfaces.d/setup 中"
@@ -137,12 +138,11 @@ allow-hotplug $SET_WIRED_ALLOW_HOTPLUG" | sudo tee /etc/network/interfaces.d/set
 fi
 
 # 配置GRUB无线网卡默认命名方式
-if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ];then
+if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ]; then
     prompt -x "配置GRUB网卡默认命名方式"
     prompt -m "检查该变量是否已经添加…… "
     check_var="GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\""
-    if cat /etc/default/grub | grep "$check_var" > /dev/null
-    then
+    if cat /etc/default/grub | grep "$check_var" >/dev/null; then
         prompt -w "您似乎已经配置过了，本次不执行添加。"
     else
         backupFile /etc/default/grub

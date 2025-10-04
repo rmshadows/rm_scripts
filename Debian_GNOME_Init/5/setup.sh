@@ -1,3 +1,4 @@
+#!/bin/bash
 : <<检查点五
 配置字体
 配置中州韵输入法
@@ -128,7 +129,7 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
         fi
         backupFile $rime_config_dir
         # 重命名
-        if [-d "$rime_config_dir(src)"];then
+        if [ -d "$rime_config_dir(src)" ];then
             backupFile "$rime_config_dir"
             prompt -e "存在 $rime_config_dir(src) ,似乎已经配置过词库了，本次不再配置"
         else

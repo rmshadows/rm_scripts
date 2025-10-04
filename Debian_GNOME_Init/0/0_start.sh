@@ -1,6 +1,6 @@
 #!/bin/bash
 :<<!说明
-脚本开头
+脚本开头(升级发行版需要更新检测发行版的代码)
 任务：
 检查运行环境
 !说明
@@ -113,6 +113,10 @@ if [ -f /etc/debian_version ]; then
     elif [ "$dvers" = "12" -o "$dvers" = "bookworm" ]; then
         # Debian 'bookworm'
         prompt -s '*** Found Debian      bookworm'
+        prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
+    elif [ "$dvers" = "13" -o "$dvers" = "trixie" ]; then
+        # Debian 'bookworm'
+        prompt -s '*** Found Debian      trixie'
     elif [ "$dvers" = "testing" -o "$dvers" = "sid" -o "$dvers" = "bookworm" ]; then
         # Debian 'testing', 'sid', and 'Trixie' -> Debian 'Trixie'
         prompt -s '*** Found Debian      testing'

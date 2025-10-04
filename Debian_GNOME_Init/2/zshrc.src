@@ -192,11 +192,34 @@ alias la='ls -A'
 alias l='ls -CF'
 
 # Git
+git-switch() {
+    local current=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || return 1
+    local main_branch=""
+
+    # 检测主分支名（优先 main）
+    if git show-ref --verify --quiet refs/heads/main; then
+        main_branch="main"
+    elif git show-ref --verify --quiet refs/heads/master; then
+        main_branch="master"
+    fi
+
+    if [ "$current" = "dev" ] && [ -n "$main_branch" ]; then
+        echo "切换 dev → $main_branch"
+        git checkout "$main_branch"
+    elif [ "$current" = "$main_branch" ]; then
+        echo "切换 $main_branch → dev"
+        git checkout dev
+    else
+        echo "当前分支: $current (未定义切换规则)"
+    fi
+}
+alias gswitch=git-switch
 alias gitac='git add . -A && git commit -m "add and update ———— `date` "'
 # alias gitfindhistory='gitsearch(){git log --all --pretty=oneline -- $1};gitsearch'
 alias gitam='git add . -A && git commit -m '
 # alias githardpull='git fetch --all && git reset --hard'
 alias gplb='git pull && git branch -a'
+
 
 # SSH
 alias ssh-key-install='ssh-copy-id -i /home/【$CURRENT_USER】/.ssh/id_rsa.pub'
@@ -208,6 +231,7 @@ alias all_proxy_sock5='export ALL_PROXY=socks5://127.0.0.1:20170'
 # 应用程序
 # alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss $3 -to $4 -i $1 -vcodec copy -acodec copy $2};ffmpegCutVideo'
 # alias hcg='hexo clean && hexo g'
+# alias p3='python3'
 
 # 系统
 alias ssa='sudo systemctl start'

@@ -18,7 +18,7 @@ switch-to-workspace-2=['<Primary>Right']
 switch-to-workspace-3=['<Primary>Up']
 switch-to-workspace-4=['<Primary>Down']"
 
-GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/']"
+GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/']"
 GNOME_CUSTOM_KEYBINDINGS_DCONF="[custom0]
 binding='<Alt>q'
 command='gnome-terminal'
@@ -42,11 +42,13 @@ name='virtualbox'
 [custom4]
 binding='<Shift><Alt>r'
 command='firefox-esr'
+name='firefox-esr'
+
+[custom5]
+binding='<Shift><Alt>s'
+command='flameshot gui'
 name='firefox-esr'"
 
-# 似乎失效
-GNOME_AREASCREENSHOT_KEYBINDINGS="['<Shift><Alt>s']"
-GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP="['<Primary><Shift>s']"
 
 # 放大镜
 GNOME_MAGNIFIER_KEYBINDINGS="['<Alt>0']"
@@ -61,7 +63,10 @@ GNOME_SWITCH_APPLICATIONS_BACKWARD_KEYBINDINGS="['<Shift><Super>Tab']"
 # 显示桌面
 GNOME_SHOW_DESKTOP_KEYBINDINGS="['<Super>d']"
 
-# 导入GNOME 电源配置 注意：Debian 12似乎已失效
+# 关机（会清空注销）
+GNOME_SHUTDOWN_KEYBINDINGS="['<Control><Alt>Delete']"
+
+# 导入GNOME 电源配置
 GNOME_POWER_DCONF="[/]
-sleep-inactive-ac-timeout=3600
+sleep-inactive-ac-timeout=7200
 sleep-inactive-ac-type='nothing'"

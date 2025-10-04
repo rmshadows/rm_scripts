@@ -26,15 +26,17 @@
 
 13. insert_hosts.sh —— 在 Host 添加某个主机解析
 
-14. kill_typora_license —— 关闭Typora未激活的弹窗
+14. interactive-time-sync.sh——同步时间
 
-15. monitor_and_kill.sh —— 每隔一段时间杀死某进程
+15. kill_typora_license —— 关闭Typora未激活的弹窗
 
-16. monitorFileAccess.sh —— 监视文件访问（很难用）
+16. monitor_and_kill.sh —— 每隔一段时间杀死某进程
 
-17. ssd_smart_check.sh —— 固态硬盘 smart 数据
+17. monitorFileAccess.sh —— 监视文件访问（很难用）
 
-18. trace_file_access.sh —— 监视程序启动过程（不好用）
+18. ssd_smart_check.sh —— 固态硬盘 smart 数据
 
-19. watchDirectoryChange.sh —— 监视目录文件更改
+19. trace_file_access.sh —— 监视程序启动过程（不好用）
+
+20. watchDirectoryChange.sh —— 监视目录文件更改
 

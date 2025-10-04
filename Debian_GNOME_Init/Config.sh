@@ -4,6 +4,8 @@
 !说明
 
 ## 检查点一 ##==
+# 是否使用DEB822 Preset=1
+SET_DEB822=1
 # 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:3
 SET_APT_SOURCE=3
 #==== 自定义源请在检查的1文件夹中定义!
@@ -105,8 +107,8 @@ SET_INSTALL_HEXO=0
 #### 下列软件安装时间较长，故放在最后安装
 # 是否安装Virtual Box Preset=0
 SET_INSTALL_VIRTUALBOX=0
-# 设置vbox仓库，0:官网(bookworm) 1:清华大学镜像站 注意：如果是sid源，则使用sid仓库 Preset=1
-SET_VIRTUALBOX_REPO=1
+# 设置vbox仓库，0:官网 1:清华大学镜像站 注意：如果是sid源，则使用sid仓库 Preset=1
+SET_VIRTUALBOX_REPO=0
 # 是否安装anydesk (受国外仓库限制，安装慢) Preset=0
 SET_INSTALL_ANYDESK=0
 # 是否设置anydesk开机自启动(注意，0为禁用，1为启用) Preset=0
@@ -121,9 +123,7 @@ SET_INSTALL_TEAMVIEWER=0
 SET_ENABLE_TEAMVIEWER=0
 # 是否安装WPS (APT安装慢) Preset=1 注：2024年8月起可能失效
 SET_INSTALL_WPS_OFFICE=0
-# 是否安装Skype Preset=0
-SET_INSTALL_SKYPE=0
-# 是否安装Docker-ce (可能失效了) Preset=0
+# 是否安装Docker-ce Preset=0
 SET_INSTALL_DOCKER_CE=0
 # 是否重装docker？ Preset=0
 SET_DOCKER_PURGE_REINSTALL=0
@@ -133,8 +133,6 @@ SET_DOCKER_NON_ROOT=0
 SET_DOCKER_CE_REPO=1
 # 是否设置Docker-ce开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_DOCKER_CE=0
-# 安装网易云音乐(可能失效了) Preset=0
-SET_INSTALL_NETEASE_CLOUD_MUSIC=0
 # 安装Google-Chrome（for CN） Preset=1
 SET_INSTALL_GOOGLE_CHROME=1
 
@@ -178,15 +176,15 @@ SET_IMPORT_GNOME_TERMINAL_DCONF=1
 SET_IMPORT_GNOME_WM_KEYBINDINGS_DCONF=1
 # 导入GNOME 自定义快捷键的dconf配置 0: 否 Preset=1
 SET_IMPORT_GNOME_CUSTOM_KEYBINDINGS_DCONF=0
-# 导入GNOME 选区截屏配置 注意：Debian 12似乎已失效 Preset=0 
-SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS=0
 # 导入GNOME 屏幕放大镜配置 Preset=1
 SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS=0
 # 导入切换窗口配置（将会禁用切换应用程序快捷键）
 SET_IMPORT_GNOME_SWITCH_WINDOWS_KEYBINDINGS=1
 # 导入显示桌面快捷键
 SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=1
-# 导入GNOME 电源配置 注意：Debian 12似乎已失效 Preset=1
+# 导入关机快捷键（会清空注销按键）
+SET_IMPORT_GNOME_SHUTDOWN_KEYBINDINGS=1
+# 导入GNOME 电源配置
 SET_IMPORT_GNOME_POWER_DCONF=1
 
 ## 检查点八 ##

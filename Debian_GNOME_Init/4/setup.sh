@@ -103,7 +103,7 @@ if [ "$SET_PYTHON3_MIRROR" -eq 1 ]; then
     pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 fi
 
-# 配置Python3全局虚拟环境（Debian 12中不能直接使用pip）
+# 配置Python3全局虚拟环境（Debian 12以后中不能直接使用pip）
 if [ "$SET_PYTHON3_VENV" -eq 1 ]; then
     prompt -x "配置Python3全局虚拟环境"
     doApt install python3-venv

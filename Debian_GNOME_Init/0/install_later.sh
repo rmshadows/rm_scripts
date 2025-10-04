@@ -56,17 +56,14 @@ if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
             if [ "$SET_VIRTUALBOX_REPO" -eq 0 ];then
                 prompt -m "不是sid源，添加官方仓库"
                 # https://suay.site/?p=526
-                sudo curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
-                sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
-                # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-                # wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
-                sudo echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian bookworm contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+                curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --yes --output /usr/share/keyrings/oracle-virtualbox-2016.gpg --dearmor
+                sudo echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] https://download.virtualbox.org/virtualbox/debian trixie contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
             elif [ "$SET_VIRTUALBOX_REPO" -eq 1 ];then
                 prompt -m "不是sid源，添加清华大学镜像仓库"
-                curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg --import
+                curl https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --yes --output /usr/share/keyrings/oracle-virtualbox-2016.gpg --dearmor
                 sudo chmod 644 /etc/apt/trusted.gpg.d/oracle_vbox_2016.asc.gpg
                 # wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-                sudo echo "deb http://mirrors.tuna.tsinghua.edu.cn/virtualbox/apt/ bookworm contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+                sudo echo "deb https://mirrors.tuna.tsinghua.edu.cn/virtualbox/apt/ trixie contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
             fi
             doApt update
             doApt install virtualbox
@@ -82,10 +79,10 @@ fi
 if [ "$SET_INSTALL_ANYDESK" -eq 1 ];then
     if ! [ -x "$(command -v anydesk)" ]; then
         prompt -x "安装Anydesk"
-        curl https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/anydesk.gpg --import
-        sudo chmod 644 /etc/apt/trusted.gpg.d/anydesk.gpg
-        # wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | apt-key add -
-        sudo echo "deb http://deb.anydesk.com/ all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://keys.anydesk.com/repos/DEB-GPG-KEY -o /etc/apt/keyrings/keys.anydesk.com.asc
+        sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
+        echo "deb [signed-by=/etc/apt/keyrings/keys.anydesk.com.asc] https://deb.anydesk.com all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list > /dev/null
         doApt update
         doApt install anydesk
     else
@@ -104,9 +101,10 @@ fi
 if [ "$SET_INSTALL_TYPORA" -eq 1 ];then
     if ! [ -x "$(command -v typora)" ]; then
         prompt -x "安装typora"
-        curl https://typora.io/linux/public-key.asc | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/typora.gpg --import
-        sudo chmod 644 /etc/apt/trusted.gpg.d/typora.gpg
-        sudo echo "deb https://typora.io/linux ./" | sudo tee /etc/apt/sources.list.d/typora.list
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://downloads.typora.io/typora.gpg | sudo tee /etc/apt/keyrings/typora.gpg > /dev/null
+        # add Typora's repository securely
+        echo "deb [signed-by=/etc/apt/keyrings/typora.gpg] https://downloads.typora.io/linux ./" | sudo tee /etc/apt/sources.list.d/typora.list
         doApt update
         doApt install typora
     else
@@ -118,9 +116,10 @@ fi
 if [ "$SET_INSTALL_SUBLIME_TEXT" -eq 1 ];then
     if ! [ -x "$(command -v sublime-text)" ]; then
         prompt -x "安装sublime-text"
-        curl https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/sublimehq-pub.gpg --import
-        sudo chmod 644 /etc/apt/trusted.gpg.d/sublimehq-pub.gpg
-        sudo echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+        # 确保 keyrings 目录存在
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+        echo -e 'Types: deb\nURIs: https://download.sublimetext.com/\nSuites: apt/stable/\nSigned-By: /etc/apt/keyrings/sublimehq-pub.asc' | sudo tee /etc/apt/sources.list.d/sublime-text.sources
         doApt update
         doApt install sublime-text
     else
@@ -143,17 +142,6 @@ if [ "$SET_INSTALL_TEAMVIEWER" -eq 1 ];then
     elif [ "$SET_ENABLE_TEAMVIEWER" -eq 1 ];then
         prompt -x "配置Teamviewer服务开机自启"
         sudo systemctl enable teamviewerd.service
-    fi
-fi
-
-# 安装skype
-if [ "$SET_INSTALL_SKYPE" -eq 1 ];then
-    if ! [ -x "$(command -v skypeforlinux)" ]; then
-        prompt -x "安装Skype国际版"
-        wget https://go.skype.com/skypeforlinux-64.deb
-        doApt install ./skypeforlinux-64.deb
-    else
-        prompt -m "您可能已经安装了Skype"
     fi
 fi
 
@@ -193,24 +181,33 @@ if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
             doApt install ca-certificates curl
             sudo install -m 0755 -d /etc/apt/keyrings
             # 如果由于网络原因，手动配置了/etc/apt/keyrings/docker.asc，则注释下面这句
-            sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            # 或者 https://mirrors.aliyun.com/docker-ce/linux/debian/gpg
+            # sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            if ! sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc; then
+                echo "主源下载失败，尝试使用阿里云镜像..."
+                sudo curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            fi
             sudo chmod a+r /etc/apt/keyrings/docker.asc
             # Add the repository to Apt sources:
             # 如果您使用的衍生物的分布，如卡利Linux， 你可能需要的替代品的一部分，这个命令，该命令的期望 打印的版本代号：
             # 读取 /etc/os-release 文件，加载其中的环境变量.然后输出 VERSION_CODENAME 变量的值，即操作系统版本的代号。
             # $(. /etc/os-release && echo "$VERSION_CODENAME") 替换这部分与代号相应Debian释放， 如 bookworm.
+            # Add the repository to Apt sources:
             echo \
                 "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
-                sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+                sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         elif [ "$SET_DOCKER_CE_REPO" -eq 1 ]; then
             prompt -m "添加清华大学镜像仓库"
-            curl https://download.docker.com/linux/debian/gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/docker-archive-keyring.gpg --import
-            sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
-            sudo echo \
-                "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
-       $(lsb_release -cs) \
-       stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+            if ! sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc; then
+                echo "主源下载失败，尝试使用阿里云镜像..."
+                sudo curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            fi
+            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+            echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         fi
         doApt update
         doApt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -241,7 +238,7 @@ if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
     fi
 fi
 
-# 安装wps-office
+# 安装wps-office (可能失效)
 if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
     if ! [ -x "$(command -v wps)" ]; then
         prompt -x "安装wps-office"
@@ -249,20 +246,11 @@ if [ "$SET_INSTALL_WPS_OFFICE" -eq 1 ];then
         # 较稳定版本
         # wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10161/wps-office_11.1.0.10161_amd64.deb
         wget https://wdl1.cache.wps.cn/wps/download/ep/Linux2019/10702/wps-office_11.1.0.10702_amd64.deb
+        # https://wps-linux-personal.wpscdn.cn/wps/download/ep/Linux2023/22571/wps-office_12.1.2.22571.AK.preread.sw_480057_amd64.deb?t=1759329603&k=9a4625d28131701d4199c026e2334a2f
+        # https://pubwps-wps365-obs.wpscdn.cn/download/Linux/22550/wps-office_12.1.2.22550.AK.preload.sw_amd64.deb
         doApt install ./wps-office*amd64.deb
     else
         prompt -m "您可能已经安装了WPS"
-    fi
-fi
-
-# 安装网易云音乐
-if [ "$SET_INSTALL_NETEASE_CLOUD_MUSIC" -eq 1 ];then
-    if ! [ -x "$(command -v netease-cloud-music)" ]; then
-        prompt -x "安装网易云音乐"
-        wget https://d1.music.126.net/dmusic/netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
-        doApt install ./netease-cloud-music_1.2.1_amd64_ubuntu_20190428.deb
-    else
-        prompt -m "您可能已经安装了netease-cloud-music"
     fi
 fi
 

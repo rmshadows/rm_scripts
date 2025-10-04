@@ -41,14 +41,6 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         dconf load /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/ <<< $GNOME_CUSTOM_KEYBINDINGS_DCONF
         dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings "$GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR"
     fi
-    # 导入GNOME 区域截屏快捷键的dconf配置
-    if [ "$SET_IMPORT_GNOME_AREASCREENSHOT_KEYBINDINGS" != 0 ];then
-        dconf read /org/gnome/settings-daemon/plugins/media-keys/area-screenshot > old-dconf-settings-daemon-area-screenshot.backup
-        dconf read /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip > old-dconf-settings-daemon-area-screenshot-clip.backup
-        prompt -x "导入GNOME 区域截屏快捷键的dconf配置"
-        dconf write /org/gnome/settings-daemon/plugins/media-keys/area-screenshot $GNOME_AREASCREENSHOT_KEYBINDINGS
-        dconf write /org/gnome/settings-daemon/plugins/media-keys/area-screenshot-clip $GNOME_AREASCREENSHOT_KEYBINDINGS_CLIP
-    fi
     # 导入GNOME 放大镜快捷键的dconf配置
     if [ "$SET_IMPORT_GNOME_MAGNIFIER_KEYBINDINGS" != 0 ];then
         dconf read /org/gnome/settings-daemon/plugins/media-keys/magnifier > old-dconf-settings-daemon-magnifier.backup
@@ -75,6 +67,14 @@ if [ "$SET_DCONF_SETTING" -eq 1 ];then
         dconf read /org/gnome/desktop/wm/keybindings/show-desktop > old-dconf-settings-show-desktop.backup
         prompt -x "导入显示桌面快捷键"
         dconf write /org/gnome/desktop/wm/keybindings/show-desktop $GNOME_SHOW_DESKTOP_KEYBINDINGS
+    fi
+    # 关机快捷键
+    if [ "$SET_IMPORT_GNOME_SHUTDOWN_KEYBINDINGS" != 0 ];then
+        dconf read /org/gnome/desktop/wm/keybindings/shutdown > old-dconf-settings-shutdown.backup
+        dconf read /org/gnome/desktop/wm/keybindings/logout > old-dconf-settings-logout.backup
+        prompt -x "导入显示桌面快捷键"
+        dconf write /org/gnome/desktop/wm/keybindings/logout "[]"
+        dconf write /org/gnome/desktop/wm/keybindings/shutdown $GNOME_SHUTDOWN_KEYBINDINGS
     fi
     # 导入GNOME 电源的dconf配置
     if [ "$SET_IMPORT_GNOME_POWER_DCONF" != 0 ];then

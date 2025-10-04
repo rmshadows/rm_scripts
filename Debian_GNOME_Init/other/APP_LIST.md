@@ -12,6 +12,14 @@ https://docs.docker.com/desktop/setup/install/linux/debian/
 
 https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb?utm_source=docker&utm_medium=webreferral&utm_campaign=docs-driven-download-linux-amd64
 
+手动下载安装包：https://download.docker.com/linux/debian/dists/
+
+## Docker-Desktop
+
+https://docs.docker.com/desktop/setup/install/linux/debian/
+
+`wget https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb`
+
 ## nvm——Node Version Manager
 
 https://github.com/nvm-sh/nvm
