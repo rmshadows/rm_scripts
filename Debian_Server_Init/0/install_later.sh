@@ -10,12 +10,12 @@ docker-ce
 安装时间较长的软件包
 # 安装later_task中的软件
 if [ "$SET_APT_INSTALL" -eq 1 ]; then
-    doApt install ${later_task[@]}
+    doApt install "${later_task[@]}"
     if [ $? != 0 ]; then
         prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
         sleep 2
         num=1
-        for var in ${later_task[@]}; do
+        for var in "${later_task[@]}"; do
             prompt -m "正在安装第 $num 个软件包: $var。"
             doApt install $var
             num=$((num + 1))
@@ -59,24 +59,33 @@ if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
             doApt install ca-certificates curl
             sudo install -m 0755 -d /etc/apt/keyrings
             # 如果由于网络原因，手动配置了/etc/apt/keyrings/docker.asc，则注释下面这句
-            sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            # 或者 https://mirrors.aliyun.com/docker-ce/linux/debian/gpg
+            # sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            if ! sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc; then
+                echo "主源下载失败，尝试使用阿里云镜像..."
+                sudo curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            fi
             sudo chmod a+r /etc/apt/keyrings/docker.asc
             # Add the repository to Apt sources:
             # 如果您使用的衍生物的分布，如卡利Linux， 你可能需要的替代品的一部分，这个命令，该命令的期望 打印的版本代号：
             # 读取 /etc/os-release 文件，加载其中的环境变量.然后输出 VERSION_CODENAME 变量的值，即操作系统版本的代号。
             # $(. /etc/os-release && echo "$VERSION_CODENAME") 替换这部分与代号相应Debian释放， 如 bookworm.
+            # Add the repository to Apt sources:
             echo \
                 "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
-                sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+                sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         elif [ "$SET_DOCKER_CE_REPO" -eq 1 ]; then
             prompt -m "添加清华大学镜像仓库"
-            curl https://download.docker.com/linux/debian/gpg | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/docker-archive-keyring.gpg --import
-            sudo chmod 644 /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg
-            sudo echo \
-                "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
-       $(lsb_release -cs) \
-       stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+            if ! sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc; then
+                echo "主源下载失败，尝试使用阿里云镜像..."
+                sudo curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            fi
+            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+            echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         fi
         doApt update
         doApt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin

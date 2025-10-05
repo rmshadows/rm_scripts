@@ -102,11 +102,11 @@ if [ -f /etc/debian_version ]; then
     elif [ "$dvers" = "9" -o "$dvers" = "stretch" ]; then
         # Debian 'stretch'
         prompt -w '*** Found Debian      '
-    elif [ "$dvers" = "10" -o "$dvers" = "buster" -o "$dvers" = "parrot" ]; then
+    elif [ "$dvers" = "10" -o "$dvers" = "buster" ]; then
         # Debian 'buster'
         prompt -w '*** Found Debian      buster'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ "$dvers" = "11" -o "$dvers" = "bullseye" -o "$dvers" = "parrot" ]; then
+    elif [ "$dvers" = "11" -o "$dvers" = "bullseye" ]; then
         # Debian 'bullseye'
         prompt -w '*** Found Debian      bullseye'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
@@ -115,10 +115,10 @@ if [ -f /etc/debian_version ]; then
         prompt -s '*** Found Debian      bookworm'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
     elif [ "$dvers" = "13" -o "$dvers" = "trixie" ]; then
-        # Debian 'bookworm'
+        # Debian 'trixie'
         prompt -s '*** Found Debian      trixie'
-    elif [ "$dvers" = "testing" -o "$dvers" = "sid" -o "$dvers" = "bookworm" ]; then
-        # Debian 'testing', 'sid', and 'Trixie' -> Debian 'Trixie'
+    elif [ "$dvers" = "testing" -o "$dvers" = "sid" -o "$dvers" = "forky" ]; then
+        # Debian 'testing', 'sid'
         prompt -s '*** Found Debian      testing'
         prompt -w "*** WARN: Debian testing 或 sid，请谨慎使用！"
     else

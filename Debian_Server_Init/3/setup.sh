@@ -100,7 +100,7 @@ if ! [ "$SET_HOST_NAME" -eq 0 ];then
     echo "$HOSTNAME" > /etc/hostname
     check_var="127.0.1.1"
     # 获取行号
-    idx=`cat /etc/hosts | grep -n ^$check_var | gawk '{print $1}' FS=":"`
+    idx=$(cat /etc/hosts | grep -n ^$check_var | gawk '{print $1}' FS=":")
     # 找到的Index
     idxl=($idx)
     idxlen=${#idxl[@]}  

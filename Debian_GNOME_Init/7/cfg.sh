@@ -68,5 +68,6 @@ GNOME_SHUTDOWN_KEYBINDINGS="['<Control><Alt>Delete']"
 
 # 导入GNOME 电源配置
 GNOME_POWER_DCONF="[/]
+power-button-action='nothing'
 sleep-inactive-ac-timeout=7200
 sleep-inactive-ac-type='nothing'"

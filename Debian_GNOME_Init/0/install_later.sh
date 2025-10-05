@@ -19,12 +19,12 @@ docker-ce
 安装时间较长的软件包
 # 安装later_task中的软件
 if [ "$SET_APT_INSTALL" -eq 1 ];then
-    doApt install ${later_task[@]}
+    doApt install "${later_task[@]}"
     if [ $? != 0 ];then
         prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
         sleep 2
         num=1
-        for var in ${later_task[@]}
+        for var in "${later_task[@]}"
         do
             prompt -m "正在安装第 $num 个软件包: $var。"
             doApt install $var

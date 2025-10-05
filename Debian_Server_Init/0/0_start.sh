@@ -24,7 +24,7 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 
 # 检测到苹果系统，退出
 if [ -e /usr/bin/uname ]; then
-    if [ "`/usr/bin/uname -s`" = "Darwin" ]; then
+    if [ "$(/usr/bin/uname -s)" = "Darwin" ]; then
         prompt -e '*** Detected MacOS / Darwin, quit!'
         prompt -e '*** Linux only!'
         exit 0
@@ -34,12 +34,12 @@ fi
 # 检测Linux发行版
 prompt -w '*** Detecting Linux Distribution....'
 if [ -f /etc/debian_version ]; then
-    dvers=`cat /etc/debian_version | cut -d '.' -f 1 | cut -d '/' -f 1`
-    if [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F -i LinuxMint`" ]; then
+    dvers=$(cat /etc/debian_version | cut -d '.' -f 1 | cut -d '/' -f 1)
+    if [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F -i LinuxMint)" ]; then
         # Linux Mint -> Ubuntu 'xenial'
         prompt -w '*** Found Linux Mint      Ubuntu xenial'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F trusty`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F trusty)" ]; then
         # Ubuntu 'trusty'
         prompt -w '*** Found Ubuntu      trusty'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
@@ -102,19 +102,23 @@ if [ -f /etc/debian_version ]; then
     elif [ "$dvers" = "9" -o "$dvers" = "stretch" ]; then
         # Debian 'stretch'
         prompt -w '*** Found Debian      '
-    elif [ "$dvers" = "10" -o "$dvers" = "buster" -o "$dvers" = "parrot" ]; then
+    elif [ "$dvers" = "10" -o "$dvers" = "buster" ]; then
         # Debian 'buster'
         prompt -w '*** Found Debian      buster'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ "$dvers" = "11" -o "$dvers" = "bullseye" -o "$dvers" = "parrot" ]; then
+    elif [ "$dvers" = "11" -o "$dvers" = "bullseye" ]; then
         # Debian 'bullseye'
         prompt -w '*** Found Debian      bullseye'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
     elif [ "$dvers" = "12" -o "$dvers" = "bookworm" ]; then
         # Debian 'bookworm'
-        prompt -s '*** Found Debian      bookworm'
-    elif [ "$dvers" = "testing" -o "$dvers" = "sid" -o "$dvers" = "bookworm" ]; then
-        # Debian 'testing', 'sid', and 'Trixie' -> Debian 'Trixie'
+        prompt -w '*** Found Debian      bookworm'
+        prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
+    elif [ "$dvers" = "13" -o "$dvers" = "trixie" ]; then
+        # Debian 'trixie'
+        prompt -s '*** Found Debian      trixie'
+    elif [ "$dvers" = "testing" -o "$dvers" = "sid" -o "$dvers" = "forky" ]; then
+        # Debian 'testing', 'sid', and 'forky' -> Debian 'forky'
         prompt -s '*** Found Debian      testing'
         prompt -w "*** WARN: Debian testing 或 sid，请谨慎使用！"
     else
