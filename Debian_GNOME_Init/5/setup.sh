@@ -105,7 +105,7 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ]; then
     fi
     if ! [ -d "/home/$CURRENT_USER/.local/share/fcitx5/rime" ]; then
         prompt -e "找不到fcitx5-rime的配置文件夹/home/$CURRENT_USER/.local/share/fcitx5/rime"
-        addFolder /home/$CURRENT_USER/.config/fcitx5/rime
+        addFolder /home/$CURRENT_USER/.local/share/fcitx5/rime
     fi
     rime_config_dir="/home/$CURRENT_USER/.local/share/fcitx5/rime"
     im-config -n fcitx5

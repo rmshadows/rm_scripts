@@ -212,12 +212,12 @@ doApt() {
   fi
   if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ]; then
     if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ]; then
-      sudo apt $@
+      sudo apt "$@"
     elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ]; then
-      sudo apt $@ -y
+      sudo apt "$@" -y
     fi
   else
-    sudo apt $@
+    sudo apt "$@"
   fi
 }
 
@@ -227,13 +227,13 @@ addFolder() {
     prompt -e "addFolder () 只能有一个参数"
     quitThis
   fi
-  if ! [ -d $1 ]; then
-    prompt -x "新建文件夹$1 "
-    mkdir $1
+  if ! [ -d "$1" ]; then
+    prompt -x "新建文件夹 $1 "
+    install -d "$1"
   fi
-  if ! [ -d $1 ]; then
-    prompt -x "(sudo)新建文件夹$1 "
-    sudo mkdir $1
+  if ! [ -d "$1" ]; then
+    prompt -x "(sudo)新建文件夹 $1 "
+    sudo install -d "$1"
   fi
 }
 
@@ -343,37 +343,36 @@ replace_placeholders_with_values() {
   echo "完成: 生成的文件为 $dest_file"
 }
 
-
 replace_placeholders_with_values_support_multiline() {
   local src_file="$1"
   local dest_file="$src_file"
-  
+
   # 如果文件是 .src 结尾，生成去掉 .src 的文件
   if [[ "$src_file" == *.src ]]; then
     dest_file="${src_file%.src}"
   fi
-  
+
   # 确认源文件是否存在
   if [[ ! -f "$src_file" ]]; then
     echo "文件不存在: $src_file"
     return 1
   fi
-  
+
   # 复制文件内容到目标文件，如果需要新建
   cp "$src_file" "$dest_file"
-  
+
   # 匹配占位符格式【$varName】，使用 sed 替换变量
   grep -oP '【\$\w+】' "$dest_file" | while read -r placeholder; do
     # 提取变量名
     varName=$(echo "$placeholder" | sed -E 's/【\$(\w+)】/\1/')
-    
+
     # 获取变量值
     varValue=${!varName}
-    
+
     if [[ -n "$varValue" ]]; then
       # 处理变量值中的换行符，替换为特殊字符（如 \n），避免被 sed 破坏
       varValue=$(echo "$varValue" | sed ':a;N;$!ba;s/\n/\\n/g')
-      
+
       # 替换文件中的占位符为变量值
       sed -i "s|${placeholder}|${varValue}|g" "$dest_file"
     else
@@ -383,12 +382,27 @@ replace_placeholders_with_values_support_multiline() {
 
   # 恢复特殊字符中的换行符
   sed -i 's/\\n/\n/g' "$dest_file"
-  
+
   echo "完成: 生成的文件为 $dest_file"
 }
 
-
 ### archive
+# 新建文件夹 $1
+addFolder251010() {
+  if [ $# -ne 1 ]; then
+    prompt -e "addFolder () 只能有一个参数"
+    quitThis
+  fi
+  if ! [ -d $1 ]; then
+    prompt -x "新建文件夹$1 "
+    mkdir -p $1
+  fi
+  if ! [ -d $1 ]; then
+    prompt -x "(sudo)新建文件夹$1 "
+    sudo mkdir -p $1
+  fi
+}
+
 # 替换用户名为使用已定义的 $CURRENT_USER replace_username "需要修改的文件"
 replace_username() {
   local file="$1"

@@ -24,6 +24,7 @@ fi
 if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOPASSWD" -eq 1 ]; then
     prompt -x "设置用户 $CURRENT_USER sudo免密码"
     TEMPORARILY_SUDOER_STRING="$CURRENT_USER ALL=(ALL)NOPASSWD:ALL"
+    # 直接添加到 /etc/sudoers 
     doAsRoot "echo '$TEMPORARILY_SUDOER_STRING' >> /etc/sudoers"
     # 检查状态
     if [ $? -ne 0 ]; then
