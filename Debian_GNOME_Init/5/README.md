@@ -99,3 +99,8 @@
 可選地、第三個字段是設定該字詞權重的頻度值（非負整數），或相對於預設權值的百分比（浮點數%）。 在拼音輸入法中，往往多音字的若干種讀音使用的場合不同，於是指定不同百分比來修正每個讀音的使用頻度。
 ```
 
+## 其他词库
+
+- 白霜拼音 - https://github.com/gaboolic/rime-frost
+- 雾凇拼音 - https://github.com/iDvel/rime-ice
+- RIME 词库增强 - https://github.com/Iorest/rime-dict

@@ -33,7 +33,7 @@ patch:
   "speller/algebra/@before 0": xform/^([b-df-hj-np-tv-z])$/$1_/
   
   # 备选词数量
-  "menu/page_size": 8
+  "menu/page_size": 10
   
   # emoji表情 https://github.com/rime/rime-emoji
   # 添加了opencc文件夹

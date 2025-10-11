@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=multi_display_setup
+GenericName=multi_display_setup
+Comment=Application
+Exec=/home/【Path to File】/.multi_display_setup.sh
+Terminal=false
+Type=Application
+Categories=Application;
+StartupNotify=false

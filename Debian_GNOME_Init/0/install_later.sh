@@ -267,10 +267,29 @@ fi
 
 
 #### 禁用第三方仓库更新
-if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ];then
+if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ]; then
     prompt -x "禁用第三方软件仓库更新"
     addFolder /etc/apt/sources.list.d/backup
-    sudo mv /etc/apt/sources.list.d/* /etc/apt/sources.list.d/backup/
+    # 定义保护文件（白名单）
+    PROTECT_LIST=(
+        "debian.sources"
+        "debian.list"
+    )
+    for f in /etc/apt/sources.list.d/*; do
+        [ -e "$f" ] || continue
+        basename=$(basename "$f")
+        # 判断是否在保护列表中
+        skip=0
+        for p in "${PROTECT_LIST[@]}"; do
+            if [ "$basename" = "$p" ]; then
+                skip=1
+                break
+            fi
+        done
+        # 非保护文件则移动到 backup
+        if [ $skip -eq 0 ]; then
+            sudo mv "$f" /etc/apt/sources.list.d/backup/
+        fi
+    done
 fi
-
 

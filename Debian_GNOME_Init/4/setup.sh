@@ -199,8 +199,8 @@ if [ "$SET_INSTALL_PHP" -eq 1 ]; then
         if [ "$SET_PHP_FPM_PORT" -ne 0 ]; then
             # 配置php fpm
             fromp=$(pwd)
-            cd /etc/php/*/fpm/pool.d/
-            phpconff=""www.conf""
+            cd /etc/php/*/fpm/pool.d/ || quitThis
+            phpconff="www.conf"
             if [ -f "$phpconff" ]; then
                 check_var="^listen = $SET_PHP_FPM_PORT"
                 if cat "$phpconff" | grep "$check_var" >/dev/null; then

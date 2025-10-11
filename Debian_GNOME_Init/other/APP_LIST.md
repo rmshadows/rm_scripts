@@ -1,4 +1,4 @@
-# Title
+# 应用
 
 ## Anydesk
 
@@ -20,9 +20,17 @@ https://docs.docker.com/desktop/setup/install/linux/debian/
 
 `wget https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb`
 
+## KVM
+
+
+
 ## nvm——Node Version Manager
 
 https://github.com/nvm-sh/nvm
+
+## Scrcpy
+
+https://github.com/Genymobile/scrcpy/releases
 
 ## Typora
 
@@ -32,8 +40,20 @@ https://typora.io/
 
 https://www.virtualbox.org/wiki/Downloads
 
+## Visual Studio Code
+
+https://code.visualstudio.com/download
+
 ## WPS-Office
 
 - https://365.wps.cn/download365
 
 - https://www.wps.cn/product/wpslinux#
+
+## 微信
+
+https://weixin.qq.com/
+
+## QQ
+
+https://im.qq.com/linuxqq/index.shtml

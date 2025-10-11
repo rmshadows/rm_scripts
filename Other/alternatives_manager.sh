@@ -1,4 +1,29 @@
 #!/bin/bash
+# ==========================================
+# alternatives 管理脚本
+# ==========================================
+# 用途：
+#   这个脚本用于管理 Linux 系统上的 "alternatives" 系统，
+#   可以查看、添加或删除某个软件的替代项（alternatives）。
+#
+# 使用方法：
+#   1. 运行脚本：
+#        sudo ./alternatives-manager.sh
+#   2. 按提示输入要管理的软件名称，例如：
+#        java
+#   3. 在菜单中选择操作：
+#        1) 查看当前 alternatives
+#        2) 添加新的 alternative
+#        3) 删除已有 alternative
+#        4) 退出
+#
+# 示例：
+#   假设你要管理 java 的替代项：
+#     Enter the name of the software you want to manage (e.g., java, editor, etc.):
+#     java
+#   然后选择 1、2 或 3 来查看、添加或删除 java 的 alternative。
+# ==========================================
+
 
 # 显示帮助信息
 function show_help {

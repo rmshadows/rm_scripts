@@ -22,7 +22,7 @@ else
     echo "default 配置文件的连接不存在。"
 fi
 
-r=`whereis php-fpm`
+r=$(whereis php-fpm)
 # echo $r
 PF_VERSION=${r#*\/php-fpm}
 
