@@ -8,7 +8,7 @@ import random
 
 from PIL import Image
 # 改成 pypdf
-from pypdf import PdfMerger, PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 # 如果需要保留原来的别名
 pdf_reader = PdfReader
