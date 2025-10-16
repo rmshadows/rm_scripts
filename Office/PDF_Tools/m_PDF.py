@@ -40,6 +40,28 @@ def add_content(pdf_in_name:str,pdf_out_name:str,content_dict:dict):
     # print("PDF Marked!")
 
 
+def mergePdfs(directory, output_pdf_file, filepathOrder=None):
+    import sys
+    import os
+    sys.setrecursionlimit(1200)
+
+    writer = PdfWriter()
+    pdf_files = m_System.getSuffixFile("pdf", directory, False)
+
+    if filepathOrder is None:
+        pdf_files = m_System.natsorted(pdf_files)
+        for pdf in pdf_files:
+            writer.append(pdf)
+    else:
+        for pdf in filepathOrder:
+            writer.append(pdf)
+
+    # 写出文件
+    with open(output_pdf_file, "wb") as f:
+        writer.write(f)
+    print(f"✅ 合并完成: {output_pdf_file}")
+
+
 def mergePdfsOld(directory, output_pdf_file):
     """
     合并PDF（带目录） for 2.0.11
@@ -63,7 +85,7 @@ def mergePdfsOld(directory, output_pdf_file):
     merger.close()
 
 
-def mergePdfs(directory, output_pdf_file, filepathOrder=None):
+def mergePdfs_251016(directory, output_pdf_file, filepathOrder=None):
     """
     合并PDF（带目录）
     Args:
@@ -74,6 +96,7 @@ def mergePdfs(directory, output_pdf_file, filepathOrder=None):
     Returns:
         None
     """
+    from pypdf import PdfMerger
     # 为了避免RecursionError: maximum recursion depth exceeded while calling a Python object > 1000
     sys.setrecursionlimit(1200)
     merger = PdfMerger()
