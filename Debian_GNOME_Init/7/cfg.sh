@@ -47,7 +47,7 @@ name='firefox-esr'
 [custom5]
 binding='<Shift><Alt>s'
 command='flameshot gui'
-name='firefox-esr'"
+name='flameshot'"
 
 
 # 放大镜
