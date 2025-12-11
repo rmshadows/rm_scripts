@@ -8,6 +8,14 @@
 export LANG=zh_CN.UTF-8
 export LC_ALL=zh_CN.UTF-8
 
+# 启动独立的 D-Bus 会话
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval $(dbus-launch --sh-syntax --exit-with-session)
+    export DBUS_SESSION_BUS_ADDRESS
+fi
+# echo $DBUS_SESSION_BUS_ADDRESS
+# dbus-launch nautilus
+
 # 设置壁纸（带 1 秒延迟，防止 X 服务器未完全启动）
 (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg) &
 # (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/zetong-li-TbHYpbi_Gbc-unsplash.jpg) &
@@ -32,6 +40,8 @@ pgrep -x nm-tray > /dev/null || nm-tray &
 # 启动 volumeicon alsa
 # volumeicon &
 
+# 启动 CopyQ 守护进程（不显示界面）
+copyq --start-server &
 
 # 启动conky
 # conky&
@@ -46,14 +56,6 @@ setxkbmap us &
 # 启动gvfs
 #/usr/libexec/gvfsd &
 #/usr/libexec/gvfs-udisks2-volume-monitor &
-
-# 启动独立的 D-Bus 会话
-if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
-    eval $(dbus-launch --sh-syntax --exit-with-session)
-    export DBUS_SESSION_BUS_ADDRESS
-fi
-# echo $DBUS_SESSION_BUS_ADDRESS
-# dbus-launch nautilus
 
 # 认证
 # sudo apt install lxpolkit
