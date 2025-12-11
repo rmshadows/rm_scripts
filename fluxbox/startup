@@ -4,6 +4,10 @@
 #
 # Lines starting with a '#' are ignored.
 
+# 设置中文
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
 # 设置壁纸（带 1 秒延迟，防止 X 服务器未完全启动）
 (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg) &
 # (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/zetong-li-TbHYpbi_Gbc-unsplash.jpg) &
@@ -14,7 +18,8 @@ pgrep -x fcitx5 > /dev/null || fcitx5 &
 # pgrep -x fcitx > /dev/null || fcitx &
 
 # 启动网络管理器托盘（避免重复运行）
-pgrep -x nm-applet > /dev/null || nm-applet &
+# pgrep -x nm-applet > /dev/null || nm-applet &
+pgrep -x nm-tray > /dev/null || nm-tray &
 # nm-applet &
 # nm-tray&
 

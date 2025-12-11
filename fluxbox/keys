@@ -150,7 +150,7 @@ Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/brightnessControl/xrandrBrigh
 # Print :ExecCommand ksnip
 Print :ExecCommand scrot
 # Mod1 Shift s :ExecCommand kylin-screenshot gui
-Mod1 Shift s :ExecCommand frameshot gui
+Mod1 Shift s :ExecCommand flameshot gui
 
 # Win + L 锁屏（使用 i3lock）
 Mod4 l :ExecCommand i3lock
