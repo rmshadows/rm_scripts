@@ -1,88 +1,94 @@
 #!/bin/bash
-# 调整亮度 用法：$ 脚本.sh 【功能：0: 减亮度 1:增亮度 2:重置亮度】
-# https://wiki.archlinuxcn.org/wiki/%E8%83%8C%E5%85%89
-# https://ubuntukylin.com/news/1763-cn.html
+# 调整亮度 用法：脚本.sh 【功能：0:减亮度 1:增亮度 2:重置亮度 3:重置检测】
+# 依赖：ddcutil（需要 root 权限）
 
-# Manual 增亮步长 (减亮是两倍！)
-bstep=5
+# 每次调节的步长（0–100 之间）
+bstep=10
 
-# 有这个文件就不会检查
-# 获取脚本所在文件夹路径
-script_dir=$(dirname "$0")
+# 获取脚本所在目录（绝对路径）
+script_dir="$(cd "$(dirname "$0")" && pwd)"
 dcf="$script_dir/ddcCheck.log"
-# echo "$dcf"
 
-# 检查显示设置
-function checkDisplay() {
-    # 获取显示设备(可能有多个，多个会退出)
-    # 运行sudo ddcutil detect并将输出保存到变量detect_output中
+# --------- 工具函数 ----------
+
+die() {
+    echo "$*" >&2
+    exit 1
+}
+
+get_brightness() {
+    sudo ddcutil getvcp 10 \
+        | grep "current value" \
+        | awk '{print $NF}'
+}
+
+checkDisplay() {
+    echo "检查显示环境..."
+
+    # 1. 检查 ddcutil 是否存在
+    command -v ddcutil >/dev/null 2>&1 || die "ddcutil 未安装，请先安装 ddcutil"
+
+    # 2. 检测显示器数量
     detect_output=$(sudo ddcutil detect)
-    # 使用grep命令来检查输出中包含的显示器数量
     display_count=$(echo "$detect_output" | grep -c "Display")
-    # 输出显示器数量
+
     echo "检测到 $display_count 个连接的显示器。"
-    # 如果显示器数量大于1，则给出相应的提示
     if [ "$display_count" -gt 1 ]; then
-        echo "注意：检测到多个显示器连接，请手动修改脚本内容以适配。"
+        echo "注意：检测到多个显示器，请手动修改脚本适配具体显示器。"
         exit 1
+    elif [ "$display_count" -eq 0 ]; then
+        die "未检测到支持 DDC 的显示器。"
     fi
 
-    # 检查是否有亮度调节功能
-    # 检测是否有 Feature: 10
+    # 3. 检查是否支持亮度调节（VCP code 10）
     capabilities_output=$(sudo ddcutil capabilities)
     if echo "$capabilities_output" | grep -q "Feature: 10"; then
-        echo "Feature: 10 存在。"
         if echo "$capabilities_output" | grep "Feature: 10" | grep -q "Brightness"; then
-            echo "Feature: 10 可能是亮度调节。"
-            echo "0" > "$dcf"
+            echo "已检测到 VCP 10 (Brightness)，环境 OK。"
+            echo "ok" > "$dcf"
         else
-            echo "Feature: 10 可能不是亮度调节，请检查！"
-            exit 2
+            die "Feature: 10 存在，但似乎不是 Brightness，请检查显示器能力。"
         fi
     else
-        echo "Feature: 10 不存在，请检查！"
-        exit 2
+        die "不支持 Feature: 10 (亮度调节)，请检查显示器或连接方式。"
     fi
 }
 
-if ! [ -f "$dcf" ];then
-    # 有问题会直接退出
-    echo "检查环境。。。"
+# --------- 主逻辑开始 ----------
+
+# 首次运行做环境检查（有问题直接退出）
+if [ ! -f "$dcf" ]; then
     checkDisplay
 fi
 
-if echo "$1" | grep -q "^[0-9]*$"; then
-    # 如果有给参数 且为数字
-    if [ "$1" == "" ]; then
-        # 获取初始亮度
-        initial_brightness=$(sudo ddcutil getvcp 10 | grep "current value" | awk '{print $NF}')
-        # 默认显示当前信息
-        echo "当前亮度（current value）为: $initial_brightness"
-    elif [ "$1" -eq 0 ]; then
-        # bdst=$(echo "$initial_brightness - $bstep" | bc)
-        # echo "减少亮度：$initial_brightness -> $bdst"
+# 读取参数（默认是空）
+action="$1"
+
+case "$action" in
+    0)
+        # 减亮度
+        echo "减少亮度：-$bstep"
         sudo ddcutil setvcp 10 - "$bstep"
-    elif [ "$1" -eq 1 ]; then
-        # bdst=$(echo "$initial_brightness + $bstep" | bc)
-        # echo "增加亮度：$initial_brightness -> $bdst"
+        ;;
+    1)
+        # 增亮度
+        echo "增加亮度：+$bstep"
         sudo ddcutil setvcp 10 + "$bstep"
-    elif [ "$1" -eq 2 ]; then
-        echo "重置亮度：100"
+        ;;
+    2)
+        # 重置亮度到 100
+        echo "重置亮度为 100"
         sudo ddcutil setvcp 10 100
-    elif [ "$1" -eq 3 ]; then
-        echo "重置脚本。"
-        if [ -f "$dcf" ];then
-            rm "$dcf"
-        fi
-    else
-        # 默认显示当前信息
-        # 获取初始亮度
-        initial_brightness=$(sudo ddcutil getvcp 10 | grep "current value" | awk '{print $NF}')
-        echo "当前亮度（current value）为: $initial_brightness"
-    fi
-else
-    # 获取初始亮度
-    initial_brightness=$(sudo ddcutil getvcp 10 | grep "current value" | awk '{print $NF}')
-    # 默认显示当前信息
-    echo "当前亮度（current value）为: $initial_brightness"
-fi
+        ;;
+    3)
+        # 删除检测标记文件，下次重跑会重新检查环境
+        echo "重置脚本检测状态（删除 $dcf）"
+        [ -f "$dcf" ] && rm -f "$dcf"
+        ;;
+    ""|*)
+        # 不给或给了其他参数：显示当前亮度
+        current=$(get_brightness)
+        echo "当前亮度（current value）为: $current"
+        ;;
+esac
+

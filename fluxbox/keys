@@ -150,7 +150,9 @@ Control Mod4 Right :ExecCommand ~/.fluxbox/scripts/brightnessControl/xrandrBrigh
 # Print :ExecCommand ksnip
 Print :ExecCommand scrot
 # Mod1 Shift s :ExecCommand kylin-screenshot gui
-Mod1 Shift s :ExecCommand frameshot gui
+Mod1 Shift s :ExecCommand flameshot gui
+# sudo apt install xclip 解决fluxbox下无法复制到剪贴板
+# Mod1 Shift s :ExecCommand flameshot gui -r | xclip -selection clipboard -t image/png
 
 # Win + L 锁屏（使用 i3lock）
 Mod4 l :ExecCommand i3lock
