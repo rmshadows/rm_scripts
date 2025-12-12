@@ -1,0 +1,42 @@
+Changelog
+--------------------------------------------------------
+Maia - Conky Theme
+[ Taurus Themes Pack ] 
+
+by Closebox73
+
+Social
+X			: https://twitter.com/closebox73
+Discord		: https://discord.com/users/1115644269802311750
+Pling		: https://pling.com/u/closebox73x
+Mastodon	: https://mastodon.social/@closebox73
+--------------------------------------------------------
+
+v2.4
+date : 06 Jun 2025
+-	New weather.sh v3.0
+-	Change name to be MAIA ( Internal purpose only )
+-	Some minor change
+
+
+v2.0
+date : 12 May 2024
+-	New weather.sh
+-	New weather-icon-text.sh
+-	Change to playerctl for media player info
+-	Add Fahrenheit variant
+-	Add Changelog
+-	Add Lisence
+-	Add Donation link
+-	Some minor change
+
+
+v1.5
+date : 12 Oct 2022
+-	Add override_uutf8_locale line
+-	Some minor change
+
+
+v1.0
+date : 01 Jun 2021
+-	Initial release

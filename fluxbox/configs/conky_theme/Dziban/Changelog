@@ -1,0 +1,45 @@
+Changelog
+--------------------------------------------------------
+Dziban - Conky Theme
+[ Draco Themes Pack ] 
+
+by Closebox73
+
+Social
+X			: https://twitter.com/closebox73
+Discord		: https://discord.com/users/1115644269802311750
+Pling		: https://pling.com/u/closebox73x
+Mastodon	: https://mastodon.social/@closebox73
+--------------------------------------------------------
+
+v2.8
+date : 24 Jun 2025
+-	New weather.sh v3.0
+-	Add wind direction scripts
+-	Change lot of execi command
+-	Some minor change
+
+
+v2.2
+date : 19 Oct 2024
+-	Add line draw_blended in conky config due transparent image issue in Gnome & KDE
+-	Add Changelog file
+-	Add Donate Link
+-	Some minor change
+
+
+v2.0
+date : 27 May 2023
+-	Using playerctl for player info
+-	Add fahrenheit version
+
+
+v1.3
+date : 12 Oct 2022
+-	Add override_uutf8_locale line
+-	Some minor change
+
+
+v1.0
+date : 14 Mar 2022
+-	Initial release
