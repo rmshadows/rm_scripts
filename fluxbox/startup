@@ -23,6 +23,10 @@ fi
 
 # 设置壁纸（带 1 秒延迟，防止 X 服务器未完全启动）
 (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg) &
+# (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/bingimg_20230129_UHD.jpg) &
+# (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/bingimg_20240410_UHD.jpg) &
+# 或者sudo apt install nitrogen
+# nitrogen --restore &
 # (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/zetong-li-TbHYpbi_Gbc-unsplash.jpg) &
 
 # 启动 fcitx5（避免重复运行）

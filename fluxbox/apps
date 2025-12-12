@@ -9,3 +9,27 @@
   # 确保窗口不会被最大化
   [Maximized] {false}
 [end]
+
+[app] (class=org.gnome.Nautilus)
+  [Deco] {NORMAL}
+  [Layer] {NORMAL}
+  [Focus] {YES}
+[end]
+
+[app] (class=firefox-esr)
+  [Deco] {NORMAL}
+  [Layer] {NORMAL}
+  [Focus] {YES}
+[end]
+
+[app] (class=wpsoffice)
+  [Deco] {NORMAL}
+  [Layer] {NORMAL}
+  [Focus] {YES}
+[end]
+
+[app] (class=Gedit)
+  [Deco] {NORMAL}
+  [Layer] {NORMAL}
+  [Focus] {YES}
+[end]
