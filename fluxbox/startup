@@ -7,6 +7,7 @@
 # 设置中文
 export LANG=zh_CN.UTF-8
 export LC_ALL=zh_CN.UTF-8
+export LANGUAGE=zh_CN
 
 # 启动独立的 D-Bus 会话
 if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
@@ -16,8 +17,16 @@ fi
 # echo $DBUS_SESSION_BUS_ADDRESS
 # dbus-launch nautilus
 
+# XDG
+# export XDG_CURRENT_DESKTOP=Fluxbox
+# export XDG_SESSION_DESKTOP=fluxbox
+
 # 设置壁纸（带 1 秒延迟，防止 X 服务器未完全启动）
 (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg) &
+# (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/bingimg_20230129_UHD.jpg) &
+# (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/bingimg_20240410_UHD.jpg) &
+# 或者sudo apt install nitrogen
+# nitrogen --restore &
 # (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/zetong-li-TbHYpbi_Gbc-unsplash.jpg) &
 
 # 启动 fcitx5（避免重复运行）
@@ -26,8 +35,8 @@ pgrep -x fcitx5 > /dev/null || fcitx5 &
 # pgrep -x fcitx > /dev/null || fcitx &
 
 # 启动网络管理器托盘（避免重复运行）
-# pgrep -x nm-applet > /dev/null || nm-applet &
 pgrep -x nm-tray > /dev/null || nm-tray &
+# pgrep -x nm-applet > /dev/null || nm-applet &
 # nm-applet &
 # nm-tray&
 
@@ -40,8 +49,6 @@ pgrep -x nm-tray > /dev/null || nm-tray &
 # 启动 volumeicon alsa
 # volumeicon &
 
-# 启动 CopyQ 守护进程（不显示界面）
-copyq --start-server &
 
 # 启动conky
 # conky&

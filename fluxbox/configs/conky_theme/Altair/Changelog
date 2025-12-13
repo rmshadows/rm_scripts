@@ -1,0 +1,37 @@
+Changelog
+------------------------------
+Altair - Conky Theme
+[ Orion Themes Pack ] 
+
+by Closebox73
+
+Social
+X			: https://twitter.com/closebox73
+Discord		: https://discord.com/users/1115644269802311750
+Pling		: https://pling.com/u/closebox73x
+Mastodon	: https://mastodon.social/@closebox73
+------------------------------
+
+v2.8
+date : 31 Mar 2025
+-	Media player info switched from MPD to Playerctl
+-	Change font from Dosis to be Barlow
+-	Change Clock font to be Bebas Neue
+-	Weather script v3.0
+-	Add Fahrenheit version
+-	A few changes to the script
+
+
+v2.0
+date : 28 Jan 2023
+-	Add override_utf8_locale line
+-	Change font from Quicksand to be Dosis
+-	Add Changelog file
+-	A few changes to the script
+-	Add Light theme
+
+
+v1.0
+date : 02 Apr 2021
+-	Initial release
+

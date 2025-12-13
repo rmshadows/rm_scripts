@@ -1,0 +1,36 @@
+#! /bin/bash
+
+# Closebox73
+# Convert degree to text
+
+DRCTN=$(cat ~/.cache/weather.json | jq -r '.wind.deg')
+
+if (( $DRCTN <= 22 )) || (( $DRCTN > 337 ));
+then
+	echo "North"
+elif (( $DRCTN > 22 )) && (( $DRCTN <= 67 ));
+then
+	echo "North East"
+elif (( $DRCTN > 67 )) && (( $DRCTN <= 112 ));
+then
+	echo "East"
+elif (( $DRCTN > 112 )) && (( $DRCTN <= 157 ));
+then
+	echo "South East"
+elif (( $DRCTN > 157 )) && (( $DRCTN <= 202 ));
+then
+	echo "South"
+elif (( $DRCTN > 202 )) && (( $DRCTN <= 247 ));
+then
+	echo "South West"
+elif (( $DRCTN > 247 )) && (( $DRCTN <= 292 ));
+then
+	echo "West"
+elif (( $DRCTN > 292 )) && (( $DRCTN <= 337 ));
+then
+	echo "North West"
+else
+	echo "Something wrong"
+fi
+
+exit

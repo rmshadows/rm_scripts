@@ -26,6 +26,71 @@
 
 将`OtherRes/gtk-display`文件夹中的`.gtkrc-2.0`放到用户目录下即可
 
+## 通过`~/.fluxbox/apps`设置装饰条
+
+### 使用Class
+
+1️⃣ 获取窗口的匹配信息（非常关键）
+
+打开那个 **没有标题栏的窗口**，然后运行：
+
+```
+xprop | grep -E "WM_CLASS|WM_NAME"
+```
+
+用鼠标点一下那个窗口，你会看到类似：
+
+```
+
+WM_CLASS(STRING) = "wechat", "WeChat"
+WM_NAME(STRING) = "WeChat"
+```
+
+我们通常用 **WM_CLASS 的第二个值**。
+
+2️⃣ 编辑 apps 文件
+
+```
+nano ~/.fluxbox/apps
+```
+
+加入一段（示例）：
+
+```
+[app] (class=WeChat)
+  [Deco] {NORMAL}
+  [Layer] {NORMAL}
+  [Focus] {YES}
+[end]
+```
+
+关键行解释
+
+- `[Deco] {NORMAL}` 👉 **强制标题栏**
+- `[Layer] {NORMAL}` 👉 防止被当成 dock
+- `[Focus] {YES}` 👉 可聚焦
+
+3️⃣ 重新加载 Fluxbox
+
+```
+
+fluxbox-remote reconfig
+```
+
+然后 **关闭并重新打开该程序窗口**。
+
+### 如果 class 不匹配？用 name（备用）
+
+有些程序 class 不稳定，可以用窗口名：
+
+```
+[app] (name=Settings)
+  [Deco] {NORMAL}
+[end]
+```
+
+⚠ name 会变，class 更稳。
+
 ## 其他
 
 ### **📂 目录**
