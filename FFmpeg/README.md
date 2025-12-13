@@ -2,6 +2,12 @@
 
 # 文件列表
 
+## FFmpegConvertVFR.sh
+
+处理可变帧率视频
+
+`ffmpeg -y -vaapi_device /dev/dri/renderD128 -i "1.MP4" -vf "fps=30,format=nv12,hwupload" -fps_mode cfr -c:v hevc_vaapi -qp 28 -c:a aac -b:a 128k "1_EDIT_30fps_CFR_HEVC.mp4"`
+
 ## FfmpegCut.sh
 
 裁剪视频、音频文件
@@ -68,6 +74,14 @@ file '3.MP4'
 
 当前文件夹中所有MTS扩展名的文件转为MP4
 
+## vfr_to_edit_gpu.sh
+
+使用GPU将可变帧率视频转化成Prores等视频（视频体积会很大）
+
+## vfr_to_edit.sh
+
+可变帧率视频转化成Prores等视频（视频体积会很大）
+
 # 我的视频处理流程
 
 1. `FfmpegCut.sh`裁剪视频(裁剪去不需要的内容)
@@ -76,6 +90,9 @@ file '3.MP4'
 4. `FFmpegMergeVideosAndAudio.sh`合并音频和视频(视频的原有音频会被替换)
 
 # 更新日志
+
+- 20251213——0.0.5
+  - 增加了VFR处理
 
 - 20230719——0.0.4
   - 新增音频采样率工具

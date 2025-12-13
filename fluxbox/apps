@@ -1,4 +1,5 @@
 # 配置 fbrun 应用的窗口行为
+# xprop | grep -E "WM_CLASS|WM_NAME"
 [app] (name=fbrun)
   # 设置 fbrun 居中显示
   [Position] (WINCENTER) {0 0}
