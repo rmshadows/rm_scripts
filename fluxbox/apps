@@ -34,3 +34,9 @@
   [Layer] {NORMAL}
   [Focus] {YES}
 [end]
+
+[app] (class=Evince)
+  [Deco] {NORMAL}
+  [Layer] {NORMAL}
+  [Focus] {YES}
+[end]

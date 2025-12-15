@@ -16,4 +16,5 @@ sudo apt install rofi
 sudo apt install pasystray
 sudo apt install volumeicon-alsa
 sudo apt install lxpolkit
-
+sudo apt install i3lock-fancy
+sudo apt install nm-tray
