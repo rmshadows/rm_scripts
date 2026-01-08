@@ -2,7 +2,7 @@
 # 注意：其他Office相关脚本请自行配置
 配置自定义的systemtl服务
 配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
-复制模板文件夹内容
+复制模板文件夹内容(WPS:~/.local/share/Kingsoft/office6/templates/wps/zh_CN)
 配置启用NetworkManager、安装net-tools
 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
 配置GRUB网卡默认命名方式

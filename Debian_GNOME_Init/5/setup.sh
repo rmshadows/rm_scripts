@@ -135,10 +135,10 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
         else
             mv "$rime_config_dir" "$rime_config_dir(src)"
         fi
-        cp RGIT_REPO/* $rime_config_dir
+        cp -r RGIT_REPO/* $rime_config_dir
     elif [ "$SET_IMPORT_RIME_DICT" -eq 2 ]; then
         prompt -x "导入本地词库。"
-        sudo cp $SET_RIME_DICT_DIR/* $rime_config_dir
+        sudo cp -r $SET_RIME_DICT_DIR/* $rime_config_dir
     fi
 fi
 
