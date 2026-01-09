@@ -296,20 +296,20 @@ alias gswc='git switch -c'
 alias gpv='git push --verbose'
 
 # rebase / merge
-alias grb='git rebase'
-alias grbi='git rebase -i'
-alias gm='git merge'
-alias gma='git merge --abort'
+# alias grb='git rebase'
+# alias grbi='git rebase -i'
+# alias gm='git merge'
+# alias gma='git merge --abort'
 
 # stash
-alias gsta='git stash'
-alias gstp='git stash pop'
-alias gstl='git stash list'
-alias gstd='git stash drop'
+# alias gsta='git stash'
+# alias gstp='git stash pop'
+# alias gstl='git stash list'
+# alias gstd='git stash drop'
 
 # reset（非 hard）
-alias grs='git restore'
-alias grst='git restore --staged'
+# alias grs='git restore'
+# alias grst='git restore --staged'
 
 # HARD PULL: make local EXACTLY match remote (1:1)
 # Usage:
@@ -425,6 +425,8 @@ alias ssa='sudo systemctl start'
 alias sss='sudo systemctl status'
 alias ssd='sudo systemctl stop'
 alias ssf='sudo systemctl restart'
+alias ssaa='sudo systemctl enable'
+alias ssdd='sudo systemctl disable'
 alias zshrc='vim /home/【$CURRENT_USER】/.zshrc'
 alias szsh='source /home/【$CURRENT_USER】/.zshrc'
 alias upgrade='sudo apt update && sudo apt upgrade'
