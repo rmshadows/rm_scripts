@@ -205,6 +205,7 @@ alias gsb='git status --short --branch'
 # alias gcm='git commit -m'
 # alias gca='git commit --amend'
 # 拉取代码
+# 配置GPG:  git config --global user.signingkey XXX 和 git config --global commit.gpgsign true 确保你的 Git 提交邮箱和这个 key 的 uid 邮箱一致（很重要）
 alias gplb='git pull --rebase --autostash && git branch -vv'
 alias gcur='git branch --show-current'
 # add all + commit with auto message (no sign)
