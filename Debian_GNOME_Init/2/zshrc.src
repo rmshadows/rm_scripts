@@ -408,6 +408,32 @@ githardpush() {
   echo "Done. Remote ${remote}/${branch} now matches local HEAD."
 }
 
+## conda
+alias cna='conda activate'
+alias cnde='conda deactivate'
+# conda env list
+alias cncur='conda info --envs'
+# alias cnab='conda activate base'
+# alias cncf='conda env create -f'
+# alias cncn='conda create -y -n'
+# alias cnconf='conda config'
+# alias cncp='conda create -y -p'
+# alias cncr='conda create -n'
+# alias cncss='conda config --show-source'
+# alias cnel='conda env list'
+# alias cni='conda install'
+# alias cniy='conda install -y'
+# alias cnl='conda list'
+# alias cnle='conda list --export'
+# alias cnles='conda list --explicit > spec-file.txt'
+# alias cnr='conda remove'
+# alias cnrn='conda remove -y --all -n'
+# alias cnrp='conda remove -y --all -p'
+# alias cnry='conda remove -y'
+# alias cnsr='conda search'
+# alias cnu='conda update'
+# alias cnua='conda update --all'
+# alias cnuc='conda update conda'
 
 # SSH
 alias ssh-key-install='ssh-copy-id -i /home/【$CURRENT_USER】/.ssh/id_rsa.pub'
