@@ -158,15 +158,14 @@ Mod1 Shift s :ExecCommand flameshot gui
 Mod4 l :ExecCommand i3lock
 # Mod4 l :ExecCommand dm-tool lock
 
-# 挂载
-# Mod1 Shift m :ExecCommand gnome-terminal -- "/home/ryan/.mountBA"
-# 杀死WPS
-# Mod1 Shift n :ExecCommand sudo pkill wps && sudo pkill et
-
 # 其他
 # Win + d 显示桌面
 Mod4 d :ShowDesktop
 # Win + a 打开应用程序查找器（Xfce4 App Finder）
 Mod4 a :ExecCommand xfce4-appfinder
-
-
+# 修改微信接收的可读文件为可写
+# Mod1 Shift n :ExecCommand chmod -R u+rwX "/home/ryan/文档/xwechat_files/wxid_xXXXXXXXXXXXXX_XXXX/msg/file/"
+# 挂载
+# Mod1 Shift m :ExecCommand gnome-terminal -- "/home/ryan/.mountBA"
+# 杀死WPS
+# Mod1 Shift b :ExecCommand sudo pkill -9 wps && sudo pkill -9 et
