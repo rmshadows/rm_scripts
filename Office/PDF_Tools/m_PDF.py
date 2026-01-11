@@ -22,7 +22,7 @@ import sys
 import m_System
 
 
-def add_content(pdf_in_name:str,pdf_out_name:str,content_dict:dict):
+def add_content(pdf_in_name: str, pdf_out_name: str, content_dict: dict):
     """
     添加PDF注释（目录）
     Args:
@@ -32,12 +32,21 @@ def add_content(pdf_in_name:str,pdf_out_name:str,content_dict:dict):
     """
     pdf_in = pdf_reader(pdf_in_name)
     pdf_out = pdf_writer()
-    pdf_out.cloneDocumentFromReader(pdf_in)
+
+    # ✅ cloneDocumentFromReader（旧） -> 逐页拷贝（新）
+    for page in pdf_in.pages:
+        pdf_out.add_page(page)
+
+    # ✅ addBookmark（旧） -> add_outline_item（新），做兼容
     for key in content_dict.keys():
-        pdf_out.addBookmark(key,int(content_dict[key])-1)
-    with open(pdf_out_name, "wb" ) as fout:
+        page_index = int(content_dict[key]) - 1
+        if hasattr(pdf_out, "add_outline_item"):
+            pdf_out.add_outline_item(key, page_index)  # 新版
+        else:
+            pdf_out.addBookmark(key, page_index)       # 旧版
+
+    with open(pdf_out_name, "wb") as fout:
         pdf_out.write(fout)
-    # print("PDF Marked!")
 
 
 def mergePdfs(directory, output_pdf_file, filepathOrder=None):
@@ -668,6 +677,24 @@ def extract_pages_to_jpg(input_pdf_path, output_dir, page_numbers_str, dpi=300):
                 output_jpg_path = os.path.join(output_dir, f"{page_number}.jpg")
                 page.save(output_jpg_path, "JPEG")
                 print(f"页码 {page_number} 已保存为 {output_jpg_path}")
+
+
+def add_content_old_260111(pdf_in_name:str,pdf_out_name:str,content_dict:dict):
+    """
+    添加PDF注释（目录）
+    Args:
+        pdf_in_name: pdf文件名
+        pdf_out_name: 输出pdf文件名
+        content_dict: 字典 title:page {"索引":1}
+    """
+    pdf_in = pdf_reader(pdf_in_name)
+    pdf_out = pdf_writer()
+    pdf_out.cloneDocumentFromReader(pdf_in)
+    for key in content_dict.keys():
+        pdf_out.addBookmark(key,int(content_dict[key])-1)
+    with open(pdf_out_name, "wb" ) as fout:
+        pdf_out.write(fout)
+    # print("PDF Marked!")
 
 
 if __name__ == '__main__':
