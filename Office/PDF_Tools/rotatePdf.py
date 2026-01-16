@@ -7,8 +7,8 @@ import m_PDF
 import m_Log
 
 # 工作目录
-targetDir = "pdfPages"
-rotation_angle = 90
+targetDir = "input"
+rotation_angle = 270
 
 # ✅ 日志配置（脚本内置）
 enable_log = False

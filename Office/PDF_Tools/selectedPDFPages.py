@@ -19,16 +19,16 @@ import m_System
 import m_Log
 
 # ========== 配置区域 ==========
-targetPdf = "1.pdf"
-# targetPdf = "src"
-outputPdfDir = "selectedPages"
+# targetPdf = "1.pdf"
+targetPdf = "input"
+outputPdfDir = "output"
 
 pages_string = None          # e.g. "2, 3-5"
-JpgMode = False              # True: JPG, False: PDF
-# JpgMode = True
-jpgDPI = 300
+# JpgMode = False              # True: JPG, False: PDF
+JpgMode = True
+jpgDPI = 600
 
-exportAsPDF = True
+exportAsPDF = False
 outputPdf = "soutput.pdf"    # 单文件模式输出名
 
 # 日志配置（脚本内置）

@@ -17,7 +17,7 @@ m_Log.init_logger(enable_file=enable_log, log_path=log_path)
 
 
 # ========== 配置区域 ==========
-input_dir = "pdfs"  # 指定要遍历的PDF文件夹
+input_dir = "input"  # 指定要遍历的PDF文件夹
 output_dir = "split_pages"  # 输出文件夹
 # =================================
 
