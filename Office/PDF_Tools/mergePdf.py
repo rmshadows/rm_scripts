@@ -7,7 +7,7 @@ import m_PDF
 import m_Log
 
 # 工作目录
-targetDir = "pdfPages"
+targetDir = "input"
 output = "output.pdf"
 
 # ✅ 日志配置（脚本内置）

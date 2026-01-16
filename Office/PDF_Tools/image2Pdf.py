@@ -6,7 +6,7 @@ import os
 import m_PDF
 import m_Log
 
-imageDir = "images"
+imageDir = "input"
 output = "output.pdf"
 
 # ✅ 日志配置（脚本内置）
