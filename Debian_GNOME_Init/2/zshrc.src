@@ -459,6 +459,8 @@ alias szsh='source /home/【$CURRENT_USER】/.zshrc'
 alias upgrade='sudo apt update && sudo apt upgrade'
 alias duls='du -sh ./*'
 alias dulsd='du -sh `la`'
+alias lsx='ls -1 | tee >(xclip -selection clipboard)'
+# alias grep='grep --color=always'
 
 # enable auto-suggestions based on the history
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
