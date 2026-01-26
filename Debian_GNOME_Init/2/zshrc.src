@@ -457,10 +457,28 @@ alias ssdd='sudo systemctl disable'
 alias zshrc='vim /home/【$CURRENT_USER】/.zshrc'
 alias szsh='source /home/【$CURRENT_USER】/.zshrc'
 alias upgrade='sudo apt update && sudo apt upgrade'
-alias duls='du -sh ./*'
-alias dulsd='du -sh `la`'
 alias lsx='ls -1 | tee >(xclip -selection clipboard)'
 # alias grep='grep --color=always'
+
+# alias duls='du -sh ./*'
+alias duls='du -hd 0 ./* | sort -hr'
+# alias dulsd='du -sh `la`'
+alias dulsa='du -hd 0 ./* ./.??* | sort -hr'
+# du：当前目录下一层（不含隐藏），按大小从大到小
+# alias dusort='du -hd 1 ./* 2>/dev/null | sort -hr'
+# alias dusort='du -hd 1 ./* | sort -hr'
+# du：当前目录下一层（含隐藏，排除 . 和 ..），按大小从大到小
+# alias dusorta='du -hd 1 ./* ./.??* 2>/dev/null | sort -hr'
+alias dusorta='du -hd 1 ./* ./.??* | sort -hr'
+
+# Debian 13: 递归监控当前目录文件变化（实时）依赖：inotify-tools（sudo apt install inotify-tools）
+alias watchchg='inotifywait -m -r -e modify,create,delete,move --format "%T  %e  %w%f" --timefmt "%F %T" .'
+# 只关心文件内容变更（不看 create/delete/move）
+alias watchmod='inotifywait -m -r -e modify --format "%T  %e  %w%f" --timefmt "%F %T" .'
+# 忽略一些常见大目录（node_modules/.git 等）
+# alias watchchgfast='inotifywait -m -r -e modify,create,delete,move --exclude "(\.git|node_modules|\.cache|dist|build)/" --format "%T  %e  %w%f" --timefmt "%F %T" .'
+# 只关心：新建 / 删除 / 移动（重命名也算 move）
+alias watchfs='inotifywait -m -r -e create,delete,move --format "%T  %e  %w%f" --timefmt "%F %T" .'
 
 # enable auto-suggestions based on the history
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
