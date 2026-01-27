@@ -191,7 +191,61 @@ alias ll='ls -l'
 alias la='ls -A'
 alias l='ls -CF'
 
-# Git
+# Git #
+# 基础
+# alias gst='git status'
+# alias gss='git status --short'
+alias gsb='git status --short --branch'
+
+# add / commit
+# alias ga='git add'
+# alias gaa='git add --all'
+# alias gapa='git add --patch'
+# alias gc='git commit'
+# alias gcm='git commit -m'
+# alias gca='git commit --amend'
+# 拉取代码
+# 配置GPG:  git config --global user.signingkey XXX 和 git config --global commit.gpgsign true 确保你的 Git 提交邮箱和这个 key 的 uid 邮箱一致（很重要）
+alias gplb='git pull --rebase --autostash && git branch -vv'
+alias gcur='git branch --show-current'
+# add all + commit with auto message (no sign)
+gitac() {
+  git add -A || return
+  git commit -m "update —— ($(date '+%Y-%m-%d %H:%M:%S'))"
+}
+# add all + commit with auto message (GPG sign)
+gitacs() {
+  git add -A || return
+  git commit -S -m "update —— ($(date '+%Y-%m-%d %H:%M:%S'))"
+}
+# add all + commit with custom message (no sign)
+gitam() {
+  if [[ $# -eq 0 ]]; then
+    echo "Usage: gitam \"commit message\""
+    return 1
+  fi
+  git add -A || return
+  git commit -m "$*"
+}
+# add all + commit with custom message (GPG sign)
+gitams() {
+  if [[ $# -eq 0 ]]; then
+    echo "Usage: gitams \"commit message\""
+    return 1
+  fi
+  git add -A || return
+  git commit -S -m "$*"
+}
+
+# 快速查看某个文件（或目录）在整个仓库历史中出现在哪些提交里
+gitFindFileHistory() {
+  if [[ $# -eq 0 ]]; then
+    echo "Usage: gitfindhistory <file-or-dir>"
+    return 1
+  fi
+  git log --all --oneline -- "$@"
+}
+# git切换分支(main dev)
 git-switch() {
     local current=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || return 1
     local main_branch=""
@@ -214,12 +268,172 @@ git-switch() {
     fi
 }
 alias gswitch=git-switch
-alias gitac='git add . -A && git commit -m "add and update ———— `date` "'
-# alias gitfindhistory='gitsearch(){git log --all --pretty=oneline -- $1};gitsearch'
-alias gitam='git add . -A && git commit -m '
-# alias githardpull='git fetch --all && git reset --hard'
-alias gplb='git pull && git branch -a'
 
+# diff / log
+# 查看已经 add（暂存区）的改动
+alias gds='git diff --staged'
+# 用一行一条的方式查看提交历史（含分支/标签）
+alias gl='git log --oneline --decorate'
+# 以图形方式查看提交历史和分支走向
+alias glog='git log --oneline --decorate --graph'
+
+# branch / checkout / switch
+# 查看 / 管理本地分支
+# alias gb='git branch'
+# 查看所有分支（本地 + 远程）
+# alias gba='git branch -a'
+# 切换分支 / 恢复文件（旧命令）
+# alias gco='git checkout'
+# 新建并切换到一个分支
+# alias gcb='git checkout -b'
+# 切换分支（新推荐命令）
+# alias gsw='git switch'
+# 新建并切换到一个分支（新推荐命令）
+alias gswc='git switch -c'
+
+# pull / push（不带 force）
+# alias gl='git pull'
+# alias gp='git push'
+alias gpv='git push --verbose'
+
+# rebase / merge
+# alias grb='git rebase'
+# alias grbi='git rebase -i'
+# alias gm='git merge'
+# alias gma='git merge --abort'
+
+# stash
+# alias gsta='git stash'
+# alias gstp='git stash pop'
+# alias gstl='git stash list'
+# alias gstd='git stash drop'
+
+# reset（非 hard）
+# alias grs='git restore'
+# alias grst='git restore --staged'
+
+# HARD PULL: make local EXACTLY match remote (1:1)
+# Usage:
+#   githardpull                 # origin + current branch (or upstream if set)
+#   githardpull upstream        # upstream + current branch
+#   githardpull origin main     # origin/main
+githardpull() {
+  local remote="${1:-origin}"
+  local branch="${2:-}"
+
+  # Must be inside a git repo
+  git rev-parse --git-dir >/dev/null 2>&1 || { echo "Not a git repository."; return 1; }
+
+  # Determine branch
+  if [[ -z "$branch" ]]; then
+    branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)"
+    if [[ -z "$branch" ]]; then
+      # Detached HEAD fallback: try upstream
+      local up
+      up="$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)"
+      if [[ -n "$up" ]]; then
+        remote="${up%%/*}"
+        branch="${up#*/}"
+      else
+        echo "Detached HEAD and no upstream configured. Use: githardpull <remote> <branch>"
+        return 1
+      fi
+    fi
+  fi
+
+  echo "This will make LOCAL exactly match REMOTE:"
+  echo "  LOCAL  : $(git rev-parse --show-toplevel)"
+  echo "  TARGET : ${remote}/${branch}"
+  echo "It will DISCARD:"
+  echo "  - uncommitted changes"
+  echo "  - staged changes"
+  echo "  - local commits not on ${remote}/${branch}"
+  echo
+  echo -n "Type: RESET-LOCAL to continue: "
+  local confirm
+  read -r confirm
+  [[ "$confirm" == "RESET-LOCAL" ]] || { echo "Cancelled."; return 1; }
+
+  git fetch --prune "$remote" || return 1
+  git reset --hard "${remote}/${branch}" || return 1
+  git clean -df || return 1
+  echo "Done. Local is now identical to ${remote}/${branch}."
+}
+
+# HARD PUSH: make remote EXACTLY match local (1:1)
+# Usage:
+#   githardpush                 # origin + current branch
+#   githardpush upstream        # upstream + current branch
+#   githardpush origin main     # push current HEAD to origin/main (force)
+githardpush() {
+  local remote="${1:-origin}"
+  local branch="${2:-}"
+
+  git rev-parse --git-dir >/dev/null 2>&1 || { echo "Not a git repository."; return 1; }
+
+  # Determine current local branch
+  local local_branch
+  local_branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)"
+  if [[ -z "$local_branch" ]]; then
+    echo "Detached HEAD. Checkout a branch first (or specify remote branch explicitly)."
+    return 1
+  fi
+
+  # Default target branch = local branch
+  [[ -z "$branch" ]] && branch="$local_branch"
+
+  # Refuse if working tree dirty (optional but safer for “restore” workflows)
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Working tree or index has changes. Commit/stash or discard before hard-push."
+    echo "If you REALLY want to proceed, clean it first or commit it."
+    return 1
+  fi
+
+  echo "This will make REMOTE exactly match LOCAL:"
+  echo "  LOCAL  : ${local_branch} @ $(git rev-parse --short HEAD)"
+  echo "  REMOTE : ${remote}/${branch}"
+  echo
+  echo "WARNING: This can OVERWRITE remote history (other people's commits)."
+  echo -n "Type: RESET-REMOTE to continue: "
+  local confirm
+  read -r confirm
+  [[ "$confirm" == "RESET-REMOTE" ]] || { echo "Cancelled."; return 1; }
+
+  git fetch --prune "$remote" || return 1
+
+  # Use --force-with-lease for safety: force, but only if remote hasn't moved unexpectedly.
+  # If you truly want unconditional overwrite, replace with: --force
+  git push --force-with-lease "$remote" "HEAD:refs/heads/${branch}" || return 1
+
+  echo "Done. Remote ${remote}/${branch} now matches local HEAD."
+}
+
+## conda
+alias cna='conda activate'
+alias cnde='conda deactivate'
+# conda env list
+alias cncur='conda info --envs'
+# alias cnab='conda activate base'
+# alias cncf='conda env create -f'
+# alias cncn='conda create -y -n'
+# alias cnconf='conda config'
+# alias cncp='conda create -y -p'
+# alias cncr='conda create -n'
+# alias cncss='conda config --show-source'
+# alias cnel='conda env list'
+# alias cni='conda install'
+# alias cniy='conda install -y'
+# alias cnl='conda list'
+# alias cnle='conda list --export'
+# alias cnles='conda list --explicit > spec-file.txt'
+# alias cnr='conda remove'
+# alias cnrn='conda remove -y --all -n'
+# alias cnrp='conda remove -y --all -p'
+# alias cnry='conda remove -y'
+# alias cnsr='conda search'
+# alias cnu='conda update'
+# alias cnua='conda update --all'
+# alias cnuc='conda update conda'
 
 # SSH
 alias ssh-key-install='ssh-copy-id -i /home/【$CURRENT_USER】/.ssh/id_rsa.pub'
@@ -238,11 +452,33 @@ alias ssa='sudo systemctl start'
 alias sss='sudo systemctl status'
 alias ssd='sudo systemctl stop'
 alias ssf='sudo systemctl restart'
+alias ssaa='sudo systemctl enable'
+alias ssdd='sudo systemctl disable'
 alias zshrc='vim /home/【$CURRENT_USER】/.zshrc'
 alias szsh='source /home/【$CURRENT_USER】/.zshrc'
 alias upgrade='sudo apt update && sudo apt upgrade'
-alias duls='du -sh ./*'
-alias dulsd='du -sh `la`'
+alias lsx='ls -1 | tee >(xclip -selection clipboard)'
+# alias grep='grep --color=always'
+
+# alias duls='du -sh ./*'
+alias duls='du -hd 0 ./* | sort -hr'
+# alias dulsd='du -sh `la`'
+alias dulsa='du -hd 0 ./* ./.??* | sort -hr'
+# du：当前目录下一层（不含隐藏），按大小从大到小
+# alias dusort='du -hd 1 ./* 2>/dev/null | sort -hr'
+# alias dusort='du -hd 1 ./* | sort -hr'
+# du：当前目录下一层（含隐藏，排除 . 和 ..），按大小从大到小
+# alias dusorta='du -hd 1 ./* ./.??* 2>/dev/null | sort -hr'
+alias dusorta='du -hd 1 ./* ./.??* | sort -hr'
+
+# Debian 13: 递归监控当前目录文件变化（实时）依赖：inotify-tools（sudo apt install inotify-tools）
+alias watchchg='inotifywait -m -r -e modify,create,delete,move --format "%T  %e  %w%f" --timefmt "%F %T" .'
+# 只关心文件内容变更（不看 create/delete/move）
+alias watchmod='inotifywait -m -r -e modify --format "%T  %e  %w%f" --timefmt "%F %T" .'
+# 忽略一些常见大目录（node_modules/.git 等）
+# alias watchchgfast='inotifywait -m -r -e modify,create,delete,move --exclude "(\.git|node_modules|\.cache|dist|build)/" --format "%T  %e  %w%f" --timefmt "%F %T" .'
+# 只关心：新建 / 删除 / 移动（重命名也算 move）
+alias watchfs='inotifywait -m -r -e create,delete,move --format "%T  %e  %w%f" --timefmt "%F %T" .'
 
 # enable auto-suggestions based on the history
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
