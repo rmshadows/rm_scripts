@@ -107,6 +107,7 @@ if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
         systemctl stop apache2.service
         systemctl disable apache2.service
     fi
+    doApt remove apache2
     prompt -x "Install nginx..."
     doApt install nginx
     addFolder "$HOME_INDEX/Logs/nginx"                       # for nginx
@@ -183,6 +184,7 @@ elif [ "$SET_INSTALL_HTTP_SERVER" -eq 2 ]; then
         systemctl stop nginx.service
         systemctl disable nginx.service
     fi
+    doApt remove nginx
     prompt -x "安装Apache2"
     addFolder "$HOME_INDEX/Logs/apache2" # for apache2
     doApt install apache2

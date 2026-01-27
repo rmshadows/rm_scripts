@@ -23,6 +23,7 @@ doApt install lsb-release
 
 if [ "$SET_DEB822" -eq 1 ]; then
     backupFile "/etc/apt/sources.list"
+    apt modernize-sources
     # 清空文件内容！
     sudo tee /etc/apt/sources.list </dev/null
     # 添加清华大学 Debian 13 镜像源
