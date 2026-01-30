@@ -60,7 +60,7 @@ if [ "$SET_INSTALL_PHP" -eq 1 ]; then
                     sudo systemctl disable php"$phpfpmVersion"-fpm.service
                 elif [ "$SET_PHP_FPM_ENABLE" -eq 1 ]; then
                     prompt -x "Enable php-fpm service."
-                    sudo systemctl enable php"$phpfpmVersion"-fpm.ser vice
+                    sudo systemctl enable php"$phpfpmVersion"-fpm.service
                 fi
             else
                 prompt -e "phpfpm没有/etc/php/*/fpm/pool.d/www.conf 文件!"

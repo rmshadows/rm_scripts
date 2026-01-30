@@ -1,3 +1,4 @@
+#!/bin/bash
 : <<检查点三
 # 注意：其他Office相关脚本请自行配置
 配置自定义的systemtl服务
@@ -39,14 +40,14 @@ prompt -i "——————————  检查点三  ———————�
 # 配置自定义的systemtl服务
 if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ]; then
     prompt -x "配置自定义的Systemctl服务"
-    addFolder /home/$CURRENT_USER/.$CURRENT_USER/
-    addFolder /home/$CURRENT_USER/.$CURRENT_USER/scripts/
+    addFolder "/home/$CURRENT_USER/.$CURRENT_USER/"
+    addFolder "/home/$CURRENT_USER/.$CURRENT_USER/scripts/"
     prompt -x "复制到 /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh 脚本"
     cp "customize_systemd_service/autorun.sh" "/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh"
-    sudo chmod +x /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
+    sudo chmod +x "/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh"
 
     prompt -x "复制 /lib/systemd/system/customize-autorun.service 服务"
-    if ! [ -f /lib/systemd/system/customize-autorun.service ]; then
+    if ! [ -f "/lib/systemd/system/customize-autorun.service" ]; then
         sudo cp "customize_systemd_service/customize-autorun.service" "/lib/systemd/system/customize-autorun.service"
     fi
 fi
@@ -54,18 +55,18 @@ fi
 # 配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
 if [ "$SET_NAUTILUS_MENU" -eq 1 ]; then
     prompt -x "配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹"
-    addFolder /home/$CURRENT_USER/Data
-    addFolder /home/$CURRENT_USER/Project
-    addFolder /home/$CURRENT_USER/VM_Share
-    addFolder /home/$CURRENT_USER/Prog
-    addFolder /home/$CURRENT_USER/Mounted
-    addFolder /home/$CURRENT_USER/.$CURRENT_USER/
+    addFolder "/home/$CURRENT_USER/Data"
+    addFolder "/home/$CURRENT_USER/Project"
+    addFolder "/home/$CURRENT_USER/VM_Share"
+    addFolder "/home/$CURRENT_USER/Prog"
+    addFolder "/home/$CURRENT_USER/Mounted"
+    addFolder "/home/$CURRENT_USER/.$CURRENT_USER/"
     prompt -x "创建 Nautilus 右键菜单"
-    sudo cp NautilusScripts/* /home/$CURRENT_USER/.local/share/nautilus/scripts/
-    sudo chmod +x /home/$CURRENT_USER/.local/share/nautilus/scripts/*
-    bash /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh
-    if [ $? -eq 0 ]; then
-        rm -f /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh
+    sudo cp NautilusScripts/* "/home/$CURRENT_USER/.local/share/nautilus/scripts/"
+    sudo chmod +x "/home/$CURRENT_USER/.local/share/nautilus/scripts/"*
+    bash "/home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
+    if [ "$?" -eq 0 ]; then
+        rm -f "/home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
     else
         echo "执行失败，保留 /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
     fi
@@ -76,7 +77,7 @@ fi
 if [ "$SET_GNOME_FILE_TEMPLATES" -eq 1 ]; then
     prompt -x "配置GNOME模板文件夹"
     addFolder "/home/$CURRENT_USER/模板"
-    cp "模板/*" "/home/$CURRENT_USER/模板/"
+    cp "模板/"* "/home/$CURRENT_USER/模板/"
 fi
 
 # 配置启用NetworkManager、安装net-tools
@@ -142,11 +143,12 @@ if [ "$SET_GRUB_NETCARD_NAMING" -eq 1 ]; then
     prompt -x "配置GRUB网卡默认命名方式"
     prompt -m "检查该变量是否已经添加…… "
     check_var="GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\""
-    if cat /etc/default/grub | grep "$check_var" >/dev/null; then
+    if sudo cat /etc/default/grub | grep "$check_var" >/dev/null; then
         prompt -w "您似乎已经配置过了，本次不执行添加。"
     else
         backupFile /etc/default/grub
         prompt -x "添加 GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\" 到 /etc/default/grub文件中"
+		# 仅当行内是 GRUB_CMDLINE_LINUX="" 时才会被替换；若已是 GRUB_CMDLINE_LINUX="其它参数"，就不会改。
         sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
         prompt -x "更新GRUB"
         sudo grub-mkconfig -o /boot/grub/grub.cfg

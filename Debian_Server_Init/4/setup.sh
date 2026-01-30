@@ -42,7 +42,8 @@ if [ "$SET_APT_INSTALL" -eq 1 ]; then
         # 软件包名
         name=${later_list[$i]/$each/${each:0:($index - 1)}}
         # 添加到列表
-        later_task[$num]=${name}
+        # later_task[$num]=${name}
+        later_task[$i]=${name}
         prompt -i "$each"
     done
     sleep 8

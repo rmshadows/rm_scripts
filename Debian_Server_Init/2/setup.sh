@@ -166,9 +166,9 @@ elif [ "$CURRENT_SHELL" == "/bin/zsh" ];then
     fi
 fi
 # 添加/usr/sbin到环境变量
-if [ "$SET_REPLACE_ROOT_RC_FILE" -eq 0 ];then
+if [ "$SET_ADD_SBIN_ENV" -eq 0 ];then
     prompt -m "保留root用户SHELL配置"
-elif [ "$SET_REPLACE_ROOT_RC_FILE" -eq 1 ];then
+elif [ "$SET_ADD_SBIN_ENV" -eq 1 ];then
     prompt -x "替换root用户的SHELL配置文件"
     prompt -m "检查该变量是否已经添加…… "
     check_var="export PATH=\"\$PATH:/usr/sbin\""

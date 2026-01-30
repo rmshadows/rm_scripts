@@ -15,7 +15,7 @@ source "cfg.sh"
 # 不是sudoer，要设置sudoer的
 if [ "$IS_SUDOER" -eq 0 ] && [ "$SET_SUDOER" -eq 1 ]; then
     prompt -x "添加用户 $CURRENT_USER 到sudo组。"
-    sudo usermod -a -G sudo $CURRENT_USER
+    sudo usermod -a -G sudo "$CURRENT_USER"
     IS_SUDOER=1
 fi
 
@@ -27,7 +27,7 @@ if [ "$IS_SUDOER" -eq 1 ] && [ "$IS_SUDO_NOPASSWD" -eq 0 ] && [ "$SET_SUDOER_NOP
     # 直接添加到 /etc/sudoers 
     doAsRoot "echo '$TEMPORARILY_SUDOER_STRING' >> /etc/sudoers"
     # 检查状态
-    if [ $? -ne 0 ]; then
+    if [ "$?" -ne 0 ]; then
         prompt -e "sudo免密码似乎配置失败了"
         quitThis
     else
@@ -190,7 +190,7 @@ elif [ "$SET_APT_UPGRADE" -eq 2 ]; then
 fi
 
 # 检查APT状态
-if [ $? -ne 0 ]; then
+if [ "$?" -ne 0 ]; then
     prompt -e "APT配置似乎失败了(比如需要手动解锁、网络连接失败，更新失败等)，请手动检查下APT运行状态。"
     quitThis
 fi
@@ -208,7 +208,7 @@ elif [ "$SET_APT_UPGRADE" -eq 2 ]; then
 fi
 
 # 检查APT状态
-if [ $? -ne 0 ]; then
+if [ "$?" -ne 0 ]; then
     prompt -e "第二次更新失败，请手动检查下APT运行状态。"
     quitThis
 fi

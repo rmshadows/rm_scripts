@@ -9,7 +9,7 @@ source "cfg.sh"
 
 # 添加字体到Home
 if [ "$SET_FONTS" -eq 1 ]; then
-    if [ -d "/home/$CURRENT_USER/.fonts" ]; then
+    if ! [ -d "/home/$CURRENT_USER/.fonts" ]; then
         addFolder /home/$CURRENT_USER/.fonts
     fi
     cp "$SET_FONTS_SOURCE"/* /home/$CURRENT_USER/.fonts/
@@ -127,7 +127,7 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
             prompt -e "Git克隆公开词库出错。"
             quitThis
         fi
-        backupFile $rime_config_dir
+        backupFile "$rime_config_dir"
         # 重命名
         if [ -d "$rime_config_dir(src)" ];then
             backupFile "$rime_config_dir"
@@ -135,6 +135,7 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
         else
             mv "$rime_config_dir" "$rime_config_dir(src)"
         fi
+		addFolder $rime_config_dir
         cp -r RGIT_REPO/* $rime_config_dir
     elif [ "$SET_IMPORT_RIME_DICT" -eq 2 ]; then
         prompt -x "导入本地词库。"
