@@ -16,7 +16,7 @@
 
 8. delete_empty_dirs.sh —— 删除空文件夹
 
-9. Docker-WeChat.sh —— 安装 Docker 微信（不再维护）
+9. ~~Docker-WeChat.sh —— 安装 Docker 微信（不再维护）~~
 
 10. download_deb_with_deps.sh —— 下载离线安装包
 
