@@ -16,12 +16,16 @@
 ?SECTION UNTRACKED
 ?SECTION NEW
 # Drop packets in the INVALID state
-Invalid(DROP)  net    	        $FW		tcp
+Invalid(DROP)	net		$FW		tcp
 
 ?COMMENT 自定义规则
 # 不允许别人Ping自己
 Ping(DROP)	net		$FW
 SSH(ACCEPT)	net		$FW # 允许SSH
+# 生产环境若为 Web 服务器，需放行 80/443，取消下面一行注释（或改用 net:你的管理IP/32 限制来源）
+# Web(ACCEPT)	net		$FW
+# 或按端口写：
+# ACCEPT	net	$FW	tcp	80,443
 
 #### 示例
 # ?COMMENT Nginx

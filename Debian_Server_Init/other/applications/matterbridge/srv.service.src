@@ -58,4 +58,5 @@ Restart=on-failure
 RestartSec=5s                        
 
 [Install]
-WantedBy=multi-user.target          # 设置服务在多用户模式下启动
+# 设置服务在多用户模式下启动
+WantedBy=multi-user.target

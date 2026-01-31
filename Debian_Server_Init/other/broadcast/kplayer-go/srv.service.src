@@ -63,4 +63,5 @@ StartLimitIntervalSec=90
 StartLimitBurst=3   
 
 [Install]
-WantedBy=multi-user.target          # 设置服务在多用户模式下启动
+# 设置服务在多用户模式下启动
+WantedBy=multi-user.target
