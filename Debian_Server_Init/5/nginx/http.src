@@ -1,3 +1,4 @@
+# HTTP 站点配置（模板）。部署时 replace_placeholders_with_values 替换：【$SET_SERVER_NAME】【$SET_HTTP_SERVER_ROOT】【$HOME_INDEX】【$phpfpmVersion】
 # 主页
 server {
     listen 8000; #监听端口
@@ -6,6 +7,7 @@ server {
     root 【$SET_HTTP_SERVER_ROOT】/home_page; #站点目录
     access_log 【$HOME_INDEX】/Logs/nginx/home.log;
     error_log 【$HOME_INDEX】/Logs/nginx/home_error.log;
+    # 错误页（301/302 为重定向码，若不需要统一跳转至 404 可去掉）
     error_page 301 302 403 404 502 https://【$SET_SERVER_NAME】/404.html; #错误页
 
     # 不是GET POST HEAD就返回空响应
@@ -17,13 +19,14 @@ server {
         return 301 /404.html;
     }
 
+    # return 301 已结束请求，其后的 deny all 不会执行，可仅保留 return
     location ~* \.(ini|php|cfg|sh|py|conf)$ {
         return 301 /404.html;
-        deny all;
+        # deny all;
     }
 
-    # 根目录下的部分文件夹全为404
-    location ~* ^/(.git) {
+    # 禁止访问站点内任意 .git 目录（网站目录为 git 仓库时防泄露）
+    location ~* /\.git {
         return 301 /404.html;
     }
 }

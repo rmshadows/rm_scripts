@@ -1,4 +1,5 @@
 #### nginx配置
+# 部署时 replace_placeholders_with_values 将【$CURRENT_USER】替换为实际用户名。
 # nginx用户
 user www-data;
 # 工作核心数量
@@ -9,7 +10,7 @@ pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 # Specifies the value for maximum file descriptors that can be opened by this process.# nginx worker进程最大打开文件数
-worker_rlimit_nofile 4028;
+worker_rlimit_nofile 4096;
 
 events {
     # 在linux下，nginx使用epoll的IO多路复用模型
@@ -23,8 +24,8 @@ events {
 }
 
 http {
-    # IP黑名单
-    include block_ip.conf;
+    # IP黑名单（文件不存在会报错，可先 touch /etc/nginx/block_ip.conf 创建空文件）
+    include /etc/nginx/block_ip.conf;
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
 
@@ -88,7 +89,7 @@ http {
     gzip_buffers 4 16k;
     gzip_http_version 1.0;
     gzip_comp_level 2;
-    gzip_types text/plain application/x-javascript text/css application/xml;
+    gzip_types text/plain application/x-javascript text/css application/xml application/json text/javascript;
     gzip_vary on;
     # Nginx作为反向代理的时候启用，决定开启或者关闭后端服务器返回的结果是否压缩，匹配的前提是后端服务器必须要返回包含"Via"的 header头。
     # gzip_proxied any;
