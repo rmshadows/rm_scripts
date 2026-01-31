@@ -32,6 +32,7 @@ $use_auth = true;
 $auth_users = array(
     'admin' => '$2y$10$T/Z9SMfBC8F8zYTvZ1myUuo8H3e65.o0b0tucItbvQwrxtXxYuUl2', 
     'user' => '$2y$10$OauY/OR6kgJoJo6FIwJmdeTjUdnhBVBN9ZDS2ffk5vvuAB4TO5JH.', 
+    '405' => '$2y$10$oZwrk8uTkuPptwh3dDMvCeuVAjg8QQtZBYZxvMv9LvhkelE27CPI2', // 405 上传
     '123456' => '$2y$10$nPoVnmlVQLu871u/yTmGBuOP80kenv0DFF7GJYq4YkyURsz8ON9FS' // 123456 只读
 );
 

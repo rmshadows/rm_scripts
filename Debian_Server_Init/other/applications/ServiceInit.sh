@@ -6,8 +6,8 @@ if ! [ -d "$HOME/Services" ];then
 # 此脚本会拷贝*.service到/lib/systemd/system/
 sudo cp *.service /lib/systemd/system/
 sudo systemctl daemon-reload
-" > "$HOME/Services/Install_Servces.sh"
-    chmod +x "$HOME/Services/Install_Servces.sh"
+" > "$HOME/Services/Install_Services.sh"
+    chmod +x "$HOME/Services/Install_Services.sh"
 fi
 
 if ! [ -d "$HOME/Applications" ];then

@@ -6,7 +6,7 @@
 # 配置SSH Key
 if [ "$SET_CONFIG_SSH_KEY" -eq 1 ]; then
     mkdir -p "/home/$CURRENT_USER/.ssh"
-    if [ -f "/home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME" ] | [ -f "/home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME.pub" ]; then
+    if [ -f "/home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME" ] || [ -f "/home/$CURRENT_USER/.ssh/$SET_SSH_KEY_NAME.pub" ]; then
         prompt -e "/home/$CURRENT_USER/.ssh/似乎已经存在 "$SET_SSH_KEY_NAME" 的SSH Key,跳过配置。"
     else
         if [ "$SET_SSH_KEY_SOURCE" -eq 0 ]; then

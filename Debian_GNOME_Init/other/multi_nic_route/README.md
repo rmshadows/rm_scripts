@@ -10,5 +10,12 @@
 
 `crontab -e`
 
+```
+    sudo cp multi_nic_route.sh /usr/local/bin/
+    sudo chmod +x /usr/local/bin/multi_nic_route.sh
 
-
+    sudo cp multi-nic-route.service /lib/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable multi-nic-route.service
+    sudo systemctl start multi-nic-route.service   # 或重启后自动执行
+```

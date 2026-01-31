@@ -11,11 +11,12 @@
 
 ```
 密码生成：
-https://tinyfilemanager.github.io/docs/pwd.html
+https://tinyfilemanager.gi123405123405123thub.io/docs/pwd.html
 https://phppasswordhash.com/
 
 admin:xNJZ$d3U9e 管理员
 user:User12345!  可以上传到tempUpload文件夹
+405:123405
 123456:123456 只读
 ```
 

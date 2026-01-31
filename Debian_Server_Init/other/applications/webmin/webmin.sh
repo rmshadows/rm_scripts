@@ -21,31 +21,26 @@ SET_DIR=$(pwd)
 # cd "$SET_DIR"
 
 #### 正文
-### 准备工作
-# 检查包是否已安装
-t_pkg="webmin"
-if ! command -v $t_pkg &>/dev/null; then
-  echo -e "\033[32m$t_pkg 未找到，开始安装 Webmin...\033[0m" # 输出绿色提示
-  # 安装 Webmin
-  echo "开始安装 Webmin..."
+# 目标配置文件路径（安装后才有）
+WEBMIN_CONFIG_FILE="/etc/webmin/config"
+MINISERV_CONFIG_FILE="/etc/webmin/miniserv.conf"
+
+### 安装 Webmin（仅未安装时执行）
+if [ ! -d /etc/webmin ]; then
+  echo -e "\033[32mWebmin 未安装，开始安装...\033[0m"
   curl -o webmin-setup-repo.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repo.sh
   sudo sh webmin-setup-repo.sh
   sudo apt update
   sudo apt-get install webmin --install-recommends
+  if [ ! -d /etc/webmin ]; then
+    prompt -e "找不到 /etc/webmin，似乎安装失败"
+    exit 1
+  fi
 else
-  echo -e "\033[31m$t_pkg 已经安装，跳过安装步骤！\033[0m"
+  echo -e "\033[33mWebmin 已安装，仅修改端口/语言配置。\033[0m"
 fi
 
-### 安装软件
-### 安装 Webmin（如果未安装）
-if ! command -v webmin &>/dev/null; then
-  prompt -e "找不到Ｗｅｂｍｉｎ，似乎安装失败了"
-  exit 1
-fi
-
-# 目标配置文件路径
-WEBMIN_CONFIG_FILE="/etc/webmin/config"
-MINISERV_CONFIG_FILE="/etc/webmin/miniserv.conf"
+### 修改端口与语言
 
 # 检查是否提供了端口和语言
 if [ -z "$NEW_PORT" ]; then
@@ -53,9 +48,9 @@ if [ -z "$NEW_PORT" ]; then
 else
   # 修改 Webmin 配置中的端口
   echo "修改 Webmin 端口为 $NEW_PORT ..."
-  sed -i "s/^port=.*$/port=$NEW_PORT/" $MINISERV_CONFIG_FILE
+  sed -i "s/^port=.*$/port=$NEW_PORT/" "$MINISERV_CONFIG_FILE"
   # 如果配置文件中没有 `port`，手动添加
-  grep -q "^port=" $MINISERV_CONFIG_FILE || echo "port=$NEW_PORT" | sudo tee -a $MINISERV_CONFIG_FILE
+  grep -q "^port=" "$MINISERV_CONFIG_FILE" || echo "port=$NEW_PORT" | sudo tee -a "$MINISERV_CONFIG_FILE"
 fi
 
 if [ -z "$NEW_LANG" ]; then
@@ -63,9 +58,9 @@ if [ -z "$NEW_LANG" ]; then
 else
   # 修改 Webmin 配置中的语言
   echo "修改 Webmin 语言为 $NEW_LANG ..."
-  sed -i "s/^lang_root=.*$/lang_root=$NEW_LANG/" $WEBMIN_CONFIG_FILE
+  sed -i "s/^lang_root=.*$/lang_root=$NEW_LANG/" "$WEBMIN_CONFIG_FILE"
   # 如果配置文件中没有 `lang_root`，手动添加
-  grep -q "^lang_root=" $WEBMIN_CONFIG_FILE || echo "lang_root=$NEW_LANG" | sudo tee -a $WEBMIN_CONFIG_FILE
+  grep -q "^lang_root=" "$WEBMIN_CONFIG_FILE" || echo "lang_root=$NEW_LANG" | sudo tee -a "$WEBMIN_CONFIG_FILE"
 fi
 
 # 重启 Webmin 服务使改动生效
@@ -79,7 +74,7 @@ echo "语言: $NEW_LANG"
 
 ### 反向代理配置
 cd "$SET_DIR"
-prompt -i "Check manully and setting up reverse proxy by yourself."
+prompt -i "Check manually and set up reverse proxy by yourself."
 replace_placeholders_with_values reverse_proxy.txt.src
 prompt -i "========================================================"
 cat reverse_proxy.txt

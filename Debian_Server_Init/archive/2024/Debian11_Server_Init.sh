@@ -1693,8 +1693,8 @@ addFolder $HOME_INDEX/Services
 echo "#!/bin/bash
 cp *.service /lib/systemd/system/
 sudo systemctl daemon-reload
-" > $HOME_INDEX/Services/Install_Servces.sh
-chmod +x $HOME_INDEX/Services/Install_Servces.sh
+" > $HOME_INDEX/Services/Install_Services.sh
+chmod +x $HOME_INDEX/Services/Install_Services.sh
 addFolder $HOME_INDEX/Logs
 addFolder $HOME_INDEX/Logs/apache2
 addFolder $HOME_INDEX/Logs/nginx

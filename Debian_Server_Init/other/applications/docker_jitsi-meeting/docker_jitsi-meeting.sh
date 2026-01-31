@@ -82,7 +82,7 @@ sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
 # 安装服务
 prompt -x "Install service..."
 cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
+sudo $HOME/Services/Install_Services.sh
 
 ### 反向代理配置
 cd "$SET_DIR"

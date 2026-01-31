@@ -22,9 +22,9 @@ if [ "$SET_INSTALL_RIME" -eq 1 ]; then
     prompt -m "如果出现异常，x11用户可能得检查下~/.xprofile，wayland用户可能得检查下~/.profile"
     sleep 8
     doApt update
-    # 移除fcitx5
+    # 移除 fcitx5 及所有 fcitx5-* 包
     doApt remove fcitx5
-    doApt remove fcitx5-"*"
+    apt list --installed 2>/dev/null | grep -E '^fcitx5-' | cut -d'/' -f1 | xargs -r sudo apt remove -y
     doApt install fcitx
     doApt install fcitx-rime
     doApt install fcitx-googlepinyin
@@ -83,9 +83,9 @@ elif [ "$SET_INSTALL_RIME" -eq 2 ]; then
     im-config -n ibus
 elif [ "$SET_INSTALL_RIME" -eq 3 ]; then
     doApt update
-    # 移除fcitx
+    # 移除 fcitx 及所有 fcitx-* 包
     doApt remove fcitx
-    doApt remove fcitx-"*"
+    apt list --installed 2>/dev/null | grep -E '^fcitx-' | cut -d'/' -f1 | xargs -r sudo apt remove -y
     doApt install fcitx5
     doApt install fcitx5-rime
     doApt install fcitx5-module-cloudpinyin
@@ -116,7 +116,7 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
     prompt -m "检查完成，开始配置词库"
     if [ "$SET_IMPORT_RIME_DICT" -eq 0 ]; then
         prompt -m "不导入词库,但保留词库添加功能。"
-        cp rime_base_config/* $rime_config_dir
+        cp rime_base_config/* "$rime_config_dir"
     elif [ "$SET_IMPORT_RIME_DICT" -eq 1 ]; then
         prompt -x "从Github导入词库。"
         if ! [ -x "$(command -v git)" ]; then
@@ -135,11 +135,11 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
         else
             mv "$rime_config_dir" "$rime_config_dir(src)"
         fi
-		addFolder $rime_config_dir
-        cp -r RGIT_REPO/* $rime_config_dir
+        addFolder "$rime_config_dir"
+        cp -r RGIT_REPO/* "$rime_config_dir"
     elif [ "$SET_IMPORT_RIME_DICT" -eq 2 ]; then
         prompt -x "导入本地词库。"
-        sudo cp -r $SET_RIME_DICT_DIR/* $rime_config_dir
+        sudo cp -r "$SET_RIME_DICT_DIR"/* "$rime_config_dir"
     fi
 fi
 

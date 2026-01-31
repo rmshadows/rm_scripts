@@ -23,7 +23,7 @@ LFSS_ROOT="/home/lfss-file-share"
 # LFSS仓库
 LFSS_REPO="https://github.com/ZizzyDizzyMC/linx-server"
 
-# 保存当前目录
+# 保存当前目录（运行脚本时应在 linxfilesharing/ 下）
 SET_DIR=$(pwd)
 #### 正文
 ### 准备工作
@@ -53,25 +53,17 @@ else
 fi
 
 ### 安装软件
-if ! [ -d $HOME/Applications ];then
-    sudo mkdir $HOME/Applications
-fi
-# 建立ROOT文件夹
-if ! [ -d "$LFSS_ROOT" ];then
-    sudo mkdir -p "$LFSS_ROOT"
-fi
+mkdir -p "$HOME/Applications"
+sudo mkdir -p "$LFSS_ROOT"
 
 # 安装
-cd $HOME/Applications
-git clone "$LFSS_REPO" linx-file-share-repo
-# 检查 git clone 是否成功
-if [ $? -eq 0 ]; then
-    echo "✅ Git clone 成功!"
-    # 进入克隆的目录
-    cd linx-file-share-repo || { echo "❌ 无法进入目录 linx-file-share-repo"; exit 1; }
+cd "$HOME/Applications"
+if [ -d linx-file-share-repo ]; then
+    echo "linx-file-share-repo 已存在，跳过 clone；若需重装请先删除该目录。"
+    cd linx-file-share-repo
 else
-    echo "❌ Git clone 失败，请检查仓库地址或网络连接。"
-    exit 1
+    git clone "$LFSS_REPO" linx-file-share-repo
+    cd linx-file-share-repo || { echo "❌ 无法进入目录 linx-file-share-repo"; exit 1; }
 fi
 
 # 编译
@@ -119,24 +111,32 @@ fi
 # 生成服务
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
+sudo mv srv.service "$HOME/Services/$SRV_NAME.service"
 # 安装服务
 prompt -x "Install service..."
-cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
+cd "$HOME/Services/"
+sudo "$HOME/Services/Install_Services.sh"
 cd "$SET_DIR"
 # 拷贝启动和停止的脚本
 prompt -x "Make start and stop script..."
-# Start and stop script
 replace_placeholders_with_values start.sh.src
-sudo cp start.sh /home/$USER/Services/$SRV_NAME/start_"$SRV_NAME".sh
-sudo chmod +x /home/$USER/Services/$SRV_NAME/*.sh
+sudo cp start.sh "$HOME/Services/$SRV_NAME/start_${SRV_NAME}.sh"
+sudo chmod +x "$HOME/Services/$SRV_NAME"/*.sh
 
-### 反向代理配置
+### Nginx 配置（与 fmgr 一致：配置写入 nginx 目录，不覆盖原机 site）
 cd "$SET_DIR"
-prompt -i "Check manully and setting up reverse proxy by yourself."
+if [ -f setupNginxForLinx.sh ]; then
+    prompt -x "运行 setupNginxForLinx.sh（写入 /etc/nginx/snippets/linx.conf）"
+    export RUN_PORT
+    bash setupNginxForLinx.sh
+else
+    prompt -w "未找到 setupNginxForLinx.sh，请手动运行以写入 nginx 片段。"
+fi
+
 replace_placeholders_with_values reverse_proxy.txt.src
+prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
 prompt -i "========================================================"
 cat reverse_proxy.txt
 prompt -i "========================================================"
+prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/linx.conf;"
 

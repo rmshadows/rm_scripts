@@ -64,7 +64,7 @@ fi
 
 ### 安装软件
 sudo cp ffmpegL_sample/* "$new_srv_path"/
-cd $new_srv_path
+cd "$new_srv_path"
 replace_placeholders_with_values conf.txt
 replace_placeholders_with_values reset_rtmp.sh
 replace_placeholders_with_values removeServices.sh

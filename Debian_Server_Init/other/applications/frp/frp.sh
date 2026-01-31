@@ -6,7 +6,7 @@ source "../GlobalVariables.sh"
 source "../Lib.sh"
 source "../ServiceInit.sh"
 
-# 保存当前目录
+# 保存当前目录（运行脚本时应在 frp/ 下）
 SET_DIR=$(pwd)
 
 #### CONF
@@ -17,6 +17,8 @@ SRV_NAME_B=frp-server
 # 未使用的参数
 REVERSE_PROXY_PORT=2053
 RUN_PORT=7500
+# nginx 片段中管理页面的路径（如 /frp/），用户 include 后通过该路径访问
+REVERSE_PROXY_URL="/frp/"
 SRV_NAME=${SRV_NAME_B}
 
 # Docs: https://github.com/fatedier/frp/blob/dev/README_zh.md
@@ -36,12 +38,10 @@ if ! command -v $t_pkg &>/dev/null; then
 fi
 
 ### 安装软件
-if ! [ -d $HOME/Applications ]; then
-    mkdir $HOME/Applications
-fi
+mkdir -p "$HOME/Applications"
 
 # 安装
-cd "$HOME/Applications/"
+cd "$HOME/Applications"
 
 if [ -n "$FRP_DOWNLOAD_URL" ]; then
     # 非空
@@ -57,12 +57,12 @@ if [ -n "$FRP_DOWNLOAD_URL" ]; then
         prompt -x "frp.tar.gz already exists."
     fi
 else
-    if [ "$LOCAL_FRP_TAR" -ne 0 ]; then
+    if [ -n "$LOCAL_FRP_TAR" ] && [ -f "$LOCAL_FRP_TAR" ]; then
         # 直接使用本地压缩包
         prompt -x "Move $LOCAL_FRP_TAR to $(pwd)..."
         mv "$LOCAL_FRP_TAR" ./frp.tar.gz
     else
-        prompt -e "未指定本地frp压缩包"
+        prompt -e "未指定本地 frp 压缩包或文件不存在（LOCAL_FRP_TAR）"
         exit 1
     fi
 fi
@@ -86,8 +86,7 @@ mv frpc.toml archive
 mv frps.toml archive
 # 请手动删除
 # rm frp.tar.gz
-# 返回之前的目录
-cd $SET_DIR
+cd "$SET_DIR"
 
 # 拷贝配置文件
 prompt -x "Set up server and client sample..."
@@ -131,31 +130,39 @@ fi
 # 生成服务
 prompt -x "Making Service..."
 replace_placeholders_with_values frp-client.service.src
-sudo mv frp-client.service /home/$USER/Services/$SRV_NAME_A.service
+sudo mv frp-client.service "$HOME/Services/$SRV_NAME_A.service"
 replace_placeholders_with_values frp-server.service.src
-sudo mv frp-server.service /home/$USER/Services/$SRV_NAME_B.service
+sudo mv frp-server.service "$HOME/Services/$SRV_NAME_B.service"
 
 # 安装服务
 prompt -x "Install service..."
-cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
-cd $SET_DIR
+cd "$HOME/Services/"
+sudo "$HOME/Services/Install_Services.sh"
+cd "$SET_DIR"
 
 # 拷贝启动和停止的脚本
 prompt -x "Make start and stop script..."
-# Start and stop script
 replace_placeholders_with_values start_client.sh
 replace_placeholders_with_values start_server.sh
-sudo cp start_client.sh /home/$USER/Services/$SRV_NAME_A/start_"$SRV_NAME_A".sh
-sudo cp start_server.sh /home/$USER/Services/$SRV_NAME_B/start_"$SRV_NAME_B".sh
-sudo chmod +x /home/$USER/Services/$SRV_NAME_A/*.sh
-sudo chmod +x /home/$USER/Services/$SRV_NAME_B/*.sh
+sudo cp start_client.sh "$HOME/Services/$SRV_NAME_A/start_${SRV_NAME_A}.sh"
+sudo cp start_server.sh "$HOME/Services/$SRV_NAME_B/start_${SRV_NAME_B}.sh"
+sudo chmod +x "$HOME/Services/$SRV_NAME_A"/*.sh
+sudo chmod +x "$HOME/Services/$SRV_NAME_B"/*.sh
 
-### 反向代理配置
+### Nginx 配置（与 fmgr 一致：配置写入 nginx 目录，不覆盖原机 site）
 cd "$SET_DIR"
-prompt -i "Check manually and setting up reverse proxy by yourself."
+if [ -f setupNginxForFrp.sh ]; then
+    prompt -x "运行 setupNginxForFrp.sh（写入 /etc/nginx/snippets/frp.conf）"
+    export RUN_PORT REVERSE_PROXY_URL
+    bash setupNginxForFrp.sh
+else
+    prompt -w "未找到 setupNginxForFrp.sh，请手动运行以写入 nginx 片段。"
+fi
+
 replace_placeholders_with_values reverse_proxy.txt.src
+prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
 prompt -i "========================================================"
 cat reverse_proxy.txt
 prompt -i "========================================================"
+prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/frp.conf;"
 

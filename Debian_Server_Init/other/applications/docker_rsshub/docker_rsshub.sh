@@ -34,30 +34,41 @@ sudo docker rm rsshub
 prompt -x "Installing rsshub..."
 sudo docker pull diygod/rsshub
 prompt -x "Creating rsshub container on $RUN_PORT..."
-sudo docker create --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
+sudo docker create --name rsshub -p "$RUN_PORT:$RUN_PORT" diygod/rsshub
 # prompt -x "Running rsshub on $RUN_PORT..."
 # sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
 
 # mk srv
 # 创建专门文件夹
-if ! [ -d $HOME/Services/$SRV_NAME ];then
+if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
     prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    mkdir $HOME/Services/$SRV_NAME
+    mkdir -p "$HOME/Services/$SRV_NAME"
 fi
 # 生成服务
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
+sudo mv srv.service "/home/$USER/Services/$SRV_NAME.service"
 # 安装服务
 prompt -x "Install service..."
-cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
+cd "$HOME/Services/"
+sudo "$HOME/Services/Install_Services.sh"
 
-sudo chmod +x /home/$USER/Services/$SRV_NAME/*.sh
+sudo chmod +x "/home/$USER/Services/$SRV_NAME/"*.sh
 cd "$SET_DIR"
-prompt -i "Check manully and setting up reverse proxy by yourself."
+
+### Nginx 配置（与 artalk/frp 一致：配置写入 nginx 目录，不覆盖原机 site）
+if [ -f setupNginxForRsshub.sh ]; then
+    prompt -x "运行 setupNginxForRsshub.sh（写入 /etc/nginx/snippets/rsshub.conf）"
+    export RUN_PORT REVERSE_PROXY_URL
+    bash setupNginxForRsshub.sh
+else
+    prompt -w "未找到 setupNginxForRsshub.sh，请手动运行以写入 nginx 片段。"
+fi
+
 replace_placeholders_with_values reverse_proxy.txt.src
+prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
 prompt -i "========================================================"
 cat reverse_proxy.txt
 prompt -i "========================================================"
+prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/rsshub.conf;"
 

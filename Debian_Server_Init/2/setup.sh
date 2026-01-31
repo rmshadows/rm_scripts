@@ -21,7 +21,7 @@ source "cfg.sh"
 if [ "$SET_USER" -eq 1 ];then
     prompt -x "Creating user $CURRENT_USER...."
     # 检测是否存在该用户
-    egrep "^$CURRENT_USER" "/etc/passwd >/dev/null"
+    grep -Eq "^$CURRENT_USER" /etc/passwd
     if [ $? -eq 0 ]; then
         # 存在用户 
         prompt -e "Failed to add $CURRENT_USER. Username already exists! Continue with $CURRENT_USER"

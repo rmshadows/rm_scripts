@@ -5,7 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=【path to】/multi_nic_route.sh
+# 请将下方路径改为脚本实际所在目录的绝对路径，或先将脚本复制到 /usr/local/bin 后使用 /usr/local/bin/multi_nic_route.sh
+ExecStart=/usr/local/bin/multi_nic_route.sh
 Restart=no
 
 [Install]

@@ -13,7 +13,7 @@
 1. 复制`ffmpegL`母文件夹为新文件夹：`XX直播`
 2. 编辑`SetupFfmpegLivePath.sh`文件中的直播名称为`XX直播`
 3. 运行`SetupFfmpegLivePath.sh`脚本自动配置
-4. 如需生成服务，运行`Install_Servces.sh`或者手动拷贝到`systemd`的目录即可
+4. 如需生成服务，运行`Install_Services.sh`或者手动拷贝到`systemd`的目录即可
 
 ## Kplayer推流
 

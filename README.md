@@ -33,6 +33,10 @@
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2026年1月31日——0.0.8
+  - Debian_Server_Init 应用安装：docker_rsshub、isso 增加 Nginx 反代片段与 setupNginx 脚本，安装后自动写入 `/etc/nginx/snippets/`，用户只需在 site 内加一行 include
+  - application_install-sample 作为应用安装模板：新增 myapp-snippet.conf、setupNginxForMyapp.sh、README.md，主脚本与 Nginx 片段流程与现有应用（artalk、frp、rsshub、isso 等）一致
+
 - 2026年1月11日——0.0.7
   - 更新了Office套件
 

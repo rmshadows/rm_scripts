@@ -19,7 +19,7 @@ if [ "$SET_APT_INSTALL" -eq 1 ]; then
     # 先判断要安装的列表
     if [ "$SET_APT_INSTALL_LIST_INDEX" -eq 0 ]; then
         # 自定义安装
-        app_list=$SEAPT_TO_INSTALL_INDEX_0
+        app_list=$APT_TO_INSTALL_INDEX_0
     elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 1 ]; then
         # 精简安装
         app_list=$APT_TO_INSTALL_INDEX_1

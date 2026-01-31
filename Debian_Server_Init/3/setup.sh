@@ -31,8 +31,8 @@ if [ "$SET_BASE_HOME" -eq 1 ];then
     echo "#!/bin/bash
 sudo cp *.service /lib/systemd/system/
 sudo systemctl daemon-reload
-" > "$HOME_INDEX/Services/Install_Servces.sh"
-    chmod +x $HOME_INDEX/Services/Install_Servces.sh
+" > "$HOME_INDEX/Services/Install_Services.sh"
+    chmod +x "$HOME_INDEX/Services/Install_Services.sh"
     # sudo chown $CURRENT_USER -hR $HOME_INDEX
 fi
 
@@ -95,7 +95,7 @@ fi
 
 
 # 设置主机名
-if ! [ "$SET_HOST_NAME" -eq 0 ];then
+if [ -n "$SET_HOST_NAME" ] && [ "$SET_HOST_NAME" != "0" ]; then
     prompt -x "Setup hostname"
     echo "$HOSTNAME" > /etc/hostname
     check_var="127.0.1.1"
@@ -117,7 +117,8 @@ if ! [ "$SET_HOST_NAME" -eq 0 ];then
         sed -i "$idx i $I_STRING" /etc/hosts
     elif [ $idxlen -eq 0 ];then
         prompt -w "Setting not found in /etc/hosts!"
-        echo $I_STRING >> /etc/hosts
+        I_STRING="127.0.1.1	$HOSTNAME"
+        echo "$I_STRING" >> /etc/hosts
     else
         prompt -e "Find duplicate user setting 127.0.1.1 in /etc/hosts! Check manually!"
         exit 1

@@ -35,10 +35,8 @@ ENCRYPTED_PASSWD=$(htpasswd -bnBC 10 "" "$ADMIN_PASSWD" | tr -d ':')
 # 输出加密后的密码（仅为验证）
 echo "(bcrypt)$ENCRYPTED_PASSWD"
 
-# 保存当前目录
+# 保存当前目录（运行脚本时应在 artalk/ 下）
 SET_DIR=$(pwd)
-# 返回之前的目录
-# cd "$SET_DIR"
 
 #### 正文
 ### 准备工作
@@ -96,7 +94,7 @@ cd artalk
 chmod +x artalk
 
 ### 服务生成
-cd $SET_DIR
+cd "$SET_DIR"
 prompt -e "创建名为 artalk 的用户组"
 sudo groupadd --system artalk
 prompt -e "创建一个名为 artalk 的用户，并且拥有一个可写的 home 目录"
@@ -126,7 +124,7 @@ sudo chgrp artalk /home/artalk/data/*
 sudo chown artalk /home/artalk/*
 sudo chgrp artalk /home/artalk/*
 
-cd $SET_DIR
+cd "$SET_DIR"
 replace_placeholders_with_values artalk.yml.src
 backupFile /home/artalk/artalk.yml
 sudo cp artalk.yml /home/artalk/artalk.yml
@@ -139,18 +137,28 @@ fi
 # 生成服务
 cd "$SET_DIR"
 prompt -x "Making Service..."
-sudo mv artalk.service /home/$USER/Services/
+replace_placeholders_with_values artalk.service.src 2>/dev/null || true
+sudo mv artalk.service "$HOME/Services/$SRV_NAME.service"
 # 安装服务
 prompt -x "Install service..."
-cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
+cd "$HOME/Services/"
+sudo "$HOME/Services/Install_Services.sh"
 cd "$SET_DIR"
 
-### 反向代理配置
+### Nginx 配置（与 fmgr 一致：配置写入 nginx 目录，不覆盖原机 site）
 cd "$SET_DIR"
-prompt -i "Check manully and setting up reverse proxy by yourself."
+if [ -f setupNginxForArtalk.sh ]; then
+    prompt -x "运行 setupNginxForArtalk.sh（写入 /etc/nginx/snippets/artalk.conf）"
+    export RUN_PORT REVERSE_PROXY_URL
+    bash setupNginxForArtalk.sh
+else
+    prompt -w "未找到 setupNginxForArtalk.sh，请手动运行以写入 nginx 片段。"
+fi
+
 replace_placeholders_with_values reverse_proxy.txt.src
+prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
 prompt -i "========================================================"
 cat reverse_proxy.txt
 prompt -i "========================================================"
+prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/artalk.conf;"
 

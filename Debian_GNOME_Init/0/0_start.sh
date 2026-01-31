@@ -24,7 +24,7 @@ _________  .___ ____   ____.___ _________  _________  _________  _________  ____
 
 # 检测到苹果系统，退出
 if [ -e /usr/bin/uname ]; then
-    if [ "`/usr/bin/uname -s`" = "Darwin" ]; then
+    if [ "$(/usr/bin/uname -s)" = "Darwin" ]; then
         prompt -e '*** Detected MacOS / Darwin, quit!'
         prompt -e '*** Linux only!'
         exit 0
@@ -34,56 +34,56 @@ fi
 # 检测Linux发行版
 prompt -w '*** Detecting Linux Distribution....'
 if [ -f /etc/debian_version ]; then
-    dvers=`cat /etc/debian_version | cut -d '.' -f 1 | cut -d '/' -f 1`
-    if [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F -i LinuxMint`" ]; then
+    dvers=$(cat /etc/debian_version | cut -d '.' -f 1 | cut -d '/' -f 1)
+    if [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F -i LinuxMint)" ]; then
         # Linux Mint -> Ubuntu 'xenial'
         prompt -w '*** Found Linux Mint      Ubuntu xenial'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F trusty`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F trusty)" ]; then
         # Ubuntu 'trusty'
         prompt -w '*** Found Ubuntu      trusty'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F wily`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F wily)" ]; then
         # Ubuntu 'wily'
         prompt -w '*** Found Ubuntu      wily'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F xenial`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F xenial)" ]; then
         # Ubuntu 'xenial'
         prompt -w '*** Found Ubuntu      xenial'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F zesty`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F zesty)" ]; then
         # Ubuntu 'zesty'
         prompt -w '*** Found Ubuntu      zesty'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F precise`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F precise)" ]; then
         # Ubuntu 'precise'
         prompt -w '*** Found Ubuntu      recise'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F artful`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F artful)" ]; then
         # Ubuntu 'artful'
         prompt -w '*** Found Ubuntu      artful'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F bionic`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F bionic)" ]; then
         # Ubuntu 'bionic'
         prompt -w '*** Found Ubuntu      bionic'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F yakkety`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F yakkety)" ]; then
         # Ubuntu 'yakkety'
         prompt -w '*** Found Ubuntu      yakkety'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F disco`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F disco)" ]; then
         # Ubuntu 'disco'
         prompt -w '*** Found Ubuntu      disco'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F focal`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F focal)" ]; then
         # Ubuntu 'focal' -> Ubuntu 'bionic' (for now)
         prompt -w '*** Found Ubuntu      focal->bionic'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F hirsute`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F hirsute)" ]; then
         # Ubuntu 'hirsute' -> Ubuntu 'bionic' (for now)
         prompt -w '*** Found Ubuntu      hirsute->bionic'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
-    elif [ -f /etc/lsb-release -a -n "`cat /etc/lsb-release 2>/dev/null | grep -F impish`" ]; then
+    elif [ -f /etc/lsb-release -a -n "$(cat /etc/lsb-release 2>/dev/null | grep -F impish)" ]; then
         # Ubuntu 'impish' -> Ubuntu 'bionic' (for now)
         prompt -w '*** Found Ubuntu      impish->bionic'
         prompt -w "*** WARN: 非本脚本指定的发行版，谨慎使用！ Not for this distribution, use with caution !"
@@ -131,17 +131,17 @@ elif [ -f /etc/SuSE-release -o -f /etc/suse-release -o -f /etc/SUSE-brand -o -f 
     prompt -e '*** Debian only !'
     exit 1
 elif [ -d /etc/yum.repos.d ]; then
-    if [ -n "`cat /etc/redhat-release 2>/dev/null | grep -i fedora`" ]; then
+    if [ -n "$(cat /etc/redhat-release 2>/dev/null | grep -i fedora)" ]; then
         prompt -e "*** Found Fedora, required /etc/yum.repos.d/xxx.repo"
         prompt -e '*** Debian only !'
         exit 1
-    elif [ -n "`cat /etc/redhat-release 2>/dev/null | grep -i centos`" -o -n "`cat /etc/redhat-release 2>/dev/null | grep -i enterprise`" ]; then
+    elif [ -n "$(cat /etc/redhat-release 2>/dev/null | grep -i centos)" -o -n "$(cat /etc/redhat-release 2>/dev/null | grep -i enterprise)" ]; then
         prompt -e "*** Found RHEL/CentOS, required /etc/yum.repos.d/xxx.repo"
         prompt -e '*** Debian only !'
         exit 1
-    elif [ -n "`cat /etc/system-release 2>/dev/null | grep -i amazon`" ]; then
+    elif [ -n "$(cat /etc/system-release 2>/dev/null | grep -i amazon)" ]; then
         prompt -e "*** Found Amazon (CentOS/RHEL based), required /etc/yum.repos.d/xxx.repo"
-        if [ -n "`cat /etc/system-release 2>/dev/null | grep -F 'Amazon Linux 2'`" ]; then
+        if [ -n "$(cat /etc/system-release 2>/dev/null | grep -F 'Amazon Linux 2')" ]; then
             prompt -e '*** Debian only, NOT redhat/el/7 !'
             exit 1
         else

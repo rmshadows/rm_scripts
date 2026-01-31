@@ -41,20 +41,20 @@ fi
 # sudo apt install libaugeas0
 sudo apt-get install python3-setuptools python3-virtualenv python3-dev
 
-if ! [ -d $HOME/Applications ]; then
-    mkdir $HOME/Applications
+if ! [ -d "$HOME/Applications" ]; then
+    mkdir -p "$HOME/Applications"
 fi
 
-if ! [ -d $HOME/Applications/isso/ ]; then
-    mkdir $HOME/Applications/isso/
+if ! [ -d "$HOME/Applications/isso" ]; then
+    mkdir -p "$HOME/Applications/isso"
 fi
 
-if ! [ -d $HOME/Logs ]; then
-    mkdir $HOME/Logs/
+if ! [ -d "$HOME/Logs" ]; then
+    mkdir -p "$HOME/Logs"
 fi
 
-if ! [ -d $HOME/Logs/isso/ ]; then
-    mkdir $HOME/Logs/isso/
+if ! [ -d "$HOME/Logs/isso" ]; then
+    mkdir -p "$HOME/Logs/isso"
 fi
 
 # 安装
@@ -85,21 +85,30 @@ sudo cp isso.conf "$HOME/Applications/isso/isso.conf"
 # 创建应用专门的服务文件夹
 if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
     prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    sudo mkdir "$HOME/Services/$SRV_NAME"
+    sudo mkdir -p "$HOME/Services/$SRV_NAME"
 fi
 # 生成服务
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
+sudo mv srv.service "/home/$USER/Services/$SRV_NAME.service"
 # 安装服务
 prompt -x "Install service..."
-cd $HOME/Services/
-sudo $HOME/Services/Install_Servces.sh
+cd "$HOME/Services/"
+sudo "$HOME/Services/Install_Services.sh"
 
-### 反向代理配置
+### Nginx 配置（与 artalk/frp 一致：配置写入 nginx 目录，不覆盖原机 site）
 cd "$SET_DIR"
-prompt -i "Check manully and setting up reverse proxy by yourself."
+if [ -f setupNginxForIsso.sh ]; then
+    prompt -x "运行 setupNginxForIsso.sh（写入 /etc/nginx/snippets/isso.conf）"
+    export RUN_PORT REVERSE_PROXY_URL
+    bash setupNginxForIsso.sh
+else
+    prompt -w "未找到 setupNginxForIsso.sh，请手动运行以写入 nginx 片段。"
+fi
+
 replace_placeholders_with_values reverse_proxy.txt.src
+prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
 prompt -i "========================================================"
 cat reverse_proxy.txt
 prompt -i "========================================================"
+prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/isso.conf;"

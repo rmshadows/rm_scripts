@@ -1,3 +1,4 @@
+#!/bin/bash
 : <<检查点四
 从APT仓库安装常用软件包
 安装Python3
@@ -166,8 +167,14 @@ source $venv_libs_dir/bin/activate" >$act
 	fi
 fi
 
-# 安装配置Apache2
+# 安装配置Apache2（与 Nginx 二选一：装 Apache 前会停用 Nginx，装 Nginx 前会停用 Apache）
 if [ "$SET_INSTALL_APACHE2" -eq 1 ]; then
+	# 若已安装 Nginx，先停止并禁用，避免与 Apache 同占 80
+	if [ -x "$(command -v nginx)" ]; then
+		prompt -x 'Stop nginx...'
+		sudo systemctl stop nginx.service
+		sudo systemctl disable nginx.service
+	fi
 	prompt -x "安装Apache2"
 	doApt install apache2
 	prompt -m "配置Apache2 共享目录为 /home/HTML"
@@ -266,9 +273,9 @@ if [ "$SET_INSTALL_PHP" -eq 1 ]; then
 	fi
 fi
 
-# 安装配置Nginx
+# 安装配置Nginx（与 Apache 二选一：装 Nginx 前会停用 Apache）
 if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
-	# 首先停止Apache2
+	# 若已安装 Apache，先停止并禁用，避免与 Nginx 同占 80
 	if [ -x "$(command -v apache2ctl)" ]; then
 		prompt -x 'Stop apache2...'
 		sudo systemctl stop apache2.service
