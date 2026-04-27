@@ -7,13 +7,14 @@ import os.path as op
 import random
 
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+
 # 改成 pypdf
 from pypdf import PdfReader, PdfWriter
 
 # 如果需要保留原来的别名
 pdf_reader = PdfReader
 pdf_writer = PdfWriter
-
 
 from pdf2image import convert_from_path
 
@@ -49,7 +50,32 @@ def add_content(pdf_in_name: str, pdf_out_name: str, content_dict: dict):
         pdf_out.write(fout)
 
 
-def mergePdfs(directory, output_pdf_file, filepathOrder=None):
+def mergePdfs(directory, output_pdf_file, filepathOrder=None, add_bookmark=False):
+    """
+    合并指定目录下的PDF文件为一个PDF文件（可选生成目录/书签）
+    参数：
+    directory (str): 待合并PDF文件所在目录路径
+    output_pdf_file (str): 输出的合并后PDF文件路径
+    filepathOrder (list, optional): 指定PDF合并顺序的文件路径列表。
+                                   若为None，则按文件名自然排序后合并。
+    add_bookmark (bool, optional): 是否生成目录（PDF左侧书签）。
+                                  True = 生成（文件名 → 起始页）
+                                  False = 不生成（默认，兼容旧逻辑）
+    功能说明：
+    1. 获取目录下所有PDF文件
+    2. 若未指定顺序，则按自然排序依次合并
+    3. 若指定顺序，则按给定列表顺序合并
+    4. 可选：为每个PDF生成目录（书签），指向其在合并后PDF中的起始页
+    5. 将合并结果写出为新的PDF文件
+
+    注意事项：
+    - 页码采用 pypdf 规则：从0开始计数（内部处理，用户无感）
+    - 目录名称默认使用PDF文件名（不含扩展名）
+    - filepathOrder中的路径需为完整路径或可被正确识别
+    - 依赖外部方法 m_System.getSuffixFile 和 m_System.natsorted
+    - 需确保 PdfWriter / PdfReader 已正确导入
+    """
+
     import sys
     import os
     sys.setrecursionlimit(1200)
@@ -57,140 +83,44 @@ def mergePdfs(directory, output_pdf_file, filepathOrder=None):
     writer = PdfWriter()
     pdf_files = m_System.getSuffixFile("pdf", directory, False)
 
+    # 确定顺序
     if filepathOrder is None:
         pdf_files = m_System.natsorted(pdf_files)
-        for pdf in pdf_files:
-            writer.append(pdf)
     else:
-        for pdf in filepathOrder:
-            writer.append(pdf)
+        pdf_files = filepathOrder
 
-    # 写出文件
+    page_index = 0  # 当前累计页数（用于目录定位）
+
+    for pdf in pdf_files:
+        # ===== 可选：添加目录 =====
+        if add_bookmark:
+            title = os.path.splitext(os.path.basename(pdf))[0]
+
+            # 兼容新旧 pypdf 接口
+            if hasattr(writer, "add_outline_item"):
+                writer.add_outline_item(title, page_index)
+            else:
+                writer.addBookmark(title, page_index)
+
+        # ===== 合并PDF =====
+        writer.append(pdf)
+
+        # ===== 更新页码 =====
+        try:
+            reader = PdfReader(pdf)
+            page_index += len(reader.pages)
+        except Exception:
+            # 单个PDF异常时不中断整体流程
+            pass
+
+    # ===== 写出文件 =====
     with open(output_pdf_file, "wb") as f:
         writer.write(f)
-    print(f"✅ 合并完成: {output_pdf_file}")
 
-
-def mergePdfsOld(directory, output_pdf_file):
-    """
-    合并PDF（带目录） for 2.0.11
-    Args:
-        directory: 文件夹
-        output_pdf_file: 保存路径
-
-    Returns:
-        None
-    """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
-    # 为了避免RecursionError: maximum recursion depth exceeded while calling a Python object > 1000
-    sys.setrecursionlimit(1200)
-    merger = PdfFileMerger()
-    pdf_files = m_System.getSuffixFile("pdf", directory, False)
-    pdf_files.sort()
-    for pdf in pdf_files:
-        merger.append(pdf)
-    merger.write(output_pdf_file)
-    merger.close()
-
-
-def mergePdfs_251016(directory, output_pdf_file, filepathOrder=None):
-    """
-    合并PDF（带目录）
-    Args:
-        directory: 文件夹
-        output_pdf_file: 保存路径
-        filepathOrder: 文件顺序
-
-    Returns:
-        None
-    """
-    from pypdf import PdfMerger
-    # 为了避免RecursionError: maximum recursion depth exceeded while calling a Python object > 1000
-    sys.setrecursionlimit(1200)
-    merger = PdfMerger()
-    pdf_files = m_System.getSuffixFile("pdf", directory, False)
-    # pdf_files.sort()
-    if filepathOrder is None:
-        pdf_files = m_System.natsorted(pdf_files)
-        for pdf in pdf_files:
-            merger.append(pdf)
+    if add_bookmark:
+        print(f"✅ 合并完成（带目录）: {output_pdf_file}")
     else:
-        for pdf in filepathOrder:
-            merger.append(pdf)
-    merger.write(output_pdf_file)
-    print(f"合并PDF: {output_pdf_file}")
-    merger.close()
-
-
-def image2pdfOld(directory, output_pdf_name, content:bool=True):
-    """
-    将所给文件夹的jpg图片转为PDF文档（提供目录）
-    Args:
-        directory: 文件夹路径
-        output_pdf_name: 导出PDF名称
-        content: 是否需要注释
-    """
-    ## change all png into jpg & delete the .png files
-    names = os.listdir(directory)
-    content_dict = {}
-    for name in names:
-        img = Image.open(op.join(directory, name))
-        name = name.split(".")
-        if name[-1] == "png":
-            name[-1] = "jpg"
-            name_jpg = str.join(".", name)
-            r, g, b, a = img.split()
-            img = Image.merge("RGB", (r, g, b))
-            to_save_path = op.join(directory, name_jpg)
-            img.save(to_save_path)
-            os.remove(op.join(directory, "{}.png".format(name[0])))
-        else:
-            continue
-    ## add jpg and jpeg to
-    file_list = os.listdir(directory)
-    pic_name = []
-    im_list = []
-    for x in file_list:
-        if "jpg" in x or 'jpeg' in x:
-            pic_name.append(x)
-    # 排序 https://www.likecs.com/show-307952382.html
-    # pic_name.sort()  # sorted
-    # 如果上面这一句无法满足，请取消注释下行(自行修改参数)
-    # e.g.: a1 a2: print(sorted(pic_name, key=lambda info: (info[0], int(info[1:]))))
-    # sort(key=lambda x: int(x[1]))
-    # pic_name = sorted(pic_name, key=lambda info: int(info[:-4]))
-    pic_name = m_System.natsorted(pic_name)
-    # print(pic_name)
-    new_pic = []
-    n = 1
-    for x in pic_name:
-        if "jpg" in x:
-            new_pic.append(x)
-            content_dict[x] = n
-            n += 1
-    im1 = Image.open(op.join(directory, new_pic[0]))
-    new_pic.pop(0)
-    for i in new_pic:
-        img = Image.open(op.join(directory, i))
-        # im_list.append(Image.open(i))
-        if img.mode == "RGBA":
-            r, g, b, a = img.split()
-            img = Image.merge("RGB", (r, g, b))
-            img = img.convert('RGB')
-            im_list.append(img)
-        else:
-            im_list.append(img)
-    im1.save(output_pdf_name, "PDF", resolution=100.0, save_all=True, append_images=im_list)
-    if content:
-        # 生成中间文件过渡防意外
-        r = "{}.pdf".format(random.randint(9999,999999))
-        os.rename(output_pdf_name, r)
-        try:
-            add_content(r, output_pdf_name, content_dict)
-            os.remove(r)
-        except Exception as e:
-            print(e)
+        print(f"✅ 合并完成: {output_pdf_file}")
 
 
 def image2pdf(directory, output_pdf_name, content:bool=True, order=None, removePngJpeg=True, pdf_resolution=100.0):
@@ -278,25 +208,16 @@ def image2pdf(directory, output_pdf_name, content:bool=True, order=None, removeP
             print(e)
 
 
-def pdf2images(pdfFile, dpi=200, format='png', output_directory="2images"):
-    """
-    拆分PDF到图片
-    Args:
-        pdfFile: PDF路径
-        dpi: 图像DPI
-        format: 图像格式
-        output_directory: 会在PDF同路径下新建文件夹
-
-    Returns:
-
-    """
-    # 没有就新建
+def pdf2images(pdfFile, dpi=200, format='png', output_directory="2images",
+               max_size=None, mode="size"):
     m_System.mkdir(output_directory)
-    pages = convert_from_path(pdfFile, dpi=dpi, fmt=format)
-
+    if mode == "dpi":
+        pages = convert_from_path(pdfFile, dpi=dpi, fmt=format)
+    elif mode == "size":
+        pages = convert_from_path(pdfFile, dpi=dpi, fmt=format, size=max_size)
+    else:
+        raise ValueError("mode 必须是 'dpi' 或 'size'")
     for i, page in enumerate(pages):
-        # page.save(f'page_{i + 1}.jpeg', format.upper())
-        # 页码
         page.save(op.join(output_directory, f"{i+1}.{format}"))
         print(f"页面 {i+1} 已经保存")
 
@@ -319,31 +240,6 @@ def jpg_to_individual_pdf(directory):
             output_pdf_name = os.path.splitext(jpg_file)[0] + '.pdf'
             # 将 JPG 图片保存为 PDF 文件
             img.save(output_pdf_name, 'PDF')
-
-
-def split_pdf_old(input_pdf_path, output_dir, export_menu=False):
-    """
-    将PDF拆分成单页的PDF文件
-    Args:
-        input_pdf_path: 输入PDF文件路径
-        output_dir: 输出目录路径
-        export_menu: 是否导出目录
-    """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    input_pdf = PdfFileReader(open(input_pdf_path, "rb"))
-    total_pages = input_pdf.getNumPages()
-    for page_number in range(total_pages):
-        pdf_writer = PdfFileWriter()
-        pdf_writer.addPage(input_pdf.getPage(page_number))
-        output_pdf_path = os.path.join(output_dir, f"page_{page_number + 1}.pdf")
-        with open(output_pdf_path, "wb") as output_pdf_file:
-            pdf_writer.write(output_pdf_file)
-        print(f"Saved: {output_pdf_path}")
-    if export_menu:
-        export_bookmarks(input_pdf_path, os.path.join(output_dir, "menu.txt"))
 
 
 def batch_split_pdf(input_pdf_path, output_folder, pdf_strict=False):
@@ -387,37 +283,6 @@ def split_single_pdf(input_pdf_path, output_dir, export_menu=False):
         export_bookmarks(input_pdf_path, os.path.join(output_dir, "menu.txt"))
 
 
-def get_bookmarks_old(pdf_path, outlines=None, parent_name=""):
-    """
-    获取PDF书签
-    Args:
-        pdf_path: 输入PDF文件路径
-        outlines: 当前的书签列表
-        parent_name: 父书签名称
-
-    Returns:
-        bookmarks: 包含页码和标题的书签列表
-    """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
-    pdf_reader = PdfFileReader(open(pdf_path, "rb"))
-
-    if outlines is None:
-        outlines = pdf_reader.getOutlines()
-
-    bookmarks = []
-
-    for outline in outlines:
-        if isinstance(outline, list):
-            # 递归处理子书签
-            bookmarks += get_bookmarks(pdf_path, outline, parent_name)
-        else:
-            title = outline.title if not parent_name else f"{parent_name} - {outline.title}"
-            bookmarks.append((pdf_reader.getDestinationPageNumber(outline) + 1, title))
-
-    return bookmarks
-
-
 def get_bookmarks(pdf_path, outlines=None, parent_name=""):
     """
     获取PDF书签
@@ -441,34 +306,6 @@ def get_bookmarks(pdf_path, outlines=None, parent_name=""):
             title = outline.title if not parent_name else f"{parent_name} - {outline.title}"
             bookmarks.append((pdf_reader.get_destination_page_number(outline) + 1, title))
     return bookmarks
-
-
-def export_bookmarks_old(input_pdf_path, output_txt_path, delimiter="\t", ignoreTheSame=False):
-    """
-    导出PDF目录与页码的关系
-    Args:
-        input_pdf_path: 输入PDF文件路径
-        output_txt_path: 输出文本文件路径
-        delimiter: 分隔符
-        ignoreTheSame: true则页面序号不会有重复
-    """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
-    bookmarks = get_bookmarks(input_pdf_path)
-    with open(output_txt_path, "w", encoding="utf-8") as f:
-        for page_number in range(1, PdfFileReader(open(input_pdf_path, "rb")).getNumPages() + 1):
-            found = False
-            for bookmark_page, title in bookmarks:
-                if ignoreTheSame:
-                    if bookmark_page == page_number:
-                        f.write(f"{page_number}{delimiter}{title}\n")
-                        found = True
-                        break
-                else:
-                    f.write(f"{page_number}{delimiter}{title}\n")
-                    found = True
-            if not found:
-                f.write(f"{page_number}{delimiter}None\n")
 
 
 def export_bookmarks(input_pdf_path, output_txt_path, delimiter="\t", ignoreTheSame=False):
@@ -495,38 +332,6 @@ def export_bookmarks(input_pdf_path, output_txt_path, delimiter="\t", ignoreTheS
                     found = True
             if not found:
                 f.write(f"{page_number}{delimiter}None\n")
-
-
-def rotate_pdf_pages_old(directory, rotation_angle):
-    """
-    将指定文件夹中的所有PDF文件按照指定角度顺时针旋转
-    Args:
-        directory: 包含PDF文件的文件夹路径
-        rotation_angle: 旋转角度，可以是90、180、270等
-
-    Returns:
-        None
-    """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
-    # 获取文件夹中所有PDF文件
-    pdf_files = [f for f in os.listdir(directory) if f.endswith('.pdf')]
-    for pdf_file in pdf_files:
-        pdf_path = os.path.join(directory, pdf_file)
-        output_path = os.path.join(directory, f"rotated_{pdf_file}")  # 新文件名加前缀
-        # 打开PDF文件
-        with open(pdf_path, 'rb') as file:
-            pdf_reader = PdfFileReader(file)
-            pdf_writer = PdfFileWriter()
-            # 遍历PDF的每一页
-            for page_num in range(pdf_reader.numPages):
-                page = pdf_reader.getPage(page_num)
-                page.rotateClockwise(rotation_angle)
-                pdf_writer.addPage(page)
-            # 保存修改后的PDF文件到新文件
-            with open(output_path, 'wb') as output_file:
-                pdf_writer.write(output_file)
-
 
 
 def rotate_pdf_pages(directory, rotation_angle):
@@ -556,30 +361,6 @@ def rotate_pdf_pages(directory, rotation_angle):
             # 保存修改后的PDF文件到新文件
             with open(output_path, 'wb') as output_file:
                 pdf_writer.write(output_file)
-
-
-def get_pdf_page_sizes_old(pdf_file):
-    """
-    获取 PDF 文件中每一页的大小（宽度和高度）。
-
-    Args:
-    - pdf_file: PDF 文件路径。
-
-    Returns:
-    - page_sizes: 包含每一页大小的列表，每个元素是一个元组 (width, height)。
-    """
-    from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter, PdfMerger, PdfReader, PdfWriter
-    from PyPDF2 import PdfFileReader as pdf_reader, PdfFileWriter as pdf_writer
-    page_sizes = []
-    with open(pdf_file, 'rb') as f:
-        pdf_reader = PdfFileReader(f)
-        num_pages = pdf_reader.getNumPages()
-        for page_num in range(num_pages):
-            page = pdf_reader.getPage(page_num)
-            width = page.mediaBox.getUpperRight_x() - page.mediaBox.getLowerLeft_x()
-            height = page.mediaBox.getUpperRight_y() - page.mediaBox.getLowerLeft_y()
-            page_sizes.append((width, height))
-    return page_sizes
 
 
 def get_pdf_page_sizes(pdf_file):
@@ -652,49 +433,47 @@ def extract_pages_to_pdf(input_pdf_path, output_pdf_path, page_numbers_str):
                 print(f"页码 {page_number} 不在有效范围内")
 
 
-def extract_pages_to_jpg(input_pdf_path, output_dir, page_numbers_str, dpi=300):
-    """
-    从PDF文件中提取指定页码并保存为JPG图片
-    Args:
-        input_pdf_path: 输入PDF文件路径
-        output_dir: 输出图片文件夹路径
-        page_numbers_str: 要提取的页码字符串 None的话就是全部
-        dpi: 图像DPI
-    """
+def extract_pages_to_jpg(input_pdf_path, output_dir, page_numbers_str,
+                         dpi=300, max_size=None, mode="size"):
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     if page_numbers_str is None:
         input_pdf_path = os.path.abspath(input_pdf_path)
         output_dir = os.path.abspath(output_dir)
         print(f"当前文件: {input_pdf_path}")
-        pdf2images(input_pdf_path, dpi, "jpg", output_dir)
+        pdf2images(
+            input_pdf_path,
+            dpi=dpi,
+            format="jpg",
+            output_directory=output_dir,
+            max_size=max_size,
+            mode=mode
+        )
     else:
-        page_numbers = parse_page_numbers(page_numbers_str)
-        page_numbers = set(page_numbers)
+        page_numbers = set(parse_page_numbers(page_numbers_str))
         for page_number in page_numbers:
-            pages = convert_from_path(input_pdf_path, dpi=dpi, first_page=page_number, last_page=page_number)
-            for i, page in enumerate(pages):
+            if mode == "dpi":
+                pages = convert_from_path(
+                    input_pdf_path,
+                    dpi=dpi,
+                    first_page=page_number,
+                    last_page=page_number
+                )
+            elif mode == "size":
+                pages = convert_from_path(
+                    input_pdf_path,
+                    dpi=dpi,
+                    first_page=page_number,
+                    last_page=page_number,
+                    size=max_size
+                )
+            else:
+                raise ValueError("mode 必须是 'dpi' 或 'size'")
+            for page in pages:
                 output_jpg_path = os.path.join(output_dir, f"{page_number}.jpg")
                 page.save(output_jpg_path, "JPEG")
                 print(f"页码 {page_number} 已保存为 {output_jpg_path}")
-
-
-def add_content_old_260111(pdf_in_name:str,pdf_out_name:str,content_dict:dict):
-    """
-    添加PDF注释（目录）
-    Args:
-        pdf_in_name: pdf文件名
-        pdf_out_name: 输出pdf文件名
-        content_dict: 字典 title:page {"索引":1}
-    """
-    pdf_in = pdf_reader(pdf_in_name)
-    pdf_out = pdf_writer()
-    pdf_out.cloneDocumentFromReader(pdf_in)
-    for key in content_dict.keys():
-        pdf_out.addBookmark(key,int(content_dict[key])-1)
-    with open(pdf_out_name, "wb" ) as fout:
-        pdf_out.write(fout)
-    # print("PDF Marked!")
 
 
 if __name__ == '__main__':

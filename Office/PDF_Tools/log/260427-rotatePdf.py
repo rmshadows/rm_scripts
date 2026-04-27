@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-合并某个文件夹下面的pdf文件
+PDF文件顺时针旋转
 """
 import os
 import m_PDF
@@ -8,14 +8,11 @@ import m_Log
 
 # 工作目录
 targetDir = "input"
-output = "output.pdf"
-
-# 是否插入目录
-bookmark = False
+rotation_angle = 270
 
 # ✅ 日志配置（脚本内置）
 enable_log = False
-log_path = "运行日志.log"   # 目录或文件：例如 "logErr/merge_pdf.log"
+log_path = "运行日志.log"   # 目录或文件：例如 "logErr/rotate_pdf.log"
 m_Log.init_logger(enable_file=enable_log, log_path=log_path)
 
 if __name__ == '__main__':
@@ -27,11 +24,11 @@ if __name__ == '__main__':
         raise FileNotFoundError(msg)
 
     try:
-        m_Log.info(f"Start mergePdfs: targetDir={targetDir}, output={output}")
-        m_PDF.mergePdfs(targetDir, output, add_bookmark=bookmark)
-        m_Log.info(f"Done mergePdfs: output={output}")
-        print("PDF合并完成！")
+        m_Log.info(f"Start rotate_pdf_pages: targetDir={targetDir}, rotation_angle={rotation_angle}")
+        m_PDF.rotate_pdf_pages(targetDir, rotation_angle)
+        m_Log.info("Done rotate_pdf_pages")
+        print("PDF旋转完成！")
     except Exception:
         # ✅ 记录异常堆栈
-        m_Log.exception(f"mergePdfs failed: targetDir={targetDir}, output={output}")
+        m_Log.exception(f"rotate_pdf_pages failed: targetDir={targetDir}, rotation_angle={rotation_angle}")
         raise

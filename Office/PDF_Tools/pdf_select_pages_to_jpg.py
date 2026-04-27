@@ -26,7 +26,11 @@ outputPdfDir = "output"
 pages_string = None          # e.g. "2, 3-5"
 # JpgMode = False              # True: JPG, False: PDF
 JpgMode = True
-jpgDPI = 600
+# 模式选择： "dpi" 或 "size"
+renderMode = "dpi"   # ← 用户切换这里
+jpgDPI = 300
+# 你可以先用这个上限，后面再按效果调(12000-16000)
+jpgMaxSize = (14000, None)
 
 exportAsPDF = False
 outputPdf = "soutput.pdf"    # 单文件模式输出名
@@ -54,9 +58,29 @@ def ensure_input_dir_create_then_exit(path: str):
 
 
 def split_pages(pdf_path: str, out_dir: str):
-    """把一个 PDF 拆成单页 PDF 或 JPG"""
     if JpgMode:
-        m_PDF.extract_pages_to_jpg(pdf_path, out_dir, pages_string, jpgDPI)
+        m_PDF.extract_pages_to_jpg(
+            pdf_path,
+            out_dir,
+            pages_string,
+            dpi=jpgDPI,
+            max_size=jpgMaxSize,
+            mode=renderMode
+        )
+    else:
+        m_PDF.extract_pages_to_pdf(pdf_path, out_dir, pages_string)
+
+
+def split_pages(pdf_path: str, out_dir: str):
+    if JpgMode:
+        m_PDF.extract_pages_to_jpg(
+            pdf_path,
+            out_dir,
+            pages_string,
+            dpi=jpgDPI,
+            max_size=jpgMaxSize,
+            mode=renderMode
+        )
     else:
         m_PDF.extract_pages_to_pdf(pdf_path, out_dir, pages_string)
 
