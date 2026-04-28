@@ -18,7 +18,7 @@ switch-to-workspace-2=['<Primary>Right']
 switch-to-workspace-3=['<Primary>Up']
 switch-to-workspace-4=['<Primary>Down']"
 
-GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/']"
+GNOME_CUSTOM_KEYBINDINGS_DCONF_VAR="['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom4/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom5/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom6/']"
 GNOME_CUSTOM_KEYBINDINGS_DCONF="[custom0]
 binding='<Alt>q'
 command='gnome-terminal'
@@ -47,7 +47,12 @@ name='firefox-esr'
 [custom5]
 binding='<Shift><Alt>s'
 command='flameshot gui'
-name='flameshot'"
+name='flameshot'
+
+[custom6]
+binding='<Ctrl><Alt>s'
+command='flameshot gui -d 3500'
+name='flameshot delay'"
 
 
 # 放大镜
