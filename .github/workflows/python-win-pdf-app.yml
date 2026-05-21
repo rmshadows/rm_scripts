@@ -38,7 +38,8 @@ jobs:
         pyinstaller -F image2Pdf.py
         pyinstaller -F mergePdf.py
         pyinstaller -F rotatePdf.py
-        pyinstaller -F selectedPDFPages.py
+        pyinstaller -F pdf_select_pages_to_jpg.py
+        pyinstaller -F pdf_select_pages_to_jpg_WIN_TEST.py
         pyinstaller -F splitPDFPages.py
     - name: Upload exe
       uses: actions/upload-artifact@v4
