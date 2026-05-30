@@ -1,6 +1,6 @@
 import PyPDF2
 
-#　转pdf到A4
+#　转pdf到A4 此版不完善，勉强能用
 
 def convert_pdf_to_A4(input_pdf_path, output_pdf_path):
     # 打开输入PDF文件
