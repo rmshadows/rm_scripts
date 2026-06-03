@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # pdf_print_fix.sh
-#
+#【不一定能用】
 # 递归处理 input 目录中的 PDF
 #
 # 模式：
