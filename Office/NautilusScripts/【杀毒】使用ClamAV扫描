@@ -1,0 +1,201 @@
+#!/bin/bash
+# 依赖：clamav、zenity、nautilus
+
+for cmd in zenity; do
+    if ! command -v "$cmd" &>/dev/null; then
+        zenity --error --text="请先安装 $cmd。\nsudo apt install zenity" 2>/dev/null || echo "缺少 $cmd"
+        exit 1
+    fi
+done
+
+if command -v clamdscan &>/dev/null && clamdscan -p 1 &>/dev/null; then
+    SCANNER="clamdscan"
+    # --fdpass：由当前用户打开文件再传给 clamd，避免挂载盘（BitLocker/NTFS 等）权限问题
+    SCAN_OPTS=(--fdpass --multiscan --no-summary --infected)
+elif command -v clamscan &>/dev/null; then
+    SCANNER="clamscan"
+    SCAN_OPTS=(--no-summary --infected)
+else
+    zenity --error --text="请先安装 ClamAV。\nsudo apt install clamav clamav-daemon"
+    exit 1
+fi
+
+TARGETS=("$@")
+SCAN_START=$(date '+%Y-%m-%d %H:%M:%S')
+LOG_FILE=$(mktemp /tmp/clamav_scan_XXXX.log)
+FILE_LIST=$(mktemp /tmp/clamav_files_XXXX.list)
+CHUNK_DIR=$(mktemp -d /tmp/clamav_chunks_XXXX)
+
+cleanup() {
+    rm -rf "$CHUNK_DIR"
+    rm -f "$FILE_LIST"
+}
+trap cleanup EXIT
+
+# 汇总待扫描文件
+: > "$FILE_LIST"
+for ITEM in "${TARGETS[@]}"; do
+    [[ -z "$ITEM" ]] && continue
+    if [[ -f "$ITEM" ]]; then
+        printf '%s\n' "$ITEM" >> "$FILE_LIST"
+    elif [[ -d "$ITEM" ]]; then
+        find "$ITEM" -type f -print >> "$FILE_LIST"
+    fi
+done
+
+TOTAL=$(wc -l < "$FILE_LIST" | tr -d ' ')
+if [[ "$TOTAL" -eq 0 ]]; then
+    rm -f "$LOG_FILE"
+    zenity --info --text="没有可扫描的文件。"
+    exit 0
+fi
+
+: > "$LOG_FILE"
+{
+    echo "ClamAV 扫描日志"
+    echo "开始时间: $SCAN_START"
+    echo "扫描目标: ${TARGETS[*]}"
+    echo "扫描方式: $SCANNER"
+    echo "待扫描文件数: $TOTAL"
+    echo ""
+    echo "--- 扫描详情（仅感染项与错误） ---"
+} >> "$LOG_FILE"
+
+# 分块：clamdscan 走并行分块；clamscan 单进程按块顺序扫描（避免多次加载病毒库）
+if [[ "$SCANNER" == "clamdscan" ]]; then
+    NPROC=$(nproc 2>/dev/null || echo 4)
+    (( NPROC > 8 )) && NPROC=8
+    (( NPROC < 1 )) && NPROC=1
+    CHUNK_SIZE=$(( (TOTAL + NPROC - 1) / NPROC ))
+    (( CHUNK_SIZE < 1 )) && CHUNK_SIZE=1
+    split -l "$CHUNK_SIZE" "$FILE_LIST" "$CHUNK_DIR/chunk_"
+else
+    # 每块约 1% 进度更新，上限 200 块
+    CHUNK_SIZE=$(( (TOTAL + 199) / 200 ))
+    (( CHUNK_SIZE < 1 )) && CHUNK_SIZE=1
+    split -l "$CHUNK_SIZE" "$FILE_LIST" "$CHUNK_DIR/chunk_"
+fi
+
+mapfile -t CHUNKS < <(find "$CHUNK_DIR" -name 'chunk_*' -type f | sort)
+CHUNK_COUNT=${#CHUNKS[@]}
+
+(
+    SCANNED=0
+
+    if [[ "$SCANNER" == "clamdscan" ]]; then
+        declare -a CHUNK_PIDS=() CHUNK_SIZES=() CHUNK_DONE=()
+
+        for i in "${!CHUNKS[@]}"; do
+            CHUNK="${CHUNKS[$i]}"
+            CHUNK_SIZES[$i]=$(wc -l < "$CHUNK" | tr -d ' ')
+            CHUNK_DONE[$i]=0
+            (
+                "$SCANNER" "${SCAN_OPTS[@]}" -f "$CHUNK" >> "$LOG_FILE" 2>&1
+            ) &
+            CHUNK_PIDS[$i]=$!
+        done
+
+        echo "# 并行扫描中（$NPROC 路）… 0 / $TOTAL"
+        echo 0
+
+        DONE=0
+        while (( DONE < CHUNK_COUNT )); do
+            for i in "${!CHUNK_PIDS[@]}"; do
+                if [[ "${CHUNK_DONE[$i]}" -eq 0 ]] && ! kill -0 "${CHUNK_PIDS[$i]}" 2>/dev/null; then
+                    wait "${CHUNK_PIDS[$i]}" 2>/dev/null || true
+                    CHUNK_DONE[$i]=1
+                    SCANNED=$(( SCANNED + CHUNK_SIZES[$i] ))
+                    (( DONE++ )) || true
+                fi
+            done
+            PERCENT=$(( SCANNED * 100 / TOTAL ))
+            (( PERCENT > 99 && DONE < CHUNK_COUNT )) && PERCENT=99
+            echo "# 已扫描 $SCANNED / $TOTAL"
+            echo "$PERCENT"
+            (( DONE < CHUNK_COUNT )) && sleep 0.25
+        done
+    else
+        for CHUNK in "${CHUNKS[@]}"; do
+            COUNT=$(wc -l < "$CHUNK" | tr -d ' ')
+            BASENAME=$(basename "$(head -n 1 "$CHUNK")")
+            echo "# 正在扫描：$BASENAME ($SCANNED / $TOTAL)"
+            "$SCANNER" "${SCAN_OPTS[@]}" -f "$CHUNK" >> "$LOG_FILE" 2>&1
+            SCANNED=$(( SCANNED + COUNT ))
+            PERCENT=$(( SCANNED * 100 / TOTAL ))
+            echo "$PERCENT"
+        done
+    fi
+
+    echo "# 扫描完成"
+    echo 100
+) | zenity --progress \
+          --title="ClamAV 扫描中…" \
+          --text="准备扫描 $TOTAL 个文件…" \
+          --percentage=0 \
+          --auto-close \
+          --auto-kill \
+          --width=480 \
+          --height=100
+
+ZENITY_EXIT=$?
+
+if [[ $ZENITY_EXIT -ne 0 ]]; then
+    jobs -p | xargs -r kill 2>/dev/null
+    notify-send "扫描已取消" "用户手动中断 ClamAV 扫描。"
+    rm -f "$LOG_FILE"
+    exit 1
+fi
+
+mapfile -t INFECTED_LINES < <(grep -E ': .* FOUND$| FOUND$' "$LOG_FILE" 2>/dev/null | sort -u)
+mapfile -t ERROR_LINES < <(grep -E ' ERROR$' "$LOG_FILE" 2>/dev/null | sort -u)
+INFECTED=${#INFECTED_LINES[@]}
+ERRORS=${#ERROR_LINES[@]}
+
+{
+    echo ""
+    echo "========== 扫描汇总 =========="
+    echo "完成时间: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "开始时间: $SCAN_START"
+    echo "扫描目标: ${TARGETS[*]}"
+    echo "扫描方式: $SCANNER"
+    echo "文件总数: $TOTAL"
+    echo "感染文件: $INFECTED"
+    echo "扫描错误: $ERRORS"
+    echo ""
+    echo "--- 感染文件 ---"
+    if [[ "$INFECTED" -eq 0 ]]; then
+        echo "（无）"
+    else
+        printf '%s\n' "${INFECTED_LINES[@]}"
+    fi
+    echo ""
+    echo "--- 扫描错误 ---"
+    if [[ "$ERRORS" -eq 0 ]]; then
+        echo "（无）"
+    else
+        printf '%s\n' "${ERROR_LINES[@]}"
+    fi
+    echo ""
+    if [[ "$INFECTED" -eq 0 && "$ERRORS" -eq 0 ]]; then
+        echo "结论: 已扫描 $TOTAL 个文件，未发现病毒。"
+    elif [[ "$INFECTED" -gt 0 ]]; then
+        echo "结论: 发现 $INFECTED 个感染项，请立即处理上述文件！"
+    else
+        echo "结论: 未发现病毒，但有 $ERRORS 个文件因权限等原因未能扫描。"
+    fi
+    echo "=============================="
+} >> "$LOG_FILE"
+
+if [[ "$INFECTED" -eq 0 ]]; then
+    if [[ "$ERRORS" -gt 0 ]]; then
+        notify-send "ClamAV 扫描完成" "未发现病毒，但有 $ERRORS 个文件扫描失败（详见日志）"
+    else
+        notify-send "ClamAV 扫描完成" "🎉 已扫描 $TOTAL 个文件，未发现病毒"
+    fi
+else
+    notify-send "⚠️ ClamAV 警告" "发现 $INFECTED 个感染项！详见日志末尾"
+fi
+
+xdg-open "$LOG_FILE" & disown
+trap - EXIT
+cleanup

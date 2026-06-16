@@ -1,3 +1,18 @@
+!==============================================================================
+! init — Fluxbox 主配置文件
+!
+! 修改后: fluxbox-remote reconfigure  或菜单 Restart Fluxbox
+! 也可用菜单 Configure 图形界面修改部分选项
+!
+! Fork 后建议优先检查:
+!   session.styleFile      默认主题（本模板用 ~/.fluxbox/styles/Ryan）
+!   session.styleOverlay   覆盖层 ~/.fluxbox/overlay
+!   session.screen0.workspaces / workspaceNames   工作区
+!   session.screen0.toolbar.*                   工具栏
+!   session.screen0.toolbar.onhead                0=主屏 1=副屏
+!   session.screen0.strftimeFormat                时钟格式
+!==============================================================================
+!
 ! 窗口标签（Tabs）配置
 ! 标签放置在窗口的左上角
 session.screen0.tab.placement:	TopLeft
@@ -102,8 +117,8 @@ session.screen0.toolbar.alpha:	255
 session.screen0.toolbar.autoHide:	false
 ! 工具栏宽度占屏幕 100%
 session.screen0.toolbar.widthPercent:	100
-! 工具栏显示在屏幕 1
-session.screen0.toolbar.onhead:	1
+! 工具栏显示在哪个显示器（0=主屏，1=第二块屏；单屏笔记本请改为 0）
+session.screen0.toolbar.onhead:	0
 ! 工具栏高度（0 代表默认）
 session.screen0.toolbar.height:	0
 ! 工具栏层级
@@ -161,8 +176,8 @@ session.screen0.edgeSnapThreshold:	5
 session.screen0.workspacewarping:	true
 ! 拖动窗口时不显示位置提示
 session.screen0.showwindowposition:	false
-! 禁止远程控制窗口操作
-session.screen0.allowRemoteActions:	false
+! 允许远程控制（fluxbox-remote reconfigure 等；可在菜单 Toggles 中切换）
+session.screen0.allowRemoteActions:	true
 
 
 ! 工作区设置
@@ -173,7 +188,7 @@ session.screen0.workspaceNames:	\345\267\245\344\275\234\345\214\272 1,\345\267\
 
 ! Fluxbox 主题与菜单配置
 ! 主题样式文件
-session.styleFile:	~/.fluxbox/styles/Font-14
+session.styleFile:	~/.fluxbox/styles/Ryan
 ! 主题覆盖文件
 session.styleOverlay:	~/.fluxbox/overlay
 ! 菜单配置文件

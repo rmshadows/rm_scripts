@@ -1,0 +1,2 @@
+# 将壁纸图片（jpg/png/webp 等）放在此目录
+# 部署时不会覆盖 ~/.fluxbox/backgrounds/

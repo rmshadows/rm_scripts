@@ -1,3 +1,14 @@
+#==============================================================================
+# keys — 快捷键与鼠标绑定
+#
+# 修改后: fluxbox-remote reloadkeys
+# 菜单: Fluxbox Settings → Edit Keys
+#
+# 键名查看: xev
+# 媒体键示例: XF86AudioRaiseVolume, XF86MonBrightnessUp
+# 播放键需 playerctl，见文件末尾注释块
+#==============================================================================
+
 # 鼠标操作配置
 # fluxbox-update_configs added '(workspace=[current])' to (Next|Prev)(Window|Group)
 # check lines marked by 'FBCV13' if they are correctly updated
@@ -18,10 +29,10 @@ OnTitlebar Mouse2 :StartTabbing
 OnTitlebar Double Mouse1 :Shade
 # 标题栏右键点击：弹出窗口菜单
 OnTitlebar Mouse3 :WindowMenu
-# 按住 Alt 并拖动左键：移动窗口
-OnWindow Mod1 Mouse1 :MacroCmd {Raise} {Focus} {StartMoving}
-# 按住 Alt 并拖动右键：调整窗口大小（从右下角调整）
-OnWindow Mod1 Mouse3 :MacroCmd {Raise} {Focus} {StartResizing BottomRight}
+# 按住 Super 并拖动左键：移动窗口
+OnWindow Mod4 Mouse1 :MacroCmd {Raise} {Focus} {StartMoving}
+# 按住 Super 并拖动右键：调整窗口大小（从右下角调整）
+OnWindow Mod4 Mouse3 :MacroCmd {Raise} {Focus} {StartResizing BottomRight}
 # 桌面左键点击：隐藏菜单
 OnDesktop Mouse1 :hideMenus
 # 桌面中键点击：弹出工作区菜单
@@ -156,17 +167,38 @@ Mod1 Shift s :ExecCommand flameshot gui
 # Mod1 Shift s :ExecCommand flameshot gui -r | xclip -selection clipboard -t image/png;pkill -f flameshot 
 
 # Win + L 锁屏（使用 i3lock）
-Mod4 l :ExecCommand i3lock
+# Mod4 l :ExecCommand i3lock
+Mod4 l :ExecCommand i3lock-fancy
 # Mod4 l :ExecCommand dm-tool lock
 
 # 其他
 # Win + d 显示桌面
 Mod4 d :ShowDesktop
+# Win + Shift + B 下一张壁纸
+Mod4 Shift b :ExecCommand ~/.fluxbox/scripts/wallpaper/wallpaper.sh next
 # Win + a 打开应用程序查找器（Xfce4 App Finder）
 Mod4 a :ExecCommand xfce4-appfinder
 # 修改微信接收的可读文件为可写
-# Mod1 Shift n :ExecCommand chmod -R u+rwX "/home/ryan/文档/xwechat_files/wxid_xXXXXXXXXXXXXX_XXXX/msg/file/"
+# Mod1 Shift m :ExecCommand chmod -R u+rwX "/home/ryan/文档/xwechat_files/wxid_xXXXXXXXXXXXXX_XXXX/msg/file/"
 # 挂载
-# Mod1 Shift m :ExecCommand gnome-terminal -- "/home/ryan/.mountBA"
+# Mod1 Shift b :ExecCommand gnome-terminal -- "/home/ryan/.mountBA"
 # 杀死WPS
-# Mod1 Shift b :ExecCommand sudo pkill -9 wps && sudo pkill -9 et
+# Mod1 Shift n :ExecCommand sudo pkill -9 wps ; sudo pkill -9 et
+
+# 笔记本媒体键（Fn 音量/亮度/播放等）
+# GNOME 下由系统守护进程处理；Fluxbox 需在 keys 里显式绑定
+# 修改后: fluxbox-remote reloadkeys
+# 键名不确定时运行 xev 再按媒体键查看
+None XF86AudioRaiseVolume  :ExecCommand ~/.fluxbox/scripts/media/volume.sh up
+None XF86AudioLowerVolume  :ExecCommand ~/.fluxbox/scripts/media/volume.sh down
+None XF86AudioMute         :ExecCommand ~/.fluxbox/scripts/media/volume.sh mute
+None XF86MonBrightnessUp   :ExecCommand ~/.fluxbox/scripts/media/brightness.sh up
+None XF86MonBrightnessDown :ExecCommand ~/.fluxbox/scripts/media/brightness.sh down
+# 播放控制（需 apt install playerctl）
+# None XF86AudioPlay         :ExecCommand ~/.fluxbox/scripts/media/player.sh play-pause
+# None XF86AudioPause        :ExecCommand ~/.fluxbox/scripts/media/player.sh play-pause
+# None XF86AudioNext         :ExecCommand ~/.fluxbox/scripts/media/player.sh next
+# None XF86AudioPrev         :ExecCommand ~/.fluxbox/scripts/media/player.sh prev
+# None XF86AudioStop         :ExecCommand ~/.fluxbox/scripts/media/player.sh stop
+# 麦克风静音（部分笔记本）
+# None XF86AudioMicMute      :ExecCommand amixer -q set Capture toggle

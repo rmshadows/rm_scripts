@@ -7,6 +7,7 @@ export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANGUAGE=en_US
 
-conky -c $HOME/.config/conky/Altair/Altair.conf &> /dev/null &
+DIR="$(cd "$(dirname "$0")" && pwd)"
+conky -c "${DIR}/Altair.conf" &> /dev/null &
 
 exit

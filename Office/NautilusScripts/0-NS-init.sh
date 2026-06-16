@@ -5,6 +5,9 @@ set +e
 # 软件包列表（去重，避免重复安装）
 packages=(
 coreutils
+xclip
+clamav
+clamav-daemon
 realpath
 xfce4-terminal
 zenity

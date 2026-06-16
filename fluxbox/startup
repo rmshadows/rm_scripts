@@ -1,8 +1,22 @@
 #!/bin/bash
 #
-# fluxbox startup-script
+# startup — Fluxbox 登录后自启脚本
 #
-# Lines starting with a '#' are ignored.
+# 以 # 开头的行被忽略；需要后台运行的命令末尾加 &
+# 修改后: Restart Fluxbox 或重新登录会话
+#
+# Fork 后建议检查:
+#   壁纸路径（backgrounds/ 下，部署不覆盖该目录）
+#   输入法 fcitx5 / fcitx4
+#   网络托盘 nm-tray / nm-applet
+#   最后一行 exec fluxbox -log 的日志路径
+#
+
+# 初始化默认主题链接（首次启动时创建 ~/.fluxbox/default.theme）
+[ -x "${HOME}/.fluxbox/scripts/style/init-default-style.sh" ] && "${HOME}/.fluxbox/scripts/style/init-default-style.sh"
+
+# 轮转 fluxbox 日志（超过 5MB 时备份）
+[ -x "${HOME}/.fluxbox/scripts/tools/rotate-fluxbox-log.sh" ] && "${HOME}/.fluxbox/scripts/tools/rotate-fluxbox-log.sh"
 
 # 设置中文
 export LANG=zh_CN.UTF-8
@@ -21,10 +35,11 @@ fi
 # export XDG_CURRENT_DESKTOP=Fluxbox
 # export XDG_SESSION_DESKTOP=fluxbox
 
-# 设置壁纸（带 1 秒延迟，防止 X 服务器未完全启动）
-(sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg) &
+# 设置壁纸（restore 读取上次记录；无记录则用 backgrounds/ 第一张）
+(sleep 1 && "${HOME}/.fluxbox/scripts/wallpaper/wallpaper.sh" restore) &
+# 旧写法（固定单张）:
+# (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/music-white-black-hd-wallpaper.jpg) &
 # (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/bingimg_20230129_UHD.jpg) &
-# (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/bingimg_20240410_UHD.jpg) &
 # 或者sudo apt install nitrogen
 # nitrogen --restore &
 # (sleep 1 && /usr/bin/fbsetbg -a ~/.fluxbox/backgrounds/zetong-li-TbHYpbi_Gbc-unsplash.jpg) &
@@ -33,6 +48,13 @@ fi
 pgrep -x fcitx5 > /dev/null || fcitx5 &
 # 启动 fcitx4（避免重复运行）
 # pgrep -x fcitx > /dev/null || fcitx &
+
+# 启用copyq
+# copyq &
+# copyq --start-server &
+
+# Display
+# xrandr --output HDMI-A-0 --mode 1920x1080 --rate 100 --primary &
 
 # 启动网络管理器托盘（避免重复运行）
 pgrep -x nm-tray > /dev/null || nm-tray &
@@ -134,4 +156,4 @@ command -v fbautostart >/dev/null && fbautostart &
 # 最后，我们启动 Fluxbox。因为它是最后运行的应用程序，你必须在它前面加上 exec。
 # exec fluxbox
 # 如果你想要保存日志:
-exec fluxbox -log "/home/jessie/.fluxbox/log"
+exec fluxbox -log "${HOME}/.fluxbox/log"

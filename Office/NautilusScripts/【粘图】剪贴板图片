@@ -1,0 +1,80 @@
+#!/bin/bash
+# 依赖：zenity；wl-clipboard 或 xclip（读图片剪贴板）；可选 imagemagick（import）
+
+# 目标目录：粘贴到所选文件/文件夹的同级目录（即父目录）
+if [ -n "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" ]; then
+    SELECTED=$(echo "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | head -n 1)
+    TARGET_DIR=$(dirname "$SELECTED")
+else
+    TARGET_DIR=$(pwd)
+fi
+
+timestamp=$(date +"%Y%m%d_%H%M%S")
+TARGET_FILE="$TARGET_DIR/${timestamp}.png"
+
+is_image_file() {
+    [ -s "$1" ] && file --mime-type "$1" 2>/dev/null | grep -q '^.*: image/'
+}
+
+paste_from_wl() {
+    local mime outfile="$1"
+    command -v wl-paste &>/dev/null || return 1
+    mime=$(wl-paste -l 2>/dev/null | grep -E '^image/' | head -n 1)
+    [ -z "$mime" ] && return 1
+    case "$mime" in
+        image/jpeg) outfile="${outfile%.png}.jpg" ;;
+        image/webp) outfile="${outfile%.png}.webp" ;;
+        image/bmp)  outfile="${outfile%.png}.bmp" ;;
+    esac
+    wl-paste --type "$mime" > "$outfile" 2>/dev/null || return 1
+    is_image_file "$outfile" || { rm -f "$outfile"; return 1; }
+    printf '%s' "$outfile"
+}
+
+paste_from_xclip() {
+    local mime outfile="$1"
+    command -v xclip &>/dev/null || return 1
+    for mime in image/png image/jpeg image/bmp image/webp; do
+        xclip -selection clipboard -t TARGETS -o 2>/dev/null | grep -q "$mime" || continue
+        case "$mime" in
+            image/jpeg) outfile="${outfile%.png}.jpg" ;;
+            image/webp) outfile="${outfile%.png}.webp" ;;
+            image/bmp)  outfile="${outfile%.png}.bmp" ;;
+        esac
+        xclip -selection clipboard -t "$mime" -o > "$outfile" 2>/dev/null || continue
+        if is_image_file "$outfile"; then
+            printf '%s' "$outfile"
+            return 0
+        fi
+        rm -f "$outfile"
+    done
+    # 部分截图工具不写 TARGETS，直接尝试 PNG
+    xclip -selection clipboard -t image/png -o > "$outfile" 2>/dev/null || return 1
+    is_image_file "$outfile" || { rm -f "$outfile"; return 1; }
+    printf '%s' "$outfile"
+}
+
+paste_from_imagemagick() {
+    local outfile="$1"
+    if command -v import &>/dev/null; then
+        import -silent -clipboard "$outfile" 2>/dev/null && is_image_file "$outfile" && printf '%s' "$outfile" && return 0
+        rm -f "$outfile"
+    fi
+    if command -v convert &>/dev/null; then
+        convert 'clipboard:' "$outfile" 2>/dev/null && is_image_file "$outfile" && printf '%s' "$outfile" && return 0
+        rm -f "$outfile"
+    fi
+    return 1
+}
+
+SAVED=
+for method in paste_from_wl paste_from_xclip paste_from_imagemagick; do
+    SAVED=$($method "$TARGET_FILE") && break
+done
+
+if [ -z "$SAVED" ]; then
+    zenity --error --text="剪贴板中没有图片，或无法读取。\n\n请确认已复制截图，并安装：\n  sudo apt install xclip\n或\n  sudo apt install wl-clipboard"
+    exit 1
+fi
+
+notify-send "图片已粘贴" "$SAVED"

@@ -460,6 +460,13 @@ alias upgrade='sudo apt update && sudo apt upgrade'
 alias lsx='ls -1 | tee >(xclip -selection clipboard)'
 # alias grep='grep --color=always'
 
+# ag搜文件内容
+alias agc='ag -i --numbers --color --color-path "1;33" --color-line-number "1;32" --color-match "1;31"'
+# 搜文件名（高亮关键字）
+agf() {
+    ag -g "$1" | GREP_COLORS='ms=1;31' grep --color=always -i "$1"
+}
+
 # alias duls='du -sh ./*'
 alias duls='du -hd 0 ./* | sort -hr'
 # alias dulsd='du -sh `la`'

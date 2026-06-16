@@ -1,4 +1,31 @@
-! overlay 文件在 Fluxbox 或类似的窗口管理器中是一个用来扩展或覆盖其他配置文件的工具，可能包含一些窗口样式、背景设置、透明度调整等。如果在配置中看到 background: none 或 background: unset，它们是为了防止其他样式或背景覆盖当前设置，确保窗口管理器按照预期显示背景。
-! The following line will prevent styles from setting the background.(两个都一样)
+!==============================================================================
+! overlay — 主题覆盖层（全局叠加在当前 Fluxbox 主题之上）
+!
+! 在 init 中通过 session.styleOverlay 指向本文件。
+! 语法与主题文件相同，见: man fluxbox-style
+!
+! 适合写在这里的内容（不修改 ryan 主题本体）:
+!   - *Font:              菜单/工具栏字号（也可用菜单 Menu size 调节）
+!   - menu.*.textColor:  菜单字色（也可用菜单 Menu color 调节）
+!   - background:        壁纸策略（见下方说明）
+!
+! 修改后执行: fluxbox-remote reloadstyle
+!==============================================================================
+
+! 壁纸策略: unset 表示不覆盖主题里的背景，由 fbsetbg/nitrogen 管壁纸
 ! background: none
 background: unset
+
+! --- 字号（Menu size 菜单会维护此行；默认 14，可手改）---
+*Font:                          DejaVu-14:Serif:Condensed
+
+! --- 菜单字色（取消注释并修改；或用菜单 Menu color → 恢复ryan字色）---
+! menu.title.textColor:          #1e90ff
+! menu.frame.textColor:          #7e7e7e
+! menu.hilite.textColor:         #1e90ff
+! menu.frame.disableColor:       #5a5a5a
+
+! --- 其他可覆盖项（示例，默认注释）---
+! session.screen0.menu.alpha:  220
+! session.screen0.toolbar.alpha: 255
+! toolbar.clock.textColor:       grey50

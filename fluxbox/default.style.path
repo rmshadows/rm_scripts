@@ -1,0 +1,3 @@
+# 默认 Fluxbox 主题入口（供 init-default-style.sh 等脚本读取）
+# 部署后对应 ~/.fluxbox/styles/Ryan 符号链接
+~/.fluxbox/styles/Ryan
