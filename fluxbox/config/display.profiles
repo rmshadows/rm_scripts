@@ -1,0 +1,13 @@
+# 显示器 profile（xrandr-profile.sh 读取，旧版/备用）
+# 格式：profile_name|描述|xrandr 命令（一行）
+# 推荐使用 scripts/display/xrandr-layout.sh 自动检测输出
+# 查看输出: xrandr --query | grep connected
+
+laptop|仅笔记本内置屏|xrandr --output eDP-1 --primary --auto --output DP-1 --off
+hdmi|仅外接屏|xrandr --output DP-1 --primary --auto --output eDP-1 --off
+dual|双屏扩展（外接在右）|xrandr --output eDP-1 --primary --auto --output DP-1 --right-of eDP-1 --auto
+extend-left|双屏扩展（外接在左）|xrandr --output DP-1 --primary --auto --output eDP-1 --right-of DP-1 --auto
+mirror|镜像同屏|xrandr --output eDP-1 --primary --auto --output DP-1 --same-as eDP-1 --auto
+# 旧示例（输出名不符时无效）:
+# hdmi|仅外接 HDMI|xrandr --output HDMI-A-0 --primary --mode 1920x1080 --rate 60 --output eDP-1 --off
+# dual|双屏扩展（HDMI 在右）|xrandr --output eDP-1 --primary --auto --output HDMI-A-0 --right-of eDP-1 --auto

@@ -1,4 +1,23 @@
 [begin] (Fluxbox Menu)
+#==============================================================================
+# menu — 桌面右键主菜单
+#
+# 修改后: fluxbox-remote reconfigure
+# 菜单: Fluxbox Settings → Edit Menu
+#
+# 语法:
+#   [submenu] (标题) ... [end]
+#   [exec] (显示名) {命令}
+#   [config] (项)     打开 init 配置对话框
+#   [include] (路径)  引入子菜单文件
+#   [separator]       分隔线
+#
+# Fork 后建议检查:
+#   System 子菜单里的锁屏命令（因发行版/显示管理器而异）
+#   应用路径（firefox/chromium/nautilus 等是否已安装）
+#   大量 [exec] 行以 # 注释保留，按需取消注释
+#==============================================================================
+
 # 基本命令格式示例
 # [submenu] (Label)
 # [exec] (Label) {Command}
@@ -28,26 +47,144 @@
 # 外观与样式
 [submenu] (Appearance - 外观)
   [config] (Configure - 配置)
-  [submenu] (Menu size) {Choose Size...}
-    [stylesdir] (~/.fluxbox/styles)
-    [restart] (Apply style)
+  [submenu] (Themes - 主题)
+    [style] (Ryan Theme - ryan主题) {~/.fluxbox/styles/Ryan}
+    [exec] (Set Ryan Default - 设为ryan默认) {~/.fluxbox/scripts/style/save-ryan-theme.sh}
+    # [style] (Restore Default - 恢复默认主题) {~/.fluxbox/default.theme}
+    # [exec] (Save as Default - 设为默认主题) {~/.fluxbox/scripts/style/save-default-style.sh}
+    [separator]
+    [exec] (Browse Themes - 浏览全部主题) {~/.fluxbox/scripts/style/choose-system-theme.sh}
+    [submenu] (System - 系统自带)
+      # stylesdir 只能列出文件，系统主题多为目录，故用 [style] 逐条列出
+      # [stylesdir] (System - 系统) {/usr/share/fluxbox/styles}
+      [style] (arch) {/usr/share/fluxbox/styles/arch}
+      [style] (Artwiz) {/usr/share/fluxbox/styles/Artwiz}
+      [style] (Bity_fluxbox) {/usr/share/fluxbox/styles/Bity_fluxbox}
+      [style] (bloe) {/usr/share/fluxbox/styles/bloe}
+      [style] (BlueFlux) {/usr/share/fluxbox/styles/BlueFlux}
+      [style] (BlueNight) {/usr/share/fluxbox/styles/BlueNight}
+      [style] (bora_black) {/usr/share/fluxbox/styles/bora_black}
+      [style] (bora_blue) {/usr/share/fluxbox/styles/bora_blue}
+      [style] (bora_green) {/usr/share/fluxbox/styles/bora_green}
+      [style] (carp) {/usr/share/fluxbox/styles/carp}
+      [style] (debian-blue) {/usr/share/fluxbox/styles/debian-blue}
+      [style] (debian-dark) {/usr/share/fluxbox/styles/debian-dark}
+      [style] (Doty) {/usr/share/fluxbox/styles/Doty}
+      [style] (Emerge) {/usr/share/fluxbox/styles/Emerge}
+      [style] (Flux) {/usr/share/fluxbox/styles/Flux}
+      [style] (green_tea) {/usr/share/fluxbox/styles/green_tea}
+      [style] (LemonSpace) {/usr/share/fluxbox/styles/LemonSpace}
+      [style] (Makro) {/usr/share/fluxbox/styles/Makro}
+      [style] (MerleyKay) {/usr/share/fluxbox/styles/MerleyKay}
+      [style] (Meta) {/usr/share/fluxbox/styles/Meta}
+      [style] (Nyz) {/usr/share/fluxbox/styles/Nyz}
+      [style] (Operation) {/usr/share/fluxbox/styles/Operation}
+      [style] (ostrich) {/usr/share/fluxbox/styles/ostrich}
+      [style] (Outcomes) {/usr/share/fluxbox/styles/Outcomes}
+      [style] (qnx-photon) {/usr/share/fluxbox/styles/qnx-photon}
+      [style] (Results) {/usr/share/fluxbox/styles/Results}
+      [style] (Shade) {/usr/share/fluxbox/styles/Shade}
+      [style] (Squared_blue) {/usr/share/fluxbox/styles/Squared_blue}
+      [style] (Squared_for_Debian) {/usr/share/fluxbox/styles/Squared_for_Debian}
+      [style] (Squared_green) {/usr/share/fluxbox/styles/Squared_green}
+      [style] (Twice) {/usr/share/fluxbox/styles/Twice}
+      [style] (zimek_bisque) {/usr/share/fluxbox/styles/zimek_bisque}
+      [style] (zimek_darkblue) {/usr/share/fluxbox/styles/zimek_darkblue}
+      [style] (zimek_green) {/usr/share/fluxbox/styles/zimek_green}
+    [end]
   [end]
-  [submenu] (Conky size) {Choose Size...}
+  [submenu] (Menu size - 菜单字号)
+    [exec] (Size +2) {~/.fluxbox/scripts/style/set-menu-font.sh +2}
+    [exec] (Size -2) {~/.fluxbox/scripts/style/set-menu-font.sh -2}
+    [exec] (Font-12) {~/.fluxbox/scripts/style/set-menu-font.sh 12}
+    [exec] (Font-14) {~/.fluxbox/scripts/style/set-menu-font.sh 14}
+    [exec] (Font-16) {~/.fluxbox/scripts/style/set-menu-font.sh 16}
+    [exec] (Font-18) {~/.fluxbox/scripts/style/set-menu-font.sh 18}
+    [exec] (Font-20) {~/.fluxbox/scripts/style/set-menu-font.sh 20}
+    [exec] (Font-22) {~/.fluxbox/scripts/style/set-menu-font.sh 22}
+    [exec] (Font-24) {~/.fluxbox/scripts/style/set-menu-font.sh 24}
+    [exec] (Font-26) {~/.fluxbox/scripts/style/set-menu-font.sh 26}
+    # 字号写入 overlay，不替换 ryan 主题；旧写法:
+    # [style] (Font-14) {~/.fluxbox/styles/Font-14}
+    # [stylesdir] (Custom - 自定义) {~/.fluxbox/styles}
+    # [stylesdir] (~/.fluxbox/styles)
+  [end]
+  [submenu] (Menu color - 菜单字色)
+    [exec] (Restore Ryan - 恢复ryan字色) {~/.fluxbox/scripts/style/set-menu-color.sh ryan}
+    # [exec] (Default - 跟随主题) {~/.fluxbox/scripts/style/set-menu-color.sh default}
+    [exec] (Blue - 蓝色) {~/.fluxbox/scripts/style/set-menu-color.sh blue}
+    [exec] (White - 白色) {~/.fluxbox/scripts/style/set-menu-color.sh white}
+    [exec] (Green - 绿色) {~/.fluxbox/scripts/style/set-menu-color.sh green}
+    [exec] (Orange - 橙色) {~/.fluxbox/scripts/style/set-menu-color.sh orange}
+    [exec] (Dark text - 深色字) {~/.fluxbox/scripts/style/set-menu-color.sh dark-text}
+    [exec] (Cycle - 轮换) {~/.fluxbox/scripts/style/set-menu-color.sh toggle}
+    # 编辑 ~/.fluxbox/config/menu-colors.conf 自定义颜色
+  [end]
+  [exec] (Theme & Font - GTK主题图标) {lxappearance}
+  # [exec] (Theme & Font) {lxappearance}
+  [submenu] (Color Mode - 亮暗色)
+    [exec] (Toggle - 切换亮/暗) {~/.fluxbox/scripts/toggle/color-scheme.sh toggle}
+    [exec] (Light - 亮色) {~/.fluxbox/scripts/toggle/color-scheme.sh light}
+    [exec] (Dark - 暗色) {~/.fluxbox/scripts/toggle/color-scheme.sh dark}
+    # 仅切换 GTK 应用外观，不改变 Fluxbox 主题
+    # 编辑 ~/.fluxbox/config/color-scheme.conf
+  [end]
+  [submenu] (Wallpaper - 壁纸)
+    [exec] (Next - 下一张) {~/.fluxbox/scripts/wallpaper/wallpaper.sh next}
+    [exec] (Previous - 上一张) {~/.fluxbox/scripts/wallpaper/wallpaper.sh prev}
+    [exec] (Random - 随机) {~/.fluxbox/scripts/wallpaper/wallpaper.sh random}
+    [exec] (Choose - 选择) {~/.fluxbox/scripts/wallpaper/wallpaper.sh pick}
+    [exec] (Browse file - 浏览文件) {~/.fluxbox/scripts/wallpaper/wallpaper.sh browse}
+    [exec] (Open folder - 打开目录) {~/.fluxbox/scripts/wallpaper/wallpaper.sh open}
+    # 图片放入 ~/.fluxbox/backgrounds/；配置见 config/wallpaper.conf
+  [end]
+  [submenu] (Conky - 桌面小部件)
     [exec] (Start conky) {conky&}
     [exec] (kill conky) {pkill conky}
     [exec] (reset conky) {~/.fluxbox/scripts/conky/conky-default}
-    [exec] (size 10) {~/.fluxbox/scripts/conky/conky-10}
-    [exec] (size 12) {~/.fluxbox/scripts/conky/conky-12}
-    [exec] (size 14) {~/.fluxbox/scripts/conky/conky-14}
-    [exec] (size 16) {~/.fluxbox/scripts/conky/conky-16}
-    [exec] (size 18) {~/.fluxbox/scripts/conky/conky-18}
-    [exec] (size 20) {~/.fluxbox/scripts/conky/conky-20}
-    [exec] (size 22) {~/.fluxbox/scripts/conky/conky-22}
-    [exec] (size 24) {~/.fluxbox/scripts/conky/conky-24}
-    [exec] (size 26) {~/.fluxbox/scripts/conky/conky-26}
-    [exec] (size 28) {~/.fluxbox/scripts/conky/conky-28}
-    [exec] (size 30) {~/.fluxbox/scripts/conky/conky-30}
-    [exec] (size 32) {~/.fluxbox/scripts/conky/conky-32}
+    [exec] (Size +2 - 增大字号) {~/.fluxbox/scripts/conky/conky-resize.sh +2}
+    [exec] (Size -2 - 减小字号) {~/.fluxbox/scripts/conky/conky-resize.sh -2}
+    [submenu] (Conky Themes - 主题包)
+      [exec] (Altair) {~/.fluxbox/scripts/conky/conky-theme.sh Altair}
+      [exec] (Maia) {~/.fluxbox/scripts/conky/conky-theme.sh Maia}
+      [exec] (Dziban) {~/.fluxbox/scripts/conky/conky-theme.sh Dziban}
+      [exec] (Alsafi) {~/.fluxbox/scripts/conky/conky-theme.sh Alsafi}
+    [end]
+    [submenu] (Conky size - 固定字号)
+      # 以下为逐档字号（可取消注释使用）；默认用上方 +2 / -2 调节
+      [exec] (size 10) {~/.fluxbox/scripts/conky/conky-resize.sh 10}
+      [exec] (size 12) {~/.fluxbox/scripts/conky/conky-resize.sh 12}
+      [exec] (size 14) {~/.fluxbox/scripts/conky/conky-resize.sh 14}
+      [exec] (size 16) {~/.fluxbox/scripts/conky/conky-resize.sh 16}
+      [exec] (size 18) {~/.fluxbox/scripts/conky/conky-resize.sh 18}
+      [exec] (size 20) {~/.fluxbox/scripts/conky/conky-resize.sh 20}
+      [exec] (size 22) {~/.fluxbox/scripts/conky/conky-resize.sh 22}
+      [exec] (size 24) {~/.fluxbox/scripts/conky/conky-resize.sh 24}
+      [exec] (size 26) {~/.fluxbox/scripts/conky/conky-resize.sh 26}
+      [exec] (size 28) {~/.fluxbox/scripts/conky/conky-resize.sh 28}
+      [exec] (size 30) {~/.fluxbox/scripts/conky/conky-resize.sh 30}
+      [exec] (size 32) {~/.fluxbox/scripts/conky/conky-resize.sh 32}
+      # [exec] (size 10) {~/.fluxbox/scripts/conky/conky-10}
+      # [exec] (size 12) {~/.fluxbox/scripts/conky/conky-12}
+      # [exec] (size 14) {~/.fluxbox/scripts/conky/conky-14}
+      # [exec] (size 16) {~/.fluxbox/scripts/conky/conky-16}
+      # [exec] (size 18) {~/.fluxbox/scripts/conky/conky-18}
+      # [exec] (size 20) {~/.fluxbox/scripts/conky/conky-20}
+      # [exec] (size 22) {~/.fluxbox/scripts/conky/conky-22}
+      # [exec] (size 24) {~/.fluxbox/scripts/conky/conky-24}
+      # [exec] (size 26) {~/.fluxbox/scripts/conky/conky-26}
+      # [exec] (size 28) {~/.fluxbox/scripts/conky/conky-28}
+      # [exec] (size 30) {~/.fluxbox/scripts/conky/conky-30}
+      # [exec] (size 32) {~/.fluxbox/scripts/conky/conky-32}
+      # [exec] (Desktop) {~/.fluxbox/scripts/conky/conky-Desktop}
+      # [exec] (Laptop) {~/.fluxbox/scripts/conky/conky-Laptop}
+    [end]
+  [end]
+  [submenu] (Profiles - 场景)
+    [exec] (Work - 工作) {~/.fluxbox/scripts/profile/switch-profile.sh work}
+    [exec] (Play - 娱乐) {~/.fluxbox/scripts/profile/switch-profile.sh play}
+    [exec] (Choose... - 选择场景) {~/.fluxbox/scripts/profile/switch-profile.sh}
+    [exec] (Save Current - 保存当前) {~/.fluxbox/scripts/profile/save-profile.sh}
   [end]
 [end]
 
@@ -64,6 +201,33 @@
   [exec] (Edit Menu - 编辑菜单) {leafpad ~/.fluxbox/menu}
   [exec] (Edit Init - 编辑Init) {leafpad ~/.fluxbox/init}
   [exec] (Edit Keys - 编辑快捷键) {leafpad ~/.fluxbox/keys}
+  [separator]
+  [submenu] (Toggles - 开关)
+    [exec] (Remote Actions - 远程控制) {~/.fluxbox/scripts/toggle/allow-remote-actions.sh}
+    [exec] (Performance Mode - 性能模式) {~/.fluxbox/scripts/toggle/performance-mode.sh}
+    [exec] (Toolbar Screen - 工具栏显示器) {~/.fluxbox/scripts/toggle/toolbar-onhead.sh}
+    [exec] (Slit Dock - Slit停靠区) {~/.fluxbox/scripts/toggle/slit-enable.sh}
+  [end]
+  [submenu] (Display - 显示器)
+    [exec] (Extend - 扩展双屏) {~/.fluxbox/scripts/display/xrandr-layout.sh extend}
+    [exec] (Extend Left - 外屏在左) {~/.fluxbox/scripts/display/xrandr-layout.sh extend-left}
+    [exec] (Mirror - 镜像同屏) {~/.fluxbox/scripts/display/xrandr-layout.sh mirror}
+    [separator]
+    [exec] (Internal Only - 仅内置屏) {~/.fluxbox/scripts/display/xrandr-layout.sh internal}
+    [exec] (External Only - 仅外接屏) {~/.fluxbox/scripts/display/xrandr-layout.sh external}
+    [separator]
+    [exec] (Choose Layout - 旧版profile) {~/.fluxbox/scripts/display/xrandr-profile.sh}
+    # 自动检测脚本: scripts/display/xrandr-layout.sh
+    # 手动 profile: 编辑 ~/.fluxbox/config/display.profiles
+    # 输出名覆盖: 编辑 ~/.fluxbox/config/display.conf
+  [end]
+  [submenu] (Tools - 工具)
+    [exec] (Deploy - 部署到~/.fluxbox) {~/.fluxbox/scripts/tools/fluxbox-deploy.sh}
+    [exec] (Sync Deploy - rsync部署) {~/.fluxbox/scripts/tools/fluxbox-sync.sh deploy}
+    [exec] (Sync Backup - 备份到仓库) {~/.fluxbox/scripts/tools/fluxbox-sync.sh backup}
+    [exec] (Add App Rule - 生成apps规则) {~/.fluxbox/scripts/tools/fluxbox-add-app.sh}
+    [exec] (Rotate Log - 轮转日志) {~/.fluxbox/scripts/tools/rotate-fluxbox-log.sh}
+  [end]
 [end]
 
 # 该模块需要手动配置
@@ -91,10 +255,20 @@
   # [exec] (Lock Screen - 锁屏) {xscreensaver-command -lock}
   [exec] (Lock Screen - 锁屏) {i3lock -f -i ~/.fluxbox/backgrounds/1080.png}
   # [exec] (Lock Screen - 锁屏) {i3lock -c 000000}
-  [exec] (Reboot - 重启) {sudo shutdown -r now}
-  [exec] (Poweroff - 关机) {sudo shutdown -P now}
-  [separator]
-  [restart] (Restart Fluxbox - 重载Fluxbox)
-  [exit] (Exit Session - 注销)
+  [submenu] (Power Options - 电源选项)
+    [exec] (Toggle Confirm - 切换确认对话框) {~/.fluxbox/scripts/system/power-toggle.sh confirm}
+    [exec] (Toggle Sudo Password - 切换sudo关机) {~/.fluxbox/scripts/system/power-toggle.sh password}
+    # 编辑 ~/.fluxbox/config/power.conf 查看当前设置
+  [end]
+  # [exec] (Reboot - 重启) {sudo shutdown -r now}
+  # [exec] (Poweroff - 关机) {sudo shutdown -P now}
 [end]
+
+[separator]
+[restart] (Restart Fluxbox - 重载Fluxbox)
+[exit] (Exit Session - 注销)
+[exec] (Reboot - 重启) {~/.fluxbox/scripts/system/power-action.sh reboot}
+[exec] (Poweroff - 关机) {~/.fluxbox/scripts/system/power-action.sh poweroff}
+# [exec] (Reboot - 重启) {sudo shutdown -r now}
+# [exec] (Poweroff - 关机) {sudo shutdown -P now}
 [end]

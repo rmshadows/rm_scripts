@@ -1,0 +1,4 @@
+! slitlist — Slit 停靠区小程序列表（每行一个命令）
+! 在 init 中: session.screen0.slit.placement 等控制位置
+! 示例: bbb, wmnd, docker
+! 修改后: fluxbox-remote reconfigure

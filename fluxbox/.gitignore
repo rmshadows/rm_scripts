@@ -1,0 +1,15 @@
+# 运行时状态（含本机路径，勿提交）
+lastwallpaper
+log
+log.old
+
+config/sync.repo.path
+config/wallpaper.current
+config/*.mode
+config/menu.color.preset
+config/menu.font.size
+config/slit.enabled
+
+# 用户壁纸（体积大且为个人文件）
+backgrounds/*
+!backgrounds/.gitkeep

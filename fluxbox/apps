@@ -1,42 +1,78 @@
-# 配置 fbrun 应用的窗口行为
-# xprop | grep -E "WM_CLASS|WM_NAME"
+#==============================================================================
+# apps — 按应用程序设置窗口规则
+#
+# 在 init 中: session.appsFile: ~/.fluxbox/apps
+# 修改后: 关闭并重新打开目标程序（或 fluxbox-remote reconfigure）
+#
+# 获取匹配名:
+#   xprop | grep -E "WM_CLASS|WM_NAME"    # 点击目标窗口
+# 通常用 WM_CLASS 的第二个值，如 class=firefox-esr
+#
+# 菜单 Tools → Add App Rule 可交互生成片段
+# 文档: man fluxbox-apps
+#==============================================================================
+
+# --- 示例: fbrun 启动器居中 ---
 [app] (name=fbrun)
-  # 设置 fbrun 居中显示
   [Position] (WINCENTER) {0 0}
-  # 设置窗口层级为 2（普通窗口层级）
-  [Layer] {2}
-  # 设置窗口的默认大小（根据你的需求，可以调整这里的大小）
-  [Geometry] {600x400}  
-  # 确保窗口不会被最大化
+  [Geometry] {600x400}
   [Maximized] {false}
 [end]
 
-[app] (class=org.gnome.Nautilus)
-  [Deco] {NORMAL}
-  [Layer] {NORMAL}
-  [Focus] {YES}
-[end]
+# --- 示例: 无标题栏的 GTK 程序强制显示装饰条 ---
+# 1. xprop 得到 class=XXX
+# 2. 取消下面注释并改成你的 class
+#
+# [app] (class=WeChat)
+#   [Deco] {NORMAL}
+#   [Layer] {NORMAL}
+#   [Focus] {YES}
+# [end]
 
-[app] (class=firefox-esr)
-  [Deco] {NORMAL}
-  [Layer] {NORMAL}
-  [Focus] {YES}
-[end]
+# --- 示例: 指定工作区 / 透明度 / 固定大小 ---
+# [app] (class=firefox-esr)
+#   [Workspace] {2}
+#   [Alpha] {230}
+#   [Geometry] {1200x800}
+# [end]
 
-[app] (class=wpsoffice)
-  [Deco] {NORMAL}
-  [Layer] {NORMAL}
-  [Focus] {YES}
-[end]
+# --- 常用属性速查 ---
+# [Deco] {NORMAL|NONE|TINY|BORDER}   窗口装饰
+# [Layer] {NORMAL|ABOVEDOCK|DOCK|...}  层级
+# [Position] (WINCENTER) {0 0}         居中
+# [Workspace] {1-12}                   默认工作区
+# [Alpha] {0-255}                      透明度
+# [Sticky] {true|false}                所有工作区显示
+# [Maximized] {true|false}
 
-[app] (class=Gedit)
-  [Deco] {NORMAL}
-  [Layer] {NORMAL}
-  [Focus] {YES}
-[end]
+# --- 以下为模板示例（按需取消注释或删除）---
 
-[app] (class=Evince)
-  [Deco] {NORMAL}
-  [Layer] {NORMAL}
-  [Focus] {YES}
-[end]
+# [app] (class=org.gnome.Nautilus)
+#   [Deco] {NORMAL}
+#   [Layer] {NORMAL}
+#   [Focus] {YES}
+# [end]
+
+# [app] (class=firefox-esr)
+#   [Deco] {NORMAL}
+#   [Layer] {NORMAL}
+#   [Focus] {YES}
+# [end]
+
+# [app] (class=wpsoffice)
+#   [Deco] {NORMAL}
+#   [Layer] {NORMAL}
+#   [Focus] {YES}
+# [end]
+
+# [app] (class=Gedit)
+#   [Deco] {NORMAL}
+#   [Layer] {NORMAL}
+#   [Focus] {YES}
+# [end]
+
+# [app] (class=Evince)
+#   [Deco] {NORMAL}
+#   [Layer] {NORMAL}
+#   [Focus] {YES}
+# [end]

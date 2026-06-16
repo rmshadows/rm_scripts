@@ -1,0 +1,6 @@
+session.screen0.opaqueMove=true
+session.forcePseudoTransparency=true
+session.screen0.window.focus.alpha=183
+session.screen0.window.unfocus.alpha=210
+session.screen0.menu.alpha=219
+session.screen0.toolbar.alpha=255

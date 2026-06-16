@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# This command will close all active conky
 killall conky
 sleep 2s
 
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANGUAGE=en_US
-		
-# Only the config listed below will be avtivated
-# if you want to combine with another theme, write the command here
-conky -c $HOME/.config/conky/Dziban/Dziban.conf &> /dev/null &
-conky -c $HOME/.config/conky/Dziban/Dziban2.conf &> /dev/null &
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+conky -c "${DIR}/Dziban.conf" &> /dev/null &
+conky -c "${DIR}/Dziban2.conf" &> /dev/null &
 
 exit
