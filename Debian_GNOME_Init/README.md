@@ -21,6 +21,14 @@
 3. 补充需要的资源(比如一些个人个性化配置)
 4. 直接运行`Debian_12_Bookworm_GNOME_Setup.sh`脚本
 
+### 失败后续跑
+
+某检查点失败后，直接**再次运行**同一入口脚本即可；默认会跳过已成功的步骤（进度保存在 `.deploy_progress`）。
+
+- `SET_DEPLOY_RESUME=1`（默认）：启用续跑，跳过已完成步骤
+- `SET_DEPLOY_RESET=1`：清除进度，强制从头运行
+- `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：续跑时跳过 init 确认
+
 ## 脚本运行流程
 
 ### 初始化脚本
@@ -269,8 +277,7 @@
 ### 检查点五
 
 - 配置中州韵输入法(fcitx、ibus、fcitx5)
-
-- 配置词库(github导入公共词库、导入本地词库)
+- 配置 RIME 词库（离线）：0=基础明月拼音 / 1=白霜拼音（见 `5/RIME_FROST/`）
 
 ### 检查点六
 
@@ -347,7 +354,9 @@
 
 - `log_message()`——记录日志(会显示再终端) log_message_bg "信息" "日志文件"
 
-- `do_job()`——执行任务，执行脚本（日志+输出） do_job "setup.sh" "$ELOG_FILE"
+- `do_job()`——执行任务，执行脚本（日志+输出） do_job "setup.sh" "$ELOG_FILE"；支持续跑跳过已完成步骤
+
+- `deploy_*()`——部署进度：`deploy_is_job_done`、`deploy_mark_job_done`、`deploy_reset_state` 等（状态文件 `.deploy_progress`）
 
 - `replace_username()`——替换用户名为使用已定义的 $CURRENT_USER
 

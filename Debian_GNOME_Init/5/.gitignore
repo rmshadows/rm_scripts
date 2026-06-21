@@ -1,0 +1,4 @@
+# 白霜离线包体积大，由 sync_rime_frost_bundle.sh 在本地生成
+/RIME_FROST/*
+!/RIME_FROST/README.md
+!/RIME_FROST/.gitkeep

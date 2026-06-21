@@ -42,3 +42,5 @@
 
 21. watchDirectoryChange.sh —— 监视目录文件更改
 
+22. KVM_Manager/ —— 用 Bash + virsh 管理 KVM 虚拟机（信息查看、快照、电源等，见目录内 README）
+

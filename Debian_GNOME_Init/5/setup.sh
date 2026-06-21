@@ -29,8 +29,6 @@ if [ "$SET_INSTALL_RIME" -eq 1 ]; then
     doApt install fcitx-rime
     doApt install fcitx-googlepinyin
     doApt install fcitx-module-cloudpinyin
-    fcitx &
-    sleep 3
     prompt -x "检查 /etc/environment 文件"
     source "fcitx/fcitx4_Lib.sh"
     update_fcitx4_etc_environment_vars
@@ -89,10 +87,7 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ]; then
     doApt install fcitx5
     doApt install fcitx5-rime
     doApt install fcitx5-module-cloudpinyin
-    fcitx5 &
-    sleep 5
     prompt -w "注意：Fcitx5 默认不再设置.pam_environment和.xprofile，如安装后不正常，请手动检查。"
-    sleep 5
     prompt -x "检查 /etc/environment 文件"
     source "fcitx/fcitx5_Lib.sh"
     update_fcitx5_etc_environment_vars
@@ -113,33 +108,46 @@ fi
 
 # 开始配置词库
 if [ "$SET_INSTALL_RIME" -ne 0 ]; then
+    source "rime_lib.sh"
+    case "$SET_INSTALL_RIME" in
+    1) _im_proc=fcitx ;;
+    2) _im_proc=ibus-daemon ;;
+    3) _im_proc=fcitx5 ;;
+    *) _im_proc="" ;;
+    esac
+    rime_prepare_config_dir "$rime_config_dir" "$_im_proc"
+
     prompt -m "检查完成，开始配置词库"
     if [ "$SET_IMPORT_RIME_DICT" -eq 0 ]; then
-        prompt -m "不导入词库,但保留词库添加功能。"
-        cp rime_base_config/* "$rime_config_dir"
+        prompt -m "基础 RIME 配置（系统明月拼音，兼容 fcitx4/fcitx5/ibus）"
+        rime_import_base_config "rime_base_config" "$rime_config_dir"
     elif [ "$SET_IMPORT_RIME_DICT" -eq 1 ]; then
-        prompt -x "从Github导入词库。"
-        if ! [ -x "$(command -v git)" ]; then
-            doApt install git
-        fi
-        git clone "$SET_RIME_DICT_GITREPO" RGIT_REPO
-        if [ $? -ne 0 ]; then
-            prompt -e "Git克隆公开词库出错。"
-            quitThis
-        fi
-        backupFile "$rime_config_dir"
-        # 重命名
-        if [ -d "$rime_config_dir(src)" ];then
-            backupFile "$rime_config_dir"
-            prompt -e "存在 $rime_config_dir(src) ,似乎已经配置过词库了，本次不再配置"
+        if [ "$SET_INSTALL_RIME" -ne 3 ]; then
+            prompt -w "白霜拼音需要 fcitx5-rime；当前框架不支持，已改用基础配置"
+            rime_import_base_config "rime_base_config" "$rime_config_dir"
         else
-            mv "$rime_config_dir" "$rime_config_dir(src)"
+            prompt -m "白霜拼音离线包（需事先运行 5/tools/sync_rime_frost_bundle.sh）"
+            rime_import_frost_bundle "$SET_RIME_FROST_DIR" "$rime_config_dir"
+            prompt -m "白霜词库首次部署可能需数分钟，请耐心等待 fcitx5-remote -r"
         fi
-        addFolder "$rime_config_dir"
-        cp -r RGIT_REPO/* "$rime_config_dir"
-    elif [ "$SET_IMPORT_RIME_DICT" -eq 2 ]; then
-        prompt -x "导入本地词库。"
-        sudo cp -r "$SET_RIME_DICT_DIR"/* "$rime_config_dir"
+    else
+        prompt -w "未知的 SET_IMPORT_RIME_DICT=$SET_IMPORT_RIME_DICT，改用基础配置"
+        rime_import_base_config "rime_base_config" "$rime_config_dir"
     fi
+
+    case "$SET_INSTALL_RIME" in
+    1)
+        prompt -x "启动 fcitx（词库配置完成后）"
+        fcitx &
+        ;;
+    3)
+        prompt -x "启动 fcitx5（词库配置完成后）"
+        fcitx5 -d
+        if command -v fcitx5-remote >/dev/null 2>&1; then
+            fcitx5-remote -r 2>/dev/null || true
+        fi
+        ;;
+    esac
+    prompt -m "词库配置完成。请注销并重新登录后使用输入法。"
 fi
 

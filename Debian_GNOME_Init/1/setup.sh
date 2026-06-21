@@ -52,8 +52,13 @@ doApt install lsb-release
 
 if [ "$SET_DEB822" -eq 1 ]; then
     backupFile "/etc/apt/sources.list"
-    # 对于backport如果报错：Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-    sudo apt modernize-sources
+    # modernize-sources 默认会询问 Rewrite sources? [Y/n]，脚本需非交互
+    prompt -x "将 sources.list 转为 DEB822（apt modernize-sources -y）"
+    if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ]; then
+        sudo apt modernize-sources -y
+    else
+        sudo apt modernize-sources
+    fi
     # 清空文件内容！
     sudo tee /etc/apt/sources.list </dev/null
     # 添加清华大学 Debian 13 镜像源

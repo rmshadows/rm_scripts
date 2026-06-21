@@ -143,9 +143,8 @@ SET_FONTS=1
 # 注意：fcitx 和 fcitx5 无法共存！参见：https://lists.debian.org/debian-chinese-gb/2021/12/msg00000.html 和 https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html
 # 配置 中州韵输入法 0: 不配置 1: fcitx-rime 2.ibus-rime 3.fcitx5-rime Preset=3
 SET_INSTALL_RIME=3
-# 是否导入词库 0: 否 1:从Github导入公共词库 (注意网速！)  2:从本地文件夹导入词库 (请注意导入格式，否则输入法可能用不了) Preset=0
-# 配置本地词库和远程词库地址请到相应文件夹中的cfg.sh
-SET_IMPORT_RIME_DICT=2
+# RIME 词库（离线）0: 基础明月拼音（兼容 fcitx4/fcitx5/ibus） 1: 白霜拼音（需 fcitx5，见 5/RIME_FROST/） Preset=1
+SET_IMPORT_RIME_DICT=1
 
 
 ## 检查点六 ##
@@ -198,6 +197,14 @@ SET_DISABLE_THIRD_PARTY_REPO=1
 SET_ENABLE_GRUB_OS_PROBER=0
 # 最后一步 设置用户目录所属 Preset=1
 SET_USER_HOME=1
+
+## 部署续跑 ##
+# 失败后续跑时跳过已完成步骤 Preset:1
+SET_DEPLOY_RESUME=1
+# 设为1则清除进度、从头运行 Preset:0
+SET_DEPLOY_RESET=0
+# 续跑时跳过 init 确认提示 Preset:1
+SET_DEPLOY_SKIP_CONFIRM=1
 
 
 

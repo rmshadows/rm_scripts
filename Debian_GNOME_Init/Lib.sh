@@ -74,7 +74,7 @@ onExit() {
 # 中途异常退出脚本要执行的 注意，检查点一后才能使用这个方法
 quitThis() {
 	onExit
-	exit
+	exit 1
 }
 
 beTempSudoer() {
@@ -291,28 +291,96 @@ log_message "日志：任务开始 - setup.sh" "$ELOG_FILE"
 log_message "日志：任务结束 - 1/setup.sh" "$ELOG_FILE"
 cd ..
 !说明
+
+# ---------- 部署进度（失败后续跑） ----------
+deploy_job_key() {
+	local script="$1"
+	local current_dir
+	current_dir=$(pwd)
+	if [ -n "$DEPLOY_SCRIPT_ROOT" ] && [[ "$current_dir" == "$DEPLOY_SCRIPT_ROOT"* ]]; then
+		echo "${current_dir#"$DEPLOY_SCRIPT_ROOT"/}/$(basename "$script")"
+	else
+		echo "$(basename "$current_dir")/$(basename "$script")"
+	fi
+}
+
+deploy_is_job_done() {
+	local job_key="$1"
+	[ -f "$DEPLOY_STATE_FILE" ] && grep -Fxq "$job_key" "$DEPLOY_STATE_FILE"
+}
+
+deploy_mark_job_done() {
+	local job_key="$1"
+	mkdir -p "$(dirname "$DEPLOY_STATE_FILE")" 2>/dev/null || true
+	if ! deploy_is_job_done "$job_key"; then
+		echo "$job_key" >>"$DEPLOY_STATE_FILE"
+	fi
+}
+
+deploy_reset_state() {
+	rm -f "$DEPLOY_STATE_FILE"
+}
+
+deploy_has_completed_jobs() {
+	[ -f "$DEPLOY_STATE_FILE" ] && [ -s "$DEPLOY_STATE_FILE" ]
+}
+
+deploy_print_completed_jobs() {
+	if deploy_has_completed_jobs; then
+		prompt -m "以下步骤已完成，续跑时将自动跳过："
+		while IFS= read -r _line; do
+			[ -n "$_line" ] && prompt -k "  ✓" "$_line"
+		done <"$DEPLOY_STATE_FILE"
+	fi
+}
+
 do_job() {
 	local script="$1"
 	local log_file="$2"
+	local job_key
+	local _job_rc=0
+	local _had_pipefail=0
 
-	# 获取当前工作目录
-	local current_dir=$(pwd)
+	job_key=$(deploy_job_key "$script")
 
-	# 记录任务开始的日志，包含当前目录和脚本名
-	log_message "日志：任务开始 - $current_dir/$(basename "$script")" "$log_file"
+	if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_is_job_done "$job_key"; then
+		prompt -m "跳过已完成步骤: $job_key"
+		log_message "日志：已跳过（续跑）- $job_key" "$log_file"
+		return 0
+	fi
 
+	log_message "日志：任务开始 - $job_key" "$log_file"
+
+	if set -o | grep -q 'pipefail[[:space:]]*on'; then
+		_had_pipefail=1
+	fi
+	set -o pipefail
+	set +e
 	{
-		# 通过进程替换处理标准错误，逐行读取并加上 [stderr]
 		source "$script" 2> >(while IFS= read -r line; do
-			echo -e "\033[1;31;47m [stderr] \033[0m $line" # 红字白底
+			echo -e "\033[1;31;47m [stderr] \033[0m $line"
 		done) |
 			while IFS= read -r line; do
-				echo "[stdout] $line" # 标准输出标记为 [stdout]
+				echo "[stdout] $line"
 			done
-	} | tee -a "$log_file" # 将输出追加到日志文件
+	} | tee -a "$log_file"
+	_job_rc=${PIPESTATUS[0]}
+	if [ "$_had_pipefail" -eq 1 ]; then
+		set -o pipefail
+	else
+		set +o pipefail
+	fi
 
-	# 记录任务结束的日志，包含当前目录和脚本名
-	log_message "日志：任务结束 - $current_dir/$(basename "$script")" "$log_file"
+	if [ "$_job_rc" -ne 0 ]; then
+		log_message "日志：任务失败 - $job_key (exit $_job_rc)" "$log_file"
+		prompt -e "步骤失败: $job_key — 修复问题后重新运行，将从该步骤继续（Config.sh: SET_DEPLOY_RESUME=1）"
+		quitThis
+	fi
+
+	if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ]; then
+		deploy_mark_job_done "$job_key"
+	fi
+	log_message "日志：任务结束 - $job_key" "$log_file"
 }
 
 # 将"【$xxx】"复制为真实变量xxx的值

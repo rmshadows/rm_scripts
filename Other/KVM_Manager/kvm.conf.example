@@ -1,0 +1,8 @@
+# KVM Manager 本地配置示例
+# 复制为 kvm.local.conf 并修改，或运行 ./kvm_info.sh --setup 交互生成
+
+# libvirt 连接 URI（virsh -c 参数）
+# 常见值:
+#   qemu:///system   — 系统级 VM（virt-manager 默认、/etc/libvirt/qemu/）
+#   qemu:///session  — 当前用户会话 VM
+KVM_VIRSH_URI="qemu:///system"

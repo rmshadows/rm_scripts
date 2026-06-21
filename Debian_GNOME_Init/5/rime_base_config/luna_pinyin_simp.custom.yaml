@@ -1,0 +1,4 @@
+# 基础配置：朙月拼音·简化字（fcitx4 / fcitx5 / ibus-rime 通用）
+# 使用系统自带 luna_pinyin 词库，不依赖白霜或大型扩充词库
+patch:
+  "menu/page_size": 10

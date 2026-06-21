@@ -1,6 +1,9 @@
 #!/bin/bash
 # https://github.com/rmshadows/rm_scripts
 
+export DEPLOY_SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$DEPLOY_SCRIPT_ROOT" || exit 1
+
 :<<!说明
 Version：0.1.0
 预设参数（在这里修改预设参数, 谢谢）
@@ -18,6 +21,11 @@ source "GlobalVariables.sh"
 source "Lib.sh"
 # 加载配置(在全局变量之后)
 source "Config.sh"
+
+if [ "${SET_DEPLOY_RESET:-0}" -eq 1 ]; then
+	deploy_reset_state
+	prompt -m "已清除部署进度，将从头运行"
+fi
 
 # 脚本开始
 source "0/0_start.sh"
