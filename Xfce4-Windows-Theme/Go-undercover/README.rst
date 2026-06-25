@@ -1,3 +1,4 @@
+818cae6aeb2ae0f84321f3de91eda183e96d0df1
 .. raw:: html
 
    <h1 align="center">
@@ -56,7 +57,14 @@ Installation 🛠️ :
                   git clone https://github.com/SofianeHamlaoui/Go-undercover && cd Go-undercover
                   chmod +x ./install.sh
                   ./install.sh
-                  
+=============
+Uninstall ❌:
+=============
+
+         .. code-block:: console
+
+                 chmod +x ./uninstall.sh
+                 ./uninstall.sh                  
 =============
 Contact Me 🤙 :
 =============       
