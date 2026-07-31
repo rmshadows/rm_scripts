@@ -1,6 +1,6 @@
 # Debian13_Server.sh
 
->Current Version: 0.1.3
+>Current Version: 0.1.4
 
 ## 目录结构
 
@@ -145,7 +145,8 @@
 
 - 安装配置php-fpm
 - 安装http服务器
-- 配置Let's encrypt ＣｅｒｔＢｏｔ
+- 配置Let's encrypt Certbot（可选，`SET_INSTALL_CERTBOT`）
+- 配置 acme.sh（可选，`SET_INSTALL_ACME_SH`；默认只安装，需手动签发；说明写入 `~/acme.sh使用说明.md` 与安装目录 `README-Debian_Server_Init.md`）
 
 
 ### 检查点六
@@ -218,6 +219,9 @@
 ## 更新日志
 
 >dev: Not available yet.
+
+- 2026.07.31——0.1.4
+  - 检查点五新增可选安装 acme.sh（`SET_INSTALL_ACME_SH`，与 Certbot 并列，默认只装不签发）
 
 - 2025.10.05——0.1.3
   - 迁移到Debian 13

@@ -48,6 +48,6 @@ Github：https://github.com/rmshadows/
 * **rename2dirame.sh**：将文件名重命名为所在目录名的脚本。
 * **RemoveDuplicatesHashFile5.0.sh**：通过哈希值查找并删除重复文件的脚本。
 
-* **searchDocx.sh**：在 Word 文档（.docx）中查找关键字的脚本。
+* **searchDocx.sh**：在 Word（默认）/ Excel（`-x`）中按关键字搜索；非交互 CLI，输出接近 grep，可管道。`./searchDocx.sh --help`
 
 * **Word2txt.sh**：将 Word 文件批量转换为纯文本的脚本。

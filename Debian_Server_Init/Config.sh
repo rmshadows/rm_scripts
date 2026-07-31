@@ -23,11 +23,11 @@ SET_APT_UPGRADE=1
 
 ## 检查点二 ##==
 # Set to 1 will specify a user.User will be created if not exist.If set to 0, continue with root(是否指定某用户进行配置，否的话将以root用户继续)  Preset:1
-SET_USER=1
+SET_USER="${SET_USER:-1}"
 # User Name in lower case(要新建的用户名-必须小写英文！) Preset="admin" SET_USER=1时生效
-SET_USER_NAME="admin"
+SET_USER_NAME="${SET_USER_NAME:-admin}"
 # User password(要新建的用户密码) Preset="passwd" SET_USER=1时生效
-SET_USER_PASSWD="passwd"
+SET_USER_PASSWD="${SET_USER_PASSWD:-passwd}"
 # 是否加入sudo组 Preset:1
 SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
@@ -57,7 +57,7 @@ SET_NETWORK_MANAGER=0
 # 配置GRUB网卡默认命名方式 传统的 ethX 名称（例如 eth0, eth1）(注意：启用此选项可能导致SET_WIRED_ALLOW_HOTPLUG失效) Preset=0
 SET_GRUB_NETCARD_NAMING=0
 # Set hostname(设置HostName) Preset=0
-SET_HOST_NAME=0
+SET_HOST_NAME="${SET_HOST_NAME:-0}"
 # Set locales(If you do not need this, just set 0) (设置语言支持，不需要请设置为0) Preset="en_US.UTF-8 UTF-8"
 SET_LOCALES="en_US.UTF-8 UTF-8
 zh_CN.UTF-8 UTF-8
@@ -144,8 +144,18 @@ SET_INSTALL_PHP=1
 SET_PHP_FPM_PORT=0
 # 是否设置php fpm开机自启,默认禁用 Preset=0
 SET_PHP_FPM_ENABLE=1
-# 是否安装CertBot? 启用LetsEncrypt的ＳＳＬ证书（只安装，需手动激活） Preset=1
-SET_INSTALL_CERTBOT=1
+# 是否安装CertBot? 启用LetsEncrypt的ＳＳＬ证书（只安装，需手动激活） Preset=0
+SET_INSTALL_CERTBOT=0
+# 是否安装 acme.sh（只安装与设默认 CA，需手动签发；可与 Certbot 并存，一般二选一） Preset=1
+SET_INSTALL_ACME_SH=1
+# acme.sh 安装目录：0=默认 $HOME_INDEX/.acme.sh ；其它填绝对路径（如 /usr/local/acme.sh）
+SET_ACME_HOME=0
+# 证书存放目录：0=默认(随安装目录) ；其它填绝对路径
+SET_ACME_CERT_HOME=0
+# 账户邮箱：0=默认 $CURRENT_USER@$HOSTNAME
+SET_ACME_EMAIL=0
+# 默认 CA：0=不改(acme.sh 当前默认多为 ZeroSSL) 1:letsencrypt 2:zerossl  Preset=1
+SET_ACME_DEFAULT_CA=1
 
 ## 检查点六 ##
 # 配置SSH Key Preset=1
@@ -211,6 +221,13 @@ fi
 # SSH
 if [ "$SET_SSH_KEY_COMMENT" -eq 0 ]; then
     SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian_Deploy_Script"
+fi
+# acme.sh
+if [ "$SET_ACME_HOME" = "0" ]; then
+    SET_ACME_HOME="$HOME_INDEX/.acme.sh"
+fi
+if [ "$SET_ACME_EMAIL" = "0" ]; then
+    SET_ACME_EMAIL="$CURRENT_USER@$HOSTNAME"
 fi
 # HTTP ROOT
 if [ "$SET_HTTP_SERVER_ROOT" -eq 0 ]; then

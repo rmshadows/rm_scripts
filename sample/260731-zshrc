@@ -1,3 +1,4 @@
+# 同步自 Debian_GNOME_Init/2/zshrc.src（占位符【$CURRENT_USER】部署时替换）
 # 【$CURRENT_USER】
 # ~/.zshrc file for zsh non-login shells.
 # see /usr/share/doc/zsh/examples/zshrc for examples

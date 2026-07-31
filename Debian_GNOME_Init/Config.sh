@@ -1,6 +1,7 @@
 #!/bin/bash
 :<<!说明
 这里是执行的配置
+另外，记得配置GlobalVariables中的# root用户密码ROOT_PASSWD！
 !说明
 
 ## 检查点一 ##==
@@ -21,7 +22,7 @@ SET_SUDOER=1
 SET_SUDOER_NOPASSWD=1
 
 ## 检查点二 ##==
-# 是否卸载vim-tiny，安装vim-full Preset:1
+# 是否卸载vim-tiny（vim -N），安装vim-full Preset:1
 SET_VIM_TINY_TO_FULL=1
 # 是否替换Bash为Zsh（包括root用户） Preset:1
 SET_BASH_TO_ZSH=1

@@ -1,7 +1,7 @@
 : <<检查点五
 安装配置php-fpm
 安装http服务器
-配置LetsEncrypt ＣｅｒｔＢｏｔ
+配置LetsEncrypt Certbot / acme.sh
 检查点五
 
 # 配置PHP FPM
@@ -275,4 +275,161 @@ if [ "$SET_INSTALL_CERTBOT" -eq 1 ]; then
     # sudo certbot certonly --nginx
     # echo "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
     # Upgrade:　sudo /opt/certbot/bin/pip install --upgrade certbot certbot-nginx
+fi
+
+# acme.sh（https://github.com/acmesh-official/acme.sh ）
+# 官方安装：curl https://get.acme.sh | sh ；此处只安装，不自动签发
+if [ "$SET_INSTALL_ACME_SH" -eq 1 ]; then
+    if [ "$SET_INSTALL_CERTBOT" -eq 1 ]; then
+        prompt -w "同时启用了 Certbot 与 acme.sh，一般只需其一；两者都会安装"
+    fi
+    prompt -x "安装 acme.sh 到 $SET_ACME_HOME （账户邮箱: $SET_ACME_EMAIL）"
+    doApt install curl cron
+
+    if [ -x "$SET_ACME_HOME/acme.sh" ]; then
+        prompt -m "已检测到 $SET_ACME_HOME/acme.sh ，跳过下载安装"
+    else
+        _acme_install_args=(--home "$SET_ACME_HOME" --accountemail "$SET_ACME_EMAIL")
+        if [ "$SET_ACME_CERT_HOME" != "0" ] && [ -n "$SET_ACME_CERT_HOME" ]; then
+            _acme_install_args+=(--cert-home "$SET_ACME_CERT_HOME")
+            sudo -H -u "$CURRENT_USER" mkdir -p "$SET_ACME_CERT_HOME" 2>/dev/null || addFolder "$SET_ACME_CERT_HOME"
+        fi
+        sudo -H -u "$CURRENT_USER" mkdir -p "$SET_ACME_HOME" 2>/dev/null || addFolder "$SET_ACME_HOME"
+
+        # acme.sh 不推荐用 sudo 包一层执行自身；对目标用户安装
+        if [ "$(id -un)" = "$CURRENT_USER" ]; then
+            curl -fsSL https://get.acme.sh | sh -s -- "${_acme_install_args[@]}"
+            _acme_rc=$?
+        else
+            # 将参数传给目标用户 shell（避免 sudo 直接跑 get.acme.sh）
+            _acme_qargs=$(printf '%q ' "${_acme_install_args[@]}")
+            sudo -H -u "$CURRENT_USER" bash -c "curl -fsSL https://get.acme.sh | sh -s -- ${_acme_qargs}"
+            _acme_rc=$?
+        fi
+        if [ "$_acme_rc" -ne 0 ] || [ ! -x "$SET_ACME_HOME/acme.sh" ]; then
+            prompt -e "acme.sh 安装失败，请检查网络（需访问 get.acme.sh / GitHub）"
+            quitThis
+        fi
+        unset _acme_install_args _acme_qargs _acme_rc
+    fi
+
+    # 方便全局调用（仍建议带 --home，或 source acme.sh.env）
+    if [ -x "$SET_ACME_HOME/acme.sh" ]; then
+        sudo ln -sfn "$SET_ACME_HOME/acme.sh" /usr/local/bin/acme.sh
+    fi
+
+    if [ "$SET_ACME_DEFAULT_CA" -eq 1 ]; then
+        prompt -x "设置 acme.sh 默认 CA 为 Let's Encrypt"
+        sudo -H -u "$CURRENT_USER" "$SET_ACME_HOME/acme.sh" --home "$SET_ACME_HOME" --set-default-ca --server letsencrypt || \
+            "$SET_ACME_HOME/acme.sh" --home "$SET_ACME_HOME" --set-default-ca --server letsencrypt
+    elif [ "$SET_ACME_DEFAULT_CA" -eq 2 ]; then
+        prompt -x "设置 acme.sh 默认 CA 为 ZeroSSL"
+        sudo -H -u "$CURRENT_USER" "$SET_ACME_HOME/acme.sh" --home "$SET_ACME_HOME" --set-default-ca --server zerossl || \
+            "$SET_ACME_HOME/acme.sh" --home "$SET_ACME_HOME" --set-default-ca --server zerossl
+    fi
+
+    _acme_webroot="$SET_HTTP_SERVER_ROOT"
+    if [ "$SET_ACME_CERT_HOME" = "0" ] || [ -z "$SET_ACME_CERT_HOME" ]; then
+        _acme_cert_home_desc="默认随安装目录"
+    else
+        _acme_cert_home_desc="$SET_ACME_CERT_HOME"
+    fi
+    if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
+        _acme_reload='systemctl reload nginx'
+        _acme_install_cert_hint="$SET_ACME_HOME/acme.sh --install-cert -d 你的域名 \\
+  --key-file /etc/ssl/你的域名.key \\
+  --fullchain-file /etc/ssl/你的域名.pem \\
+  --reloadcmd \"${_acme_reload}\""
+    elif [ "$SET_INSTALL_HTTP_SERVER" -eq 2 ]; then
+        _acme_reload='systemctl reload apache2'
+        _acme_install_cert_hint="$SET_ACME_HOME/acme.sh --install-cert -d 你的域名 \\
+  --key-file /etc/ssl/你的域名.key \\
+  --fullchain-file /etc/ssl/你的域名.pem \\
+  --reloadcmd \"${_acme_reload}\""
+    else
+        _acme_reload='true'
+        _acme_install_cert_hint="（未安装 http 服务器，请自行指定 --reloadcmd 与证书路径）"
+    fi
+
+    _acme_readme="$SET_ACME_HOME/README-Debian_Server_Init.md"
+    _acme_readme_home="$HOME_INDEX/acme.sh使用说明.md"
+    _acme_issue_hint="$SET_ACME_HOME/acme.sh --issue -d 你的域名 -w ${_acme_webroot} --reloadcmd \"${_acme_reload}\""
+
+    # 写入说明文件（安装目录 + 家目录各一份，跑完脚本也好找）
+    _acme_readme_body="# acme.sh 使用说明（由 Debian_Server_Init 生成）
+
+脚本只负责**安装** acme.sh，**不会自动签发**证书。签发需域名已解析到本机，且 HTTP 校验路径可访问。
+
+## 安装位置
+
+- 程序目录: \`$SET_ACME_HOME\`
+- 可执行文件: \`$SET_ACME_HOME/acme.sh\`（另有软链 \`/usr/local/bin/acme.sh\`）
+- 账户邮箱: \`$SET_ACME_EMAIL\`
+- 证书目录: \`${_acme_cert_home_desc}\`
+- 环境变量: \`source $SET_ACME_HOME/acme.sh.env\`（或重新登录）
+- 本说明副本: \`$SET_ACME_HOME/README-Debian_Server_Init.md\`
+- 家目录快捷: \`$HOME_INDEX/acme.sh使用说明.md\`
+
+官方文档: https://github.com/acmesh-official/acme.sh
+
+## 签发证书（示例）
+
+\`\`\`bash
+source $SET_ACME_HOME/acme.sh.env
+# 或: $SET_ACME_HOME/acme.sh --home $SET_ACME_HOME ...
+
+$_acme_issue_hint
+\`\`\`
+
+当前配置参考域名 \`SET_SERVER_NAME=$SET_SERVER_NAME\`，webroot=\`${_acme_webroot}\`。
+
+## 把证书装到 Web 服务器常用路径（示例）
+
+\`\`\`bash
+$_acme_install_cert_hint
+\`\`\`
+
+然后在站点配置里指向上述 key / fullchain（本仓库 nginx https 模板常用 \`/etc/ssl/\$域名.pem\`）。
+
+## 续期
+
+安装时一般已写入用户 cron（\`crontab -l\` 可见）。手动检查：
+
+\`\`\`bash
+$SET_ACME_HOME/acme.sh --cron --home $SET_ACME_HOME
+\`\`\`
+
+## 卸载
+
+\`\`\`bash
+# 1) 卸掉 acme.sh（会清 cron 相关项）
+$SET_ACME_HOME/acme.sh --uninstall --home $SET_ACME_HOME
+
+# 2) 删除安装目录（按需）
+rm -rf $SET_ACME_HOME
+
+# 3) 删除软链（若存在）
+sudo rm -f /usr/local/bin/acme.sh
+
+# 4) 删除本说明（可选）
+rm -f \"$HOME_INDEX/acme.sh使用说明.md\"
+\`\`\`
+
+已签发的证书若在其它目录（如 \`/etc/ssl/\`），需自行删除站点 SSL 配置与证书文件。
+"
+
+    if [ "$(id -un)" = "$CURRENT_USER" ]; then
+        printf '%s\n' "$_acme_readme_body" >"$_acme_readme"
+        printf '%s\n' "$_acme_readme_body" >"$_acme_readme_home"
+    else
+        printf '%s\n' "$_acme_readme_body" | sudo -H -u "$CURRENT_USER" tee "$_acme_readme" >/dev/null
+        printf '%s\n' "$_acme_readme_body" | sudo -H -u "$CURRENT_USER" tee "$_acme_readme_home" >/dev/null
+    fi
+
+    prompt -s "acme.sh 已安装。使用/卸载说明已写入："
+    prompt -k "  →" "$_acme_readme_home"
+    prompt -k "  →" "$_acme_readme"
+    prompt -i "续期由 cron 负责；重新登录或: source $SET_ACME_HOME/acme.sh.env"
+    prompt -i "签发示例: $_acme_issue_hint"
+    unset _acme_webroot _acme_reload _acme_install_cert_hint _acme_readme _acme_readme_home _acme_issue_hint _acme_readme_body _acme_cert_home_desc
 fi

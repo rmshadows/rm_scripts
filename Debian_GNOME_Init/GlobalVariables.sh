@@ -12,8 +12,8 @@ fi
 !说明
 
 ### 外部变量
-# root用户密码
-ROOT_PASSWD=""
+# root用户密码（可在运行前用环境变量覆盖：ROOT_PASSWD='xxx'）
+ROOT_PASSWD="${ROOT_PASSWD:-}"
 
 
 ### 脚本内部变量（一般无需更改）

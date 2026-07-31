@@ -1,3 +1,28 @@
+#!/usr/bin/env bash
+# 安装 zsh + 插件，将 root 与当前用户改为 zsh，并写入 Debian_GNOME_Init 同款 zshrc（已内嵌）
+# --undo：还原 shell 与 .zshrc；不卸载 apt 包
+# 用法: sudo ./setup-zsh.sh [--apply|--undo|--status]
+# 模板来源: Debian_GNOME_Init/2/zshrc.src
+set -euo pipefail
+
+NAME="setup-zsh"
+BACKUP_DIR="${SYSTWEAK_BACKUP:-$HOME/.systweak-backup}/${NAME}"
+
+log() { echo "[+] $*"; }
+die() { echo "[x] $*" >&2; exit 1; }
+
+[[ $EUID -eq 0 ]] || die "请用 root/sudo 运行"
+command -v apt-get >/dev/null 2>&1 || die "仅支持 apt 系发行版"
+
+if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
+  CURRENT_USER="$SUDO_USER"
+else
+  CURRENT_USER="root"
+fi
+
+# 内嵌自 Debian_GNOME_Init/2/zshrc.src（占位符 【$CURRENT_USER】）
+emit_zshrc_template() {
+  cat <<'ZSHRC_TEMPLATE_EOF'
 # 【$CURRENT_USER】
 # ~/.zshrc file for zsh non-login shells.
 # see /usr/share/doc/zsh/examples/zshrc for examples
@@ -522,3 +547,114 @@ activatePythonVenv
 # Created by `pipx` on 2023-06-30 12:10:31
 # :/usr/games:/usr/local/games
 export PATH="$PATH:/home/【$CURRENT_USER】/.local/bin"
+
+ZSHRC_TEMPLATE_EOF
+}
+
+write_gnome_zshrc() {
+  local user="$1" home="$2" zshrc_path="${2}/.zshrc"
+  local tmp
+  tmp="$(mktemp)"
+  mkdir -p "${home}/.cache"
+  emit_zshrc_template >"$tmp"
+  sed -i "s|【\$CURRENT_USER】|${user}|g" "$tmp"
+  if [[ "$user" == "root" ]]; then
+    sed -i "s|/home/root|/root|g" "$tmp"
+  fi
+  install -m 0644 "$tmp" "$zshrc_path"
+  chown "${user}:${user}" "$zshrc_path" 2>/dev/null || true
+  rm -f "$tmp"
+  log "已写入 GNOME 风格 .zshrc -> $zshrc_path"
+}
+
+backup_user() {
+  local user="$1" home="$2"
+  local udir="$BACKUP_DIR/users/${user}"
+  mkdir -p "$udir"
+  if [[ ! -f "$udir/shell.prev" ]]; then
+    getent passwd "$user" | cut -d: -f7 >"$udir/shell.prev"
+  fi
+  if [[ -f "${home}/.zshrc" && ! -f "$udir/zshrc.bak" ]]; then
+    cp -a "${home}/.zshrc" "$udir/zshrc.bak"
+  elif [[ ! -f "${home}/.zshrc" && ! -f "$udir/zshrc.missing" ]]; then
+    touch "$udir/zshrc.missing"
+  fi
+}
+
+apply_user() {
+  local user="$1" home="$2" zsh_path="$3"
+  backup_user "$user" "$home"
+  write_gnome_zshrc "$user" "$home"
+  local cur
+  cur="$(getent passwd "$user" | cut -d: -f7)"
+  if [[ "$cur" != "$zsh_path" ]]; then
+    usermod -s "$zsh_path" "$user"
+    log "$user: shell $cur -> $zsh_path"
+  else
+    log "$user: 已是 zsh"
+  fi
+}
+
+cmd_status() {
+  echo "备份: $BACKUP_DIR"
+  echo "目标用户: $CURRENT_USER (+ root)"
+  echo "zshrc: 内嵌自 Debian_GNOME_Init/2/zshrc.src"
+  command -v zsh >/dev/null && echo "zsh: $(command -v zsh)" || echo "zsh: 未安装"
+  for u in root "$CURRENT_USER"; do
+    echo "$u shell: $(getent passwd "$u" | cut -d: -f7)"
+  done
+}
+
+cmd_apply() {
+  export DEBIAN_FRONTEND=noninteractive
+  mkdir -p "$BACKUP_DIR"
+  log "安装 zsh 及插件..."
+  apt-get update -y
+  apt-get install -y zsh zsh-syntax-highlighting zsh-autosuggestions bash-completion silversearcher-ag || \
+    apt-get install -y zsh zsh-syntax-highlighting zsh-autosuggestions bash-completion
+
+  local zsh_path
+  zsh_path="$(command -v zsh)"
+  grep -qx "$zsh_path" /etc/shells || echo "$zsh_path" >>/etc/shells
+
+  apply_user root /root "$zsh_path"
+  if [[ "$CURRENT_USER" != "root" ]]; then
+    local home
+    home="$(getent passwd "$CURRENT_USER" | cut -d: -f6)"
+    apply_user "$CURRENT_USER" "$home" "$zsh_path"
+  fi
+  log "完成。重新登录或 exec zsh。--undo 不卸载软件包。"
+  cmd_status
+}
+
+cmd_undo() {
+  [[ -d "$BACKUP_DIR/users" ]] || die "无用户备份"
+  for udir in "$BACKUP_DIR"/users/*; do
+    [[ -d "$udir" ]] || continue
+    local user home
+    user="$(basename "$udir")"
+    home="$(getent passwd "$user" | cut -d: -f6)"
+    [[ -n "$home" ]] || continue
+    if [[ -f "$udir/shell.prev" ]]; then
+      usermod -s "$(cat "$udir/shell.prev")" "$user"
+      log "$user: 已还原 shell"
+    fi
+    if [[ -f "$udir/zshrc.bak" ]]; then
+      cp -a "$udir/zshrc.bak" "${home}/.zshrc"
+      chown "${user}:${user}" "${home}/.zshrc" 2>/dev/null || true
+      log "$user: 已还原 .zshrc"
+    elif [[ -f "$udir/zshrc.missing" ]]; then
+      rm -f "${home}/.zshrc"
+      log "$user: 原先无 .zshrc，已删除"
+    fi
+  done
+  cmd_status
+}
+
+case "${1:---apply}" in
+  --apply|apply) cmd_apply ;;
+  --undo|undo) cmd_undo ;;
+  --status|status) cmd_status ;;
+  -h|--help) echo "用法: sudo $0 [--apply|--undo|--status]" ;;
+  *) die "未知参数: $1" ;;
+esac

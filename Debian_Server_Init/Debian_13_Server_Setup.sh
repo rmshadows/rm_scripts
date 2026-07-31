@@ -1,7 +1,7 @@
 #!/bin/bash
 # https://github.com/rmshadows/rm_scripts
 :<<!说明
-Version：0.1.3
+Version：0.1.4
 !说明
 
 
