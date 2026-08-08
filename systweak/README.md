@@ -31,6 +31,8 @@
 |------|------|----------|
 | `sudo-nopasswd.sh` | 给用户加/撤 sudo 免密（`/etc/sudoers.d/`） | 好（删文件即可） |
 | `set-hostname.sh` | 修改系统主机名（同步 `/etc/hostname`、`hosts`） | 好 |
+| `enable-sysrq.sh` | 启用 Magic SysRq（默认永久；`--temp` 仅临时） | 好 |
+| `setup-shorewall.sh` | 一键部署 Shorewall（需旁路 `shorewall/SW_CONF` 或 `.tar.gz`；默认不自动启动） | 中 |
 | `disable-sleep.sh` | 禁止休眠/挂起（systemd mask + GNOME/XFCE） | 中（还原 mask 与 gsettings） |
 | `lock-suspend.sh` | 启用或禁用「休眠+锁屏」相关项 | 中（快照 gsettings/logind 等） |
 | `gnome-idle-lock.sh` | GNOME：闲置 60s 锁屏、立即锁定 | 好（还原 gsettings） |

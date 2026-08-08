@@ -441,7 +441,7 @@ alias ssh-key-install='ssh-copy-id -i /home/【$CURRENT_USER】/.ssh/id_rsa.pub'
 alias sshpwdconnect='pwdconnect(){sshpass -p "$1" ssh};pwdconnect'
 
 # 代理
-alias all_proxy_sock5='export ALL_PROXY=socks5://127.0.0.1:20170'
+alias all_proxy_sock5='export ALL_PROXY=socks5://127.0.0.1:10808'
 
 # 应用程序
 # alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss $3 -to $4 -i $1 -vcodec copy -acodec copy $2};ffmpegCutVideo'
