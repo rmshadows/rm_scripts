@@ -5,7 +5,7 @@ export DEPLOY_SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DEPLOY_SCRIPT_ROOT" || exit 1
 
 :<<!说明
-Version：0.1.0
+Version：0.1.1
 预设参数（在这里修改预设参数, 谢谢）
 注意：如果没有注释，默认0 为否 1 为是。
 if [ "$" -eq 1 ];then

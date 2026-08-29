@@ -122,7 +122,42 @@ rime_prepare_config_dir() {
 	rime_ensure_config_owned "$dest_dir"
 }
 
-# 启动输入法但必须脱离当前脚本：fcitx5 是常驻进程，前台跑会把部署卡死在 Loaded addon rime
+# 登录自启 + Wayland 用户环境（GNOME 会话会读 environment.d，不一定读 xprofile）
+rime_install_im_session() {
+	local kind="$1"
+	local home="/home/$CURRENT_USER"
+	local autostart="$home/.config/autostart"
+	local envd="$home/.config/environment.d"
+
+	mkdir -p "$autostart" "$envd"
+
+	case "$kind" in
+	fcitx5)
+		prompt -x "配置 fcitx5 登录自启与 environment.d"
+		cp "fcitx/fcitx5-autostart.desktop" "$autostart/fcitx5.desktop"
+		cp "fcitx/im-fcitx.conf" "$envd/im-fcitx.conf"
+		;;
+	fcitx)
+		prompt -x "配置 fcitx 登录自启与 environment.d"
+		cp "fcitx/fcitx4-autostart.desktop" "$autostart/fcitx.desktop"
+		cp "fcitx/im-fcitx.conf" "$envd/im-fcitx.conf"
+		;;
+	ibus)
+		prompt -x "配置 ibus 登录自启与 environment.d"
+		cp "ibus/ibus-autostart.desktop" "$autostart/ibus.desktop"
+		cp "ibus/im-ibus.conf" "$envd/im-ibus.conf"
+		;;
+	*)
+		return 0
+		;;
+	esac
+
+	if ! chown -R "$CURRENT_USER:$CURRENT_USER" "$autostart" "$envd" 2>/dev/null; then
+		sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$autostart" "$envd"
+	fi
+}
+
+# 启动输入法但必须脱离当前脚本：fcitx5 是常驻进程，前台跑会把部署卡死
 rime_start_im_detached() {
 	local im="$1"
 

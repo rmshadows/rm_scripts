@@ -227,12 +227,16 @@ deploy_prepare_interactive() {
 # 执行apt命令 注意，检查点一后才能使用这个方法
 doApt() {
 	prompt -x "doApt: $@"
-	# 如果是第一次运行apt
-	if [ "$FIRST_DO_APT" -eq 1 ]; then
-		prompt -w "如果APT显示被占用，『对此的通常建议是等待』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
-		prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+	# 仅本机第一次跑部署时提示一次（unattended-upgrade 可能占锁）。续跑/再跑不再 sleep。
+	if [ "${FIRST_DO_APT:-1}" -eq 1 ]; then
 		FIRST_DO_APT=0
-		sleep 5
+		_apt_hint="${DEPLOY_SCRIPT_ROOT:-.}/.deploy_apt_hint"
+		if [ ! -f "$_apt_hint" ]; then
+			prompt -w "如果APT显示被占用，『对此的通常建议是等待』（unattended-upgrade 等）。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
+			prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+			sleep 5
+			echo 1 >"$_apt_hint" 2>/dev/null || true
+		fi
 	fi
 	# 安装/升级会弹出 debconf（wireshark dumpcap、显示管理器、键盘布局等），必须在 TTY 上跑
 	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "purge" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then

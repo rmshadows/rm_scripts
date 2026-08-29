@@ -1,6 +1,6 @@
 # Debian_13_GNOME.sh
 
->Current Version: 0.1.0
+>Current Version: 0.1.1
 
 ## 目录结构
 
@@ -19,7 +19,9 @@
 1. 检查是否符合脚本系统要求
 2. 配置好`Config.sh`以及数字目录下的`cfg.sh`（如有必要）
 3. 补充需要的资源(比如一些个人个性化配置)
-4. 直接运行`Debian_12_Bookworm_GNOME_Setup.sh`脚本
+4. 直接运行`Debian_13_GNOME_Setup.sh`脚本
+
+白霜拼音词库在仓库 `5/RIME_FROST/`（精简离线包，部署时本地拷贝，不访问 GitHub）。`SET_APT_TO_INSTALL_LATER` 是黑名单：从当前 INDEX 挑出的包放到脚本末尾再装（如 apt-listbugs）。
 
 ### 失败后续跑
 
@@ -278,7 +280,8 @@
 ### 检查点五
 
 - 配置中州韵输入法(fcitx、ibus、fcitx5)
-- 配置 RIME 词库（离线）：0=基础明月拼音 / 1=白霜拼音（见 `5/RIME_FROST/`）
+- 写入登录自启（`~/.config/autostart`）与 Wayland 环境（`~/.config/environment.d`）
+- 配置 RIME 词库（离线）：0=基础明月拼音 / 1=白霜拼音（仓库内 `5/RIME_FROST/`，约 42MB）
 
 ### 检查点六
 
@@ -347,7 +350,7 @@
 
 - `backupFile ()`——备份配置文件。先检查是否有bak结尾的备份文件，没有则创建，有则另外覆盖一个newbak文件。$1 :文件名
 
-- `doApt ()`——执行apt命令 注意，检查点一后才能使用这个方法
+- `doApt ()`——执行 apt。本机第一次部署会提示 unattended-upgrade 可能占锁（之后写入 `.deploy_apt_hint`，续跑不再提示）
 
 - `addFolder ()`——新建文件夹。只能有一个参数$1
 
@@ -538,6 +541,12 @@
 - zsh-autosuggestions——zsh插件，提供命令自动补全建议（提高交互效率）。
 
 ## 更新日志
+
+- 2026年8月29日——0.1.1
+  - 失败后续跑（`.deploy_progress`）；apt 交互保留真实 TTY（debconf / wireshark / 显示管理器）
+  - 稍后安装改为 INDEX 黑名单；apt-listbugs 等不再提前装上卡死自动安装
+  - 白霜拼音精简离线包入库（约 42MB），部署本地拷贝，不 git clone
+  - fcitx5 后台启动、登录自启与 `environment.d`；unattended-upgrade 占锁提示仅本机第一次出现
 
 - 2025年10月1日——0.1.0
   - 开始适配Debian 13

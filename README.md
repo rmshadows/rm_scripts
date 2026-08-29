@@ -96,6 +96,9 @@ SET_USER_NAME='admin' SET_USER_PASSWD='你的用户密码' bash Debian_13_Server
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2026年8月29日——0.1.1
+  - Debian_GNOME_Init：续跑、TTY 交互、精简白霜离线包入库、fcitx5 登录自启
+
 - 2026年7月31日——0.1.0
   - 新增 systweak（单脚本系统微调，可 --undo）；forKylinV10SP1 标为归档
   - 主 README 增加 Release 一键拉取说明；Server Init 可选 acme.sh

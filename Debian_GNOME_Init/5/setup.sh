@@ -6,6 +6,7 @@ https://wiki.archlinuxcn.org/wiki/Fcitx5
 检查点五
 
 source "cfg.sh"
+source "rime_lib.sh"
 
 # 添加字体到Home
 if [ "$SET_FONTS" -eq 1 ]; then
@@ -19,8 +20,7 @@ fi
 # 注意：据说 pam-env 已不再读取 ~/.pam_environment 文件。
 if [ "$SET_INSTALL_RIME" -eq 1 ]; then
     prompt -m "通常建议是：在 运行于xorg的GNOME 模式下使用Fcitx输入法(而不是Wayland！)， 模式切换在用户登录页面的小齿轮可以配置。"
-    prompt -m "如果出现异常，x11用户可能得检查下~/.xprofile，wayland用户可能得检查下~/.profile"
-    sleep 8
+    prompt -m "如果出现异常，x11用户可能得检查下~/.xprofile，wayland用户可能得检查下 environment.d / ~/.profile"
     doApt update
     # 移除 fcitx5 及所有 fcitx5-* 包
     doApt remove fcitx5
@@ -55,6 +55,7 @@ if [ "$SET_INSTALL_RIME" -eq 1 ]; then
     fi
     prompt -x "im-config 切换 fcitx, 注销生效"
     im-config -n fcitx
+    rime_install_im_session fcitx
     rime_config_dir="/home/$CURRENT_USER/.config/fcitx/rime/"
 elif [ "$SET_INSTALL_RIME" -eq 2 ]; then
     # https://wiki.archlinuxcn.org/wiki/IBus
@@ -79,6 +80,7 @@ elif [ "$SET_INSTALL_RIME" -eq 2 ]; then
     fi
     rime_config_dir="/home/$CURRENT_USER/.config/ibus/rime"
     im-config -n ibus
+    rime_install_im_session ibus
 elif [ "$SET_INSTALL_RIME" -eq 3 ]; then
     doApt update
     # 移除 fcitx 及所有 fcitx-* 包
@@ -87,7 +89,7 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ]; then
     doApt install fcitx5
     doApt install fcitx5-rime
     doApt install fcitx5-module-cloudpinyin
-    prompt -w "注意：Fcitx5 默认不再设置.pam_environment和.xprofile，如安装后不正常，请手动检查。"
+    prompt -w "注意：Fcitx5 已写入登录自启与 ~/.config/environment.d/（Wayland 不依赖 .xprofile）。"
     prompt -x "检查 /etc/environment 文件"
     source "fcitx/fcitx5_Lib.sh"
     update_fcitx5_etc_environment_vars
@@ -104,11 +106,11 @@ elif [ "$SET_INSTALL_RIME" -eq 3 ]; then
     fi
     rime_config_dir="/home/$CURRENT_USER/.local/share/fcitx5/rime"
     im-config -n fcitx5
+    rime_install_im_session fcitx5
 fi
 
 # 开始配置词库
 if [ "$SET_INSTALL_RIME" -ne 0 ]; then
-    source "rime_lib.sh"
     case "$SET_INSTALL_RIME" in
     1) _im_proc=fcitx ;;
     2) _im_proc=ibus-daemon ;;
@@ -126,7 +128,7 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
             prompt -w "白霜拼音需要 fcitx5-rime；当前框架不支持，已改用基础配置"
             rime_import_base_config "rime_base_config" "$rime_config_dir"
         else
-            prompt -m "白霜拼音离线包（需事先运行 5/tools/sync_rime_frost_bundle.sh）"
+            prompt -m "导入仓库内精简白霜拼音（5/RIME_FROST）"
             rime_import_frost_bundle "$SET_RIME_FROST_DIR" "$rime_config_dir"
         fi
     else

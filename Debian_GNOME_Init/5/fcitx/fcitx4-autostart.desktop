@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Fcitx
+Comment=Start Input Method
+Exec=fcitx -d
+Icon=fcitx
+Terminal=false
+Type=Application
+Categories=System;Utility;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Phase=Applications
