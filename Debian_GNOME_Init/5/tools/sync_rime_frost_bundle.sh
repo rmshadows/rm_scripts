@@ -1,6 +1,6 @@
 #!/bin/bash
-# 将本机白霜拼音配置同步到 5/RIME_FROST，供离线部署使用
-# 自动排除用户词库、自定义短语、机器标识等隐私/个人数据
+# 将本机白霜拼音配置精简同步到 5/RIME_FROST（可提交 git，部署时不访问 GitHub）
+# 排除：隐私数据、作者原料目录、未启用的腾讯大词库、小狼毫残留
 
 set -euo pipefail
 
@@ -9,8 +9,8 @@ DEST="$SCRIPT_DIR/../RIME_FROST"
 TEMPLATE_DIR="$SCRIPT_DIR/rime_frost_templates"
 SRC="${1:-$HOME/.local/share/fcitx5/rime}"
 
-# 不同步到离线包的个人/机器相关文件（RIME 首次部署时会自动重建部分文件）
-RSYNC_PRIVATE_EXCLUDES=(
+RSYNC_EXCLUDES=(
+	# 运行时生成 / 隐私
 	'build/'
 	'sync/'
 	'*.userdb/'
@@ -23,6 +23,13 @@ RSYNC_PRIVATE_EXCLUDES=(
 	'rime_frost.custom.yaml'
 	'*.custom.yaml'
 	'*udict*'
+	# 非运行时：词库原料、文档图、作者脚本
+	'others/'
+	# 方案里已注释，不加载
+	'cn_dicts/tencent.dict.yaml'
+	# Windows 小狼毫 / 非白霜方案残留
+	'weasel.yaml'
+	'luna_pinyin.dict.yaml'
 )
 
 if [ ! -f "$SRC/rime_frost.schema.yaml" ]; then
@@ -39,23 +46,25 @@ fi
 
 mkdir -p "$DEST"
 _excludes=(--exclude '.gitkeep' --exclude 'README.md')
-for _pat in "${RSYNC_PRIVATE_EXCLUDES[@]}"; do
+for _pat in "${RSYNC_EXCLUDES[@]}"; do
 	_excludes+=(--exclude "$_pat")
 done
 
-echo "同步白霜方案文件（已排除个人词库/短语/机器标识）…"
+echo "同步精简白霜方案（排除 others/、tencent、隐私文件）…"
 rsync -a --delete "${_excludes[@]}" "$SRC/" "$DEST/"
 
-# 空自定义短语模板（schema 需要此文件，但不包含个人词条）
 if [ -f "$TEMPLATE_DIR/custom_phrase.txt" ]; then
 	cp "$TEMPLATE_DIR/custom_phrase.txt" "$DEST/custom_phrase.txt"
 fi
 
-# 再次清理可能遗留的隐私文件
-for _f in user.yaml installation.yaml custom_phrase_double.txt; do
+for _f in user.yaml installation.yaml custom_phrase_double.txt weasel.yaml luna_pinyin.dict.yaml; do
 	rm -f "$DEST/$_f"
 done
+rm -rf "$DEST/others" "$DEST/cn_dicts/tencent.dict.yaml"
 find "$DEST" \( -name '*.userdb' -o -name '*udict*' \) -print -delete 2>/dev/null || true
 
-echo "已同步白霜离线包 → $DEST（不含个人词库）"
+echo "已同步精简白霜离线包 → $DEST"
 du -sh "$DEST"
+test -f "$DEST/rime_frost.schema.yaml" && echo "OK: rime_frost.schema.yaml"
+test ! -d "$DEST/others" && echo "OK: 无 others/"
+test ! -f "$DEST/cn_dicts/tencent.dict.yaml" && echo "OK: 无 tencent 词库"

@@ -128,7 +128,6 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
         else
             prompt -m "白霜拼音离线包（需事先运行 5/tools/sync_rime_frost_bundle.sh）"
             rime_import_frost_bundle "$SET_RIME_FROST_DIR" "$rime_config_dir"
-            prompt -m "白霜词库首次部署可能需数分钟，请耐心等待 fcitx5-remote -r"
         fi
     else
         prompt -w "未知的 SET_IMPORT_RIME_DICT=$SET_IMPORT_RIME_DICT，改用基础配置"
@@ -137,15 +136,10 @@ if [ "$SET_INSTALL_RIME" -ne 0 ]; then
 
     case "$SET_INSTALL_RIME" in
     1)
-        prompt -x "启动 fcitx（词库配置完成后）"
-        fcitx &
+        rime_start_im_detached fcitx
         ;;
     3)
-        prompt -x "启动 fcitx5（词库配置完成后）"
-        fcitx5 -d
-        if command -v fcitx5-remote >/dev/null 2>&1; then
-            fcitx5-remote -r 2>/dev/null || true
-        fi
+        rime_start_im_detached fcitx5
         ;;
     esac
     prompt -m "词库配置完成。请注销并重新登录后使用输入法。"

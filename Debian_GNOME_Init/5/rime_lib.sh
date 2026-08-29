@@ -53,8 +53,10 @@ rime_import_frost_bundle() {
 	parent_dir=$(dirname "$dest_dir")
 	if ! rime_frost_bundle_ready "$src_dir"; then
 		prompt -e "白霜离线包不完整: $src_dir（缺少 rime_frost.schema.yaml）"
-		prompt -m "请先在本机执行: Debian_GNOME_Init/5/tools/sync_rime_frost_bundle.sh"
-		quitThis
+		prompt -w "仓库里应带有精简包 5/RIME_FROST/。也可在已有白霜的机器上运行: 5/tools/sync_rime_frost_bundle.sh"
+		prompt -w "本次改用基础明月拼音，部署继续。"
+		rime_import_base_config "rime_base_config" "$dest_dir"
+		return 0
 	fi
 
 	rime_ensure_config_owned "$parent_dir"
@@ -80,7 +82,7 @@ rime_import_frost_bundle() {
 		fi
 	fi
 	mkdir -p "$dest_dir"
-	prompt -x "导入白霜拼音离线包（约 150MB+，请稍候）: $src_dir → $dest_dir"
+	prompt -x "导入白霜拼音离线包: $src_dir → $dest_dir"
 	if command -v rsync >/dev/null 2>&1; then
 		rsync -a \
 			--exclude 'build/' \
@@ -118,4 +120,23 @@ rime_prepare_config_dir() {
 	fi
 	rime_ensure_config_owned "$(dirname "$dest_dir")"
 	rime_ensure_config_owned "$dest_dir"
+}
+
+# 启动输入法但必须脱离当前脚本：fcitx5 是常驻进程，前台跑会把部署卡死在 Loaded addon rime
+rime_start_im_detached() {
+	local im="$1"
+
+	case "$im" in
+	fcitx)
+		prompt -x "后台启动 fcitx（不占用当前终端）"
+		nohup fcitx >/dev/null 2>&1 &
+		disown $! 2>/dev/null || true
+		;;
+	fcitx5)
+		prompt -x "后台启动 fcitx5（不占用当前终端）"
+		# -d 在 stdout 被管道接住时可能不会真正 daemonize；再加 nohup/&/disown 和关掉 stdio
+		nohup fcitx5 -d -q >/dev/null 2>&1 &
+		disown $! 2>/dev/null || true
+		;;
+	esac
 }

@@ -28,6 +28,7 @@
 - `SET_DEPLOY_RESUME=1`（默认）：启用续跑，跳过已完成步骤
 - `SET_DEPLOY_RESET=1`：清除进度，强制从头运行
 - `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：续跑时跳过 init 确认
+- `SET_DEPLOY_FULL_LOG=0`（默认）：不套 `script`，直接用真实终端（wireshark / 显示管理器等 debconf 可交互）。设为 `1` 才全文录像（`script -f`）
 
 ## 脚本运行流程
 
@@ -354,7 +355,7 @@
 
 - `log_message()`——记录日志(会显示再终端) log_message_bg "信息" "日志文件"
 
-- `do_job()`——执行任务，执行脚本（日志+输出） do_job "setup.sh" "$ELOG_FILE"；支持续跑跳过已完成步骤
+- `do_job()`——在当前终端 source 执行步骤（保留 TTY，apt 可交互）；开始/结束写入日志。整次运行可用 `script` 包一层记全文。
 
 - `deploy_*()`——部署进度：`deploy_is_job_done`、`deploy_mark_job_done`、`deploy_reset_state` 等（状态文件 `.deploy_progress`）
 

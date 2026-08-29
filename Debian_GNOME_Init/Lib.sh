@@ -200,6 +200,30 @@ backupFile() {
 	fi
 }
 
+# 交互式安装（wireshark / 显示管理器 / apt-listchanges 等）必须连真实 TTY。
+# 管道、tee、未 flush 的 script 都会让界面画不出来、按键进不去。
+deploy_tty_ok() {
+	[ -t 0 ] && [ -t 1 ] && [ -t 2 ]
+}
+
+deploy_prepare_interactive() {
+	if ! deploy_tty_ok; then
+		prompt -e "stdin/stdout/stderr 不是终端。debconf / pager / ncurses 无法显示，也无法接收按键。"
+		prompt -w "请直接在终端运行：bash Debian_13_GNOME_Setup.sh（不要再套一层管道或无 -t 的 ssh）"
+		return 1
+	fi
+	# 有 TTY 时禁止 noninteractive，否则 wireshark、gdm/sddm 选择等会静默卡住或乱选
+	if [ -z "${DEBIAN_FRONTEND:-}" ] || [ "${DEBIAN_FRONTEND}" = "noninteractive" ]; then
+		if command -v whiptail >/dev/null 2>&1 || command -v dialog >/dev/null 2>&1; then
+			export DEBIAN_FRONTEND=dialog
+		else
+			export DEBIAN_FRONTEND=readline
+		fi
+	fi
+	export TERM="${TERM:-xterm-256color}"
+	return 0
+}
+
 # 执行apt命令 注意，检查点一后才能使用这个方法
 doApt() {
 	prompt -x "doApt: $@"
@@ -210,14 +234,20 @@ doApt() {
 		FIRST_DO_APT=0
 		sleep 5
 	fi
-	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then
+	# 安装/升级会弹出 debconf（wireshark dumpcap、显示管理器、键盘布局等），必须在 TTY 上跑
+	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "purge" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then
+		deploy_prepare_interactive || prompt -w "无 TTY，debconf 问答可能无法操作"
+	fi
+	# sudo 默认 env_reset，不把 DEBIAN_FRONTEND 传下去则对话框出不来
+	local _sudo=(sudo --preserve-env=DEBIAN_FRONTEND,DEBCONF_FRONTEND,TERM,LANG,LC_ALL,LANGUAGE,DISPLAY)
+	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "purge" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then
 		if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ]; then
-			sudo apt "$@"
+			"${_sudo[@]}" apt "$@"
 		elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ]; then
-			sudo apt "$@" -y
+			"${_sudo[@]}" apt "$@" -y
 		fi
 	else
-		sudo apt "$@"
+		"${_sudo[@]}" apt "$@"
 	fi
 }
 
@@ -339,7 +369,6 @@ do_job() {
 	local log_file="$2"
 	local job_key
 	local _job_rc=0
-	local _had_pipefail=0
 
 	job_key=$(deploy_job_key "$script")
 
@@ -351,30 +380,13 @@ do_job() {
 
 	log_message "日志：任务开始 - $job_key" "$log_file"
 
-	if set -o | grep -q 'pipefail[[:space:]]*on'; then
-		_had_pipefail=1
-	fi
-	set -o pipefail
-	set +e
-	{
-		source "$script" 2> >(while IFS= read -r line; do
-			echo -e "\033[1;31;47m [stderr] \033[0m $line"
-		done) |
-			while IFS= read -r line; do
-				echo "[stdout] $line"
-			done
-	} | tee -a "$log_file"
-	_job_rc=${PIPESTATUS[0]}
-	if [ "$_had_pipefail" -eq 1 ]; then
-		set -o pipefail
-	else
-		set +o pipefail
-	fi
-
+	# 当前 shell + 真实 TTY 中 source，不经过管道/tee。
+	# wireshark、显示管理器、apt-listchanges 等都靠 debconf/ncurses，必须 isatty。
+	source "$script"
+	_job_rc=$?
+	# 真正失败应走 quitThis（exit 1）。这里不把「脚本最后一条命令」的非零当成整步失败。
 	if [ "$_job_rc" -ne 0 ]; then
-		log_message "日志：任务失败 - $job_key (exit $_job_rc)" "$log_file"
-		prompt -e "步骤失败: $job_key — 修复问题后重新运行，将从该步骤继续（Config.sh: SET_DEPLOY_RESUME=1）"
-		quitThis
+		log_message "日志：任务结束（末条命令退出码 $_job_rc）- $job_key" "$log_file"
 	fi
 
 	if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ]; then

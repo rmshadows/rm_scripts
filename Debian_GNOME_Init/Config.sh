@@ -206,6 +206,8 @@ SET_DEPLOY_RESUME=1
 SET_DEPLOY_RESET=0
 # 续跑时跳过 init 确认提示 Preset:1
 SET_DEPLOY_SKIP_CONFIRM=1
+# 全文终端录像（script -f）。默认 0：直接用真实终端，wireshark/显示管理器/pager 可交互。需要完整日志再设 1
+SET_DEPLOY_FULL_LOG=0
 
 
 

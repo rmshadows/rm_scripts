@@ -34,61 +34,83 @@ if [ "$SET_APT_INSTALL" -eq 1 ]; then
 		# 全部安装
 		app_list=$APT_TO_INSTALL_INDEX_3
 	fi
-	# 首先，处理稍后要安装的软件包（在 0/install_later.sh 中安装）
-	# 从 cfg.sh 读取「稍后安装」列表原始字符串，格式为 "- 【包名】——【描述】" 多行
+	# SET_APT_TO_INSTALL_LATER = 黑名单：从当前 INDEX 挑出，脚本结束后再装
 	later_list=$SET_APT_TO_INSTALL_LATER
-	# 将 "- " 换成换行 → 去掉空格/制表符 → 删首行（空行）→ 把换行再换成空格，得到「包名——描述 包名——描述 …」一行
 	later_list=$(echo "$later_list" | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
-	# 按空格拆成数组，每个元素为一条 "包名——描述"
 	later_list=($later_list)
-	# 数组长度，即「稍后安装」条目个数
 	later_len="${#later_list[@]}"
-	prompt -m "下列是脚本运行结束后要安装的软件包: "
+	later_blacklist=()
 	for ((i = 0; i < $later_len; i++)); do
-		# 当前条目的完整字符串，如 "apt-listbugs——apt显示bug信息。…"
 		each=${later_list[$i]}
-		# 用 expr index 找到第一个 "—"（破折号）的位置，即「包名」与「描述」的分界
 		index=$(expr index "$each" —)
-		# 从当前条目标题中截取「包名」：用子串替换把整条换成「从开头到破折号前一位」
 		name=${later_list[$i]/$each/${each:0:($index - 1)}}
-		# 把解析出的包名写入 later_task 数组，供后续 install_later.sh 使用
-		later_task[$i]=${name}
-		# 在终端打印当前整条（包名——描述），方便用户确认
-		prompt -i "$each"
+		later_blacklist[$i]=${name}
 	done
-	sleep 8
-	echo -e "\n\n\n"
-	# 处理app_list列表
-	# 把“- ”转为换行符 然后删除所有空格 最后删除第一行。echo $LST | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d'
+
+	# 处理 INDEX 列表
 	app_list=$(echo $app_list | sed 's/- /\n/g' | tr -d [:blank:] | sed '1d' | sed 's/\n/ /g')
-	# 生成新的列表
 	app_list=($app_list)
-	# 接下来打印要安装的软件包列表, 显示的序号从0开始
 	num=0
 	app_len=${#app_list[@]}
+	index_names=()
 	prompt -m "下列是即将安装的软件包: "
 	for ((i = 0; i < $app_len; i++)); do
-		# 显示序号
-		echo -en "\e[1;35m$num)\e[0m"
 		each=${app_list[$i]}
 		index=$(expr index "$each" —)
-		# 软件包名
 		name=${app_list[$i]/$each/${each:0:($index - 1)}}
+		index_names[$i]=${name}
+		_skip_now=0
+		for _later in "${later_blacklist[@]}"; do
+			if [ "$name" = "$_later" ]; then
+				_skip_now=1
+				break
+			fi
+		done
+		if [ "$_skip_now" -eq 1 ]; then
+			later_task+=("$name")
+			prompt -w "从 INDEX 挑出稍后安装: $name"
+			continue
+		fi
+		echo -en "\e[1;35m$num)\e[0m"
 		immediately_task[$num]=${name}
 		prompt -i "$each"
 		num=$((num + 1))
 	done
-	sleep 10
-	doApt install "${immediately_task[@]}"
-	if [ $? != 0 ]; then
-		prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
-		sleep 2
-		num=1
-		for var in "${immediately_task[@]}"; do
-			prompt -m "正在安装第 $num 个软件包: $var。"
-			doApt install $var
-			num=$((num + 1))
+	# 黑名单中不在当前 INDEX 的包：仍稍后安装
+	for _later in "${later_blacklist[@]}"; do
+		_in_index=0
+		for _idx in "${index_names[@]}"; do
+			if [ "$_later" = "$_idx" ]; then
+				_in_index=1
+				break
+			fi
 		done
+		if [ "$_in_index" -eq 0 ]; then
+			later_task+=("$_later")
+			prompt -w "稍后名单中有包不在当前 INDEX，仍会稍后安装: $_later"
+		fi
+	done
+	if [ ${#later_task[@]} -eq 0 ]; then
+		prompt -m "稍后安装（黑名单）：无"
+	else
+		prompt -m "稍后安装（黑名单）: ${later_task[*]}"
+	fi
+	sleep 8
+	echo -e "\n\n\n"
+	if [ ${#immediately_task[@]} -eq 0 ]; then
+		prompt -m "立即安装列表为空（均已列入稍后安装）"
+	else
+		doApt install "${immediately_task[@]}"
+		if [ $? != 0 ]; then
+			prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
+			sleep 2
+			num=1
+			for var in "${immediately_task[@]}"; do
+				prompt -m "正在安装第 $num 个软件包: $var。"
+				doApt install $var
+				num=$((num + 1))
+			done
+		fi
 	fi
 fi
 
