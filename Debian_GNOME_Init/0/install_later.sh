@@ -17,19 +17,7 @@ docker-ce
 安装网易云音乐
 禁用第三方软件仓库更新(提升apt体验)
 安装时间较长的软件包
-# 安装later_task中的软件（逐个安装，保留 TTY，便于 apt-listchanges / wireshark 等交互）
-if [ "$SET_APT_INSTALL" -eq 1 ]; then
-	if [ ${#later_task[@]} -eq 0 ]; then
-		prompt -m "稍后安装列表为空，跳过。"
-	else
-		num=1
-		for var in "${later_task[@]}"; do
-			prompt -m "正在安装稍后列表第 $num 个软件包: $var（可交互）"
-			doApt install "$var"
-			num=$((num + 1))
-		done
-	fi
-fi
+# later_task（apt-listchanges 等）必须在 Chrome / Docker 等全部装完之后再装，见文件末尾。
 
 # 安装Virtual Box
 if [ "$SET_INSTALL_VIRTUALBOX" -eq 1 ];then
@@ -289,5 +277,19 @@ if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ]; then
             sudo mv "$f" /etc/apt/sources.list.d/backup/
         fi
     done
+fi
+
+# 稍后安装黑名单：必须在本文件所有其它 apt 之后（否则 listchanges 会打断 Chrome 等）
+if [ "$SET_APT_INSTALL" -eq 1 ]; then
+	if [ ${#later_task[@]} -eq 0 ]; then
+		prompt -m "稍后安装列表为空，跳过。"
+	else
+		num=1
+		for var in "${later_task[@]}"; do
+			prompt -m "正在安装稍后列表第 $num 个软件包: $var（可交互）"
+			doApt install "$var"
+			num=$((num + 1))
+		done
+	fi
 fi
 

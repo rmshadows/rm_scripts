@@ -42,6 +42,9 @@ SET_ZSH_AUTOSUGGESTIONS=1
 SET_SYSTEMCTL_SERVICE=1
 # 是否配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹 Preset=1
 SET_NAUTILUS_MENU=1
+# 启用办公右键脚本：把仓库根目录 Office/ 同步到 ~/.local/share/nautilus/lib/Office，
+# 再把 Office/NautilusScripts/Office/ 平铺到 scripts/（脚本用 ../lib/Office）Preset=1
+SET_NAUTILUS_OFFICE=1
 # 复制模板文件夹内容(注意：有些系统可能在~/.Templates，这个不在本脚本考虑范围) Preset=1
 SET_GNOME_FILE_TEMPLATES=1
 # 配置启用NetworkManager、安装net-tools Preset=1
@@ -58,11 +61,11 @@ SET_GRUB_NETCARD_NAMING=0
 # 是否从APT源安装常用软件 Preset=1
 SET_APT_INSTALL=1
 :<<注释
-有几个预选的安装列表供参考:
-0.自定义列表
-1.轻便安装
-2.部分安装
-3.全部安装
+有几个预选的安装列表供参考（内容在 4/cfg.sh）:
+0.自定义（空，建议用 3）
+1.轻量：网络 debug + 编程 + 仅 VLC + 实际在用的扩展
+2.日用影音：1 的全部 + GIMP/Kdenlive/OBS/HandBrake 等
+3.自定义（空，自行填写 APT_TO_INSTALL_INDEX_3）
 Preset=1
 注释
 SET_APT_INSTALL_LIST_INDEX=1
@@ -87,6 +90,8 @@ SET_PHP_FPM_PORT=0
 SET_PHP_FPM_ENABLE=0
 # 是否设置Nginx开机自启动(注意，0为禁用，1为启用) Preset=0
 SET_ENABLE_NGINX=0
+# 配置 fmgr 文件共享（仓库 fmgr文件传输 → /home/HTML/fmgr）。仅当上面 Nginx 与 PHP 都安装时生效。不启动服务，自行 systemctl start php*-fpm nginx。 Preset=1
+SET_CONFIG_FMGR=1
 # 安装配置git Preset=1
 SET_INSTALL_GIT=1
 # Git用户名、邮箱地址 默认$CURRENT_USER & $CURRENT_USER@$HOST
@@ -186,6 +191,24 @@ SET_IMPORT_GNOME_SHOW_DESKTOP_KEYBINDINGS=1
 SET_IMPORT_GNOME_SHUTDOWN_KEYBINDINGS=1
 # 导入GNOME 电源配置
 SET_IMPORT_GNOME_POWER_DCONF=1
+# GNOME Tweaks「窗口：副键调整窗口」Preset=1
+SET_GNOME_RESIZE_WITH_RIGHT_BUTTON=1
+# 固定工作区数量（0=不改；4=固定 4 个，并关闭动态工作区）Preset=4
+SET_GNOME_FIXED_WORKSPACES=4
+# 启用下列 GNOME 扩展（按当前机器实际在用的 UUID）Preset=1
+# 完整 apt 扩展清单见 4/README.md。安装 ≠ 启用。
+SET_GNOME_ENABLE_EXTENSIONS=1
+SET_GNOME_EXTENSIONS_ENABLE="
+dash-to-dock@micxgx.gmail.com
+ubuntu-appindicators@ubuntu.com
+drive-menu@gnome-shell-extensions.gcampax.github.com
+freon@UshakovVasilii_Github.yahoo.com
+harddiskled@bijidroid.gmail.com
+impatience@gfxmonk.net
+noannoyance-fork@vrba.dev
+"
+# 写入扩展偏好（Dash 位置、Freon 传感器、Impatience 速度等）Preset=1
+SET_GNOME_EXTENSIONS_CONFIG=1
 
 ## 检查点八 ##
 # 是否配置Shorewall防火墙(但是需要手动启用) Preset=1

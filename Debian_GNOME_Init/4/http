@@ -39,31 +39,20 @@ server {
     }
 
     ##################################################################
-    # 使用fmgr请注释下面
-    # 拒绝对 PHP 以外的动态脚本处理请求
+    # 使用 fmgr（SET_CONFIG_FMGR=1）时，setup 会注释掉 BEGIN_DENY_DYNAMIC 段
+    # BEGIN_DENY_DYNAMIC
     location ~ \.(php|php5|py|pl|cgi|sh)$ {
         return 403;
     }
+    # END_DENY_DYNAMIC
     # 不是GET POST HEAD就返回空响应(一些情况可能需要注释掉)
     if ($request_method !~ ^(GET|HEAD|POST)$) {
         return 444;
     }
 
     ##################################################################
-    # FMGR
-    # location /fmgr/ {
-    #     rewrite ^/fmgr/(.*)$ /fmgr/$1 break;
-    #     autoindex on; # 允许自动索引
-    #     autoindex_exact_size off; # 不显示文件大小
-    #     autoindex_localtime off; # 不显示本地时间
-    # }
-    # location /x {
-    #     rewrite ^/x(/|/index\.html)?$ /fmgr/index.php;
-    # }
-    # # rewrite fmgr
-    # location ~/fmgr/filesfmgr {
-    #     rewrite ^/fmgr/filesfmgr(.*)$ /fmgr/$1;
-    # }
+    # FMGR：SET_CONFIG_FMGR=1 时 setup 会取消下一行注释
+    # include /etc/nginx/snippets/fmgr.conf;
     ##################################################################
     # 错误页面配置
     # error_page 404 /404.html;

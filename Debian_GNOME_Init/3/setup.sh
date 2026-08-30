@@ -1,8 +1,8 @@
 #!/bin/bash
 : <<检查点三
-# 注意：其他Office相关脚本请自行配置
 配置自定义的systemtl服务
 配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹
+可选：同步仓库 Office/ 到 nautilus/lib 并释放办公右键脚本
 复制模板文件夹内容(WPS:~/.local/share/Kingsoft/office6/templates/wps/zh_CN)
 配置启用NetworkManager、安装net-tools
 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过 Preset=0
@@ -61,16 +61,46 @@ if [ "$SET_NAUTILUS_MENU" -eq 1 ]; then
     addFolder "/home/$CURRENT_USER/Prog"
     addFolder "/home/$CURRENT_USER/Mounted"
     addFolder "/home/$CURRENT_USER/.$CURRENT_USER/"
+    nautilus_base="/home/$CURRENT_USER/.local/share/nautilus"
+    addFolder "$nautilus_base/scripts"
     prompt -x "创建 Nautilus 右键菜单"
-    sudo cp NautilusScripts/* "/home/$CURRENT_USER/.local/share/nautilus/scripts/"
-    sudo chmod +x "/home/$CURRENT_USER/.local/share/nautilus/scripts/"*
-    bash "/home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
-    if [ "$?" -eq 0 ]; then
-        rm -f "/home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
-    else
-        echo "执行失败，保留 /home/$CURRENT_USER/.local/share/nautilus/scripts/0-NS-init.sh"
+    sudo cp NautilusScripts/* "$nautilus_base/scripts/"
+    sudo chmod +x "$nautilus_base/scripts/"*
+    sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$nautilus_base"
+
+    if [ "${SET_NAUTILUS_OFFICE:-0}" -eq 1 ]; then
+        office_src="${DEPLOY_SCRIPT_ROOT}/../Office"
+        if [ ! -d "$office_src" ]; then
+            prompt -w "未找到仓库 Office/（$office_src），跳过办公脚本。请把 rm_scripts/Office 与 Debian_GNOME_Init 放在同一仓库。"
+        else
+            addFolder "$nautilus_base/lib/Office"
+            prompt -x "同步 Office 到 $nautilus_base/lib/Office"
+            if command -v rsync >/dev/null 2>&1; then
+                rsync -a --exclude '.idea' --exclude '__pycache__' --exclude '*.pyc' --exclude '.git' \
+                    "$office_src/" "$nautilus_base/lib/Office/"
+            else
+                cp -a "$office_src/." "$nautilus_base/lib/Office/"
+            fi
+            if [ -d "$office_src/NautilusScripts/Office" ]; then
+                prompt -x "释放 Office 办公右键脚本到 scripts/"
+                cp -a "$office_src/NautilusScripts/Office/"* "$nautilus_base/scripts/"
+            fi
+            if [ -f "$office_src/NautilusScripts/【粘图】剪贴板图片" ]; then
+                cp -a "$office_src/NautilusScripts/【粘图】剪贴板图片" "$nautilus_base/scripts/"
+            fi
+            chmod +x "$nautilus_base/scripts/"*
+            sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$nautilus_base"
+            # 双面打印、PDF 工具依赖 ../lib/Office
+            export NS_INIT_EXTRA_PACKAGES="xclip clamav clamav-daemon python3-pypdf python3-pil python3-openpyxl python3-docx python3-natsort libreoffice-writer libreoffice-calc libnotify-bin"
+        fi
     fi
-    # sudo chown $CURRENT_USER -hR /home/$CURRENT_USER
+
+    bash "$nautilus_base/scripts/0-NS-init.sh"
+    if [ "$?" -eq 0 ]; then
+        rm -f "$nautilus_base/scripts/0-NS-init.sh"
+    else
+        echo "执行失败，保留 $nautilus_base/scripts/0-NS-init.sh"
+    fi
 fi
 
 # 复制模板文件夹内容
@@ -78,6 +108,13 @@ if [ "$SET_GNOME_FILE_TEMPLATES" -eq 1 ]; then
     prompt -x "配置GNOME模板文件夹"
     addFolder "/home/$CURRENT_USER/模板"
     cp "模板/"* "/home/$CURRENT_USER/模板/"
+    # WPS 等软件常会清空 ~/模板，在家目录留一份压缩包便于恢复
+    templates_archive="/home/$CURRENT_USER/模板备份.tar.gz"
+    if tar -czf "$templates_archive" -C "/home/$CURRENT_USER" 模板; then
+        prompt -m "已打包模板备份: $templates_archive"
+    else
+        prompt -w "模板备份打包失败，请稍后手动打包 ~/模板"
+    fi
 fi
 
 # 配置启用NetworkManager、安装net-tools

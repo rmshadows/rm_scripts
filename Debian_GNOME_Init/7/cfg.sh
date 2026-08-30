@@ -76,3 +76,42 @@ GNOME_POWER_DCONF="[/]
 power-button-action='nothing'
 sleep-inactive-ac-timeout=7200
 sleep-inactive-ac-type='nothing'"
+
+# GNOME 扩展偏好（与当前机器实际用法对齐；不含显示器接口等本机硬件项）
+GNOME_EXT_DASH_TO_DOCK_DCONF="[/]
+dock-position='LEFT'
+dock-fixed=false
+autohide=true
+intellihide=false
+show-mounts=false
+show-trash=false
+dash-max-icon-size=48
+multi-monitor=true
+hot-keys=false
+animation-time=0.1
+hide-delay=0.1
+height-fraction=0.9
+background-opacity=0.8"
+
+GNOME_EXT_FREON_DCONF="[/]
+hot-sensors=['__average__', '__max__']
+panel-box-index=0
+show-decimal-value=false
+use-drive-udisks2=false
+use-generic-liquidctl=false
+use-gpu-bumblebeenvidia=false
+use-gpu-nvidia=false"
+
+GNOME_EXT_HARDDISKLED_DCONF="[/]
+mode=6"
+
+GNOME_EXT_IMPATIENCE_DCONF="[/]
+speed-factor=0.25"
+
+GNOME_EXT_NOANNOYANCE_DCONF="[/]
+blocklist=['Microsoft Teams - Preview']"
+
+GNOME_EXT_APPINDICATOR_DCONF="[/]
+legacy-tray-enabled=true
+tray-pos='right'
+icon-spacing=12"

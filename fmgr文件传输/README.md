@@ -1,5 +1,7 @@
 # FMGR —— 轻量级文件共享
 
+Debian GNOME 部署：`Config.sh` 里 `SET_CONFIG_FMGR=1`，且 `SET_INSTALL_NGINX=1`、`SET_INSTALL_PHP=1` 时，会把本目录同步到 `/home/HTML/fmgr` 并写入 Nginx snippet。**不启动** php-fpm / nginx，用时自行 `sudo systemctl start php*-fpm nginx`。
+
 >MoveToParent里面的要移动到上级文件夹，一个跳转网页，一个404
 
 ### 文件路径

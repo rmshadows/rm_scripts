@@ -19,6 +19,7 @@ APT_TO_INSTALL_INDEX="
 - cifs-utils——访问Windows共享文件夹
 - clamav——Linux下的杀毒软件
 - cmake——cmake
+- copyq——剪贴板管理器
 - cowpatty——wireless hash
 - crunch——字典生成
 - cups——cups打印机驱动
@@ -39,7 +40,6 @@ APT_TO_INSTALL_INDEX="
 - gcc——C
 - gedit-plugin*——Gedit插件
 - gimp——gimp图片编辑
-- glance——一个可以代替htop的软件
 - gnome-recipes——GNOME西餐菜单。注意：西餐为主的菜单
 - gnome-shell-extension-appindicator——支持Unity/Ubuntu风格的系统托盘(AppIndicator)，把传统托盘图标显示在顶栏或托盘区
 - gnome-shell-extension-apps-menu——在顶栏提供“应用菜单”（按分类列出已安装应用）
@@ -56,7 +56,6 @@ APT_TO_INSTALL_INDEX="
 - gnome-shell-extension-flypie——弹出式“饼状”快速启动/命令选择器，类似Pie菜单
 - gnome-shell-extension-freon——在顶栏显示温度、电压等硬件传感数据（依赖lm-sensors）
 - gnome-shell-extension-gamemode——为当前会话启用/集成GameMode（提升游戏性能的守护模式）
-- gnome-shell-extension-gpaste——将GPaste剪贴板管理器集成到顶栏（方便访问历史剪贴项）
 - gnome-shell-extension-gsconnect——与Android手机互联（基于KDEConnect协议），文件/通知/剪贴板互通）
 - gnome-shell-extension-gsconnect-browsers——为GSConnect提供浏览器集成（例如来自手机发送链接到浏览器打开）
 - gnome-shell-extension-hard-disk-led——在顶栏显示磁盘活动/LED状态（展示磁盘I/O指示）

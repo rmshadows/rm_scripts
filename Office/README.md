@@ -34,7 +34,7 @@ Github：https://github.com/rmshadows/
 
 * **move\_subdirfiles\_here.sh**：将子目录中的文件移动到当前目录的脚本。
 
-* **NautilusScripts/**：适用于 GNOME 文件管理器（Nautilus）的右键脚本集合。
+* **NautilusScripts/**：适用于 GNOME 文件管理器（Nautilus）的右键脚本集合。Debian GNOME 部署开启 `SET_NAUTILUS_OFFICE=1` 时：本目录同步到 `~/.local/share/nautilus/lib/Office`，其中 `NautilusScripts/Office/` 平铺到 `~/.local/share/nautilus/scripts/`（脚本通过 `../lib/Office` 找工具）。
 
 * **Office2txt.sh**：将 Word、Excel 等 Office 文件批量转换为纯文本的脚本。
 

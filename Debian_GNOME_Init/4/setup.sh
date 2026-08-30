@@ -7,6 +7,7 @@
 安装配置Apache2
 配置PHP FPM
 配置nginx
+可选：配置 fmgr 文件共享（不启动服务）
 安装配置Git(配置User Email)
 安装配置SSH
 安装配置npm(是否安装hexo)
@@ -22,16 +23,16 @@ if [ "$SET_APT_INSTALL" -eq 1 ]; then
 	later_task=()
 	# 先判断要安装的列表
 	if [ "$SET_APT_INSTALL_LIST_INDEX" -eq 0 ]; then
-		# 自定义安装
+		# 自定义（空，建议用 INDEX 3）
 		app_list=$APT_TO_INSTALL_INDEX_0
 	elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 1 ]; then
-		# 精简安装
+		# 轻量
 		app_list=$APT_TO_INSTALL_INDEX_1
 	elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 2 ]; then
-		# 部分安装
+		# 日用影音
 		app_list=$APT_TO_INSTALL_INDEX_2
 	elif [ "$SET_APT_INSTALL_LIST_INDEX" -eq 3 ]; then
-		# 全部安装
+		# 自定义
 		app_list=$APT_TO_INSTALL_INDEX_3
 	fi
 	# SET_APT_TO_INSTALL_LATER = 黑名单：从当前 INDEX 挑出，脚本结束后再装
@@ -346,6 +347,69 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
 	else
 		prompt -e "Nginx's installation seems failed."
 		quitThis
+	fi
+fi
+
+# fmgr 文件共享：仅当同时安装了 Nginx 与 PHP，且不启动服务
+if [ "${SET_CONFIG_FMGR:-0}" -eq 1 ]; then
+	if [ "${SET_INSTALL_NGINX:-0}" -ne 1 ] || [ "${SET_INSTALL_PHP:-0}" -ne 1 ]; then
+		prompt -w "SET_CONFIG_FMGR=1 但未同时安装 Nginx 和 PHP（SET_INSTALL_NGINX / SET_INSTALL_PHP），跳过 fmgr。"
+	else
+		fmgr_src="${DEPLOY_SCRIPT_ROOT}/../fmgr文件传输"
+		fmgr_dst="/home/HTML/fmgr"
+		if [ ! -d "$fmgr_src" ]; then
+			prompt -w "未找到仓库 fmgr文件传输/（$fmgr_src），跳过 fmgr。"
+		else
+			prompt -x "配置 fmgr 到 $fmgr_dst（不启动 nginx / php-fpm）"
+			addFolder /home/HTML
+			addFolder "$fmgr_dst"
+			if command -v rsync >/dev/null 2>&1; then
+				rsync -a --exclude 'NginxSetup' --exclude '.git' --exclude '.idea' \
+					"$fmgr_src/" "$fmgr_dst/"
+			else
+				cp -a "$fmgr_src/." "$fmgr_dst/"
+				rm -rf "$fmgr_dst/NginxSetup"
+			fi
+			if [ -d "$fmgr_src/MoveToParent" ]; then
+				sudo cp -a "$fmgr_src/MoveToParent/." /home/HTML/
+			fi
+			if [ ! -e /home/HTML/index.html ] && [ -f /home/HTML/jumpindex.html ]; then
+				sudo cp /home/HTML/jumpindex.html /home/HTML/index.html
+			fi
+			doApt install php-mbstring php-zip php-xml php-gd
+			sudo mkdir -p /etc/nginx/snippets
+			if [ -f "$fmgr_src/NginxSetup/fmgr-snippet.conf" ]; then
+				sudo sed "s|__FMGR_PARENT__|/home/HTML|g" "$fmgr_src/NginxSetup/fmgr-snippet.conf" \
+					| sudo tee /etc/nginx/snippets/fmgr.conf >/dev/null
+			fi
+			if [ -f /etc/nginx/sites-available/http ]; then
+				# 启用 snippet，并去掉会误伤 /fmgr/*.php 的动态脚本 403
+				sudo sed -i 's|^[[:space:]]*# include /etc/nginx/snippets/fmgr.conf;|    include /etc/nginx/snippets/fmgr.conf;|' \
+					/etc/nginx/sites-available/http
+				sudo sed -i '/# BEGIN_DENY_DYNAMIC/,/# END_DENY_DYNAMIC/s/^/# /' \
+					/etc/nginx/sites-available/http
+			fi
+			sudo chown -R "$CURRENT_USER:$CURRENT_USER" /home/HTML
+			if getent group www-data >/dev/null; then
+				sudo chgrp -R www-data /home/HTML/fmgr/files /home/HTML/fmgr/files/tempUpload 2>/dev/null || true
+				sudo chmod -R ug+rwx /home/HTML/fmgr/files
+			fi
+			# 不启动：与 SET_ENABLE_NGINX / SET_PHP_FPM_ENABLE 一致
+			if [ "${SET_ENABLE_NGINX:-0}" -eq 0 ]; then
+				sudo systemctl disable nginx.service 2>/dev/null || true
+				sudo systemctl stop nginx.service 2>/dev/null || true
+			fi
+			if [ "${SET_PHP_FPM_ENABLE:-0}" -eq 0 ]; then
+				phpfpm_unit=$(systemctl list-unit-files --type=service --no-legend 2>/dev/null | awk '/^php[0-9.]*-fpm\.service/{print $1; exit}')
+				if [ -n "$phpfpm_unit" ]; then
+					sudo systemctl disable "$phpfpm_unit" 2>/dev/null || true
+					sudo systemctl stop "$phpfpm_unit" 2>/dev/null || true
+				fi
+			fi
+			prompt -m "fmgr 已就位：只读 /fmgr/ 、上传 /fmgr/uploader.php（需登录）。服务未启动，需要时："
+			prompt -m "  sudo systemctl start php*-fpm nginx"
+			prompt -m "访问 http://<本机>/ 或 /x 或 /fmgr/ ；账号见仓库 fmgr文件传输/README.md"
+		fi
 	fi
 fi
 

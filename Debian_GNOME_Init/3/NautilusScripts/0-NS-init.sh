@@ -14,7 +14,15 @@ ghostscript
 cups
 bash
 gnome-terminal
+libnotify-bin
 )
+# 办公脚本额外依赖（检查点三 SET_NAUTILUS_OFFICE=1 时由 setup.sh 传入）
+if [ -n "${NS_INIT_EXTRA_PACKAGES:-}" ]; then
+  # shellcheck disable=SC2206
+  packages+=($NS_INIT_EXTRA_PACKAGES)
+fi
+# 去重
+readarray -t packages < <(printf '%s\n' "${packages[@]}" | awk 'NF && !seen[$0]++')
 
 # 记录安装失败的软件包
 failed=()
