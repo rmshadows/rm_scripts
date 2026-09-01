@@ -162,6 +162,32 @@ sudo journalctl -u hdmi-hotplug-recover.service -n 30 --no-pager
 
 ---
 
+## 恢复后桌面异常（标题栏没了等）
+
+`recover` **只跑 xrandr**，不会重启 Fluxbox / GNOME。全部输出 `--off` 再打开时，轻量窗口管理器有时跟不上 RandR，Fluxbox 偶发装饰/标题栏错乱。GNOME（Mutter）一般自己消化，很少需要动。
+
+需要时**手动**重载窗口管理器即可（应用通常还在）：
+
+**Fluxbox**
+
+```bash
+fluxbox-remote Restart
+# 或：Fluxbox 菜单 → Restart
+```
+
+**GNOME on Xorg**
+
+```bash
+# 键盘：Alt+F2，输入 r，回车
+busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
+# 或：
+killall -SIGQUIT gnome-shell   # 由 gnome-session 再拉起
+```
+
+GNOME Wayland 没有可靠的 Shell 热重载，多半只能注销。本方案本身也要求 X11。
+
+---
+
 ## 布局文件
 
 `hdmi-hotplug-save.sh` 写出当前每个 **connected** 输出的名字、是否主屏、mode、刷新率、位置、旋转。
