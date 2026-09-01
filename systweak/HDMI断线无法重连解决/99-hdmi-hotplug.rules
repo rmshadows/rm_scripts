@@ -1,0 +1,2 @@
+# DRM 热插拔（KVM 切回）→ 只启动 systemd，不要在 udev 里跑 xrandr
+SUBSYSTEM=="drm", ACTION=="change", ENV{HOTPLUG}=="1", RUN+="/usr/local/bin/hdmi-hotplug-trigger.sh"

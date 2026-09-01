@@ -1,0 +1,13 @@
+[Unit]
+Description=Recover HDMI/display after DRM hotplug (KVM)
+After=display-manager.service
+
+[Service]
+Type=oneshot
+# 改成你的桌面用户（setup.sh 会自动替换 __DESKTOP_USER__）
+User=__DESKTOP_USER__
+# 多数 X11 是 :0；recover.sh 仍会再探测 DISPLAY / XAUTHORITY
+Environment=DISPLAY=:0
+ExecStart=/usr/local/bin/hdmi-hotplug-recover.sh
+StandardOutput=journal
+StandardError=journal
