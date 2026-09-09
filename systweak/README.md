@@ -42,6 +42,7 @@
 | `rime-chinese-mode.sh` | 当前会话切到 Rime 中文模式 | 弱（即时操作，无持久备份） |
 | `lightdm-gtk-greeter.sh` | LightDM 使用 **lightdm-gtk-greeter**（可设为默认 DM） | 中（还原 conf/默认 DM；包不卸） |
 | `lightdm-gtk-background.sh` | 设置 LightDM GTK greeter 背景图 | 好（还原 conf） |
+| `wechat-recv-writable.sh` | GNOME：Alt+Shift+M 把微信接收文件目录设为可写（自动发现账号） | 好（还原原快捷键） |
 | `_template.sh` | 新脚本模板 | — |
 
 ## 示例
