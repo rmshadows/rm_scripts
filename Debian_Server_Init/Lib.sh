@@ -200,24 +200,56 @@ backupFile() {
 	fi
 }
 
+# 交互式安装（apt-listchanges / pager / debconf 等）必须连真实 TTY。
+# 管道、tee、未 flush 的 script 都会让界面画不出来、按键进不去。
+deploy_tty_ok() {
+	[ -t 0 ] && [ -t 1 ] && [ -t 2 ]
+}
+
+deploy_prepare_interactive() {
+	if ! deploy_tty_ok; then
+		prompt -e "stdin/stdout/stderr 不是终端。debconf / pager / ncurses 无法显示，也无法接收按键。"
+		prompt -w "请直接在终端运行：bash Debian_13_Server_Setup.sh（不要再套一层管道或无 -t 的 ssh）"
+		return 1
+	fi
+	if [ -z "${DEBIAN_FRONTEND:-}" ] || [ "${DEBIAN_FRONTEND}" = "noninteractive" ]; then
+		if command -v whiptail >/dev/null 2>&1 || command -v dialog >/dev/null 2>&1; then
+			export DEBIAN_FRONTEND=dialog
+		else
+			export DEBIAN_FRONTEND=readline
+		fi
+	fi
+	export TERM="${TERM:-xterm-256color}"
+	return 0
+}
+
 # 执行apt命令 注意，检查点一后才能使用这个方法
 doApt() {
 	prompt -x "doApt: $@"
-	# 如果是第一次运行apt
-	if [ "$FIRST_DO_APT" -eq 1 ]; then
-		prompt -w "如果APT显示被占用，『对此的通常建议是等待』。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
-		prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+	# 仅本机第一次跑部署时提示一次（unattended-upgrade 可能占锁）。续跑/再跑不再 sleep。
+	if [ "${FIRST_DO_APT:-1}" -eq 1 ]; then
 		FIRST_DO_APT=0
-		sleep 5
+		_apt_hint="${DEPLOY_SCRIPT_ROOT:-.}/.deploy_apt_hint"
+		if [ ! -f "$_apt_hint" ]; then
+			prompt -w "如果APT显示被占用，『对此的通常建议是等待』（unattended-upgrade 等）。如果你没有耐心，请尝试根据报错决定是否运行下列所示的命令(删锁、dpkg重配置)，注意：后者是极不建议的！"
+			prompt -e "sudo rm /var/lib/dpkg/lock-frontend && sudo rm /var/lib/dpkg/lock && sudo dpkg --configure -a"
+			sleep 5
+			echo 1 >"$_apt_hint" 2>/dev/null || true
+		fi
 	fi
-	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then
+	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "purge" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then
+		deploy_prepare_interactive || prompt -w "无 TTY，debconf 问答可能无法操作"
+	fi
+	# sudo 默认 env_reset，不把 DEBIAN_FRONTEND 传下去则对话框出不来
+	local _sudo=(sudo --preserve-env=DEBIAN_FRONTEND,DEBCONF_FRONTEND,TERM,LANG,LC_ALL,LANGUAGE,DISPLAY)
+	if [ "$1" = "install" ] || [ "$1" = "remove" ] || [ "$1" = "purge" ] || [ "$1" = "dist-upgrade" ] || [ "$1" = "upgrade" ] || [ "$1" = "full-upgrade" ]; then
 		if [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 0 ]; then
-			sudo apt "$@"
+			"${_sudo[@]}" apt "$@"
 		elif [ "$SET_APT_RUN_WITHOUT_ASKING" -eq 1 ]; then
-			sudo apt "$@" -y
+			"${_sudo[@]}" apt "$@" -y
 		fi
 	else
-		sudo apt "$@"
+		"${_sudo[@]}" apt "$@"
 	fi
 }
 
@@ -290,29 +322,79 @@ log_message "日志：任务开始 - setup.sh" "$ELOG_FILE"
 } | tee -a "$ELOG_FILE"    # 将输出追加到日志文件
 log_message "日志：任务结束 - 1/setup.sh" "$ELOG_FILE"
 cd ..
+# 管道会抢走 TTY：apt modernize-sources / pager / debconf 会卡住等回车。
 !说明
+
+# ---------- 部署进度（失败后续跑） ----------
+deploy_job_key() {
+	local script="$1"
+	local current_dir
+	current_dir=$(pwd)
+	if [ -n "$DEPLOY_SCRIPT_ROOT" ] && [[ "$current_dir" == "$DEPLOY_SCRIPT_ROOT"* ]]; then
+		echo "${current_dir#"$DEPLOY_SCRIPT_ROOT"/}/$(basename "$script")"
+	else
+		echo "$(basename "$current_dir")/$(basename "$script")"
+	fi
+}
+
+deploy_is_job_done() {
+	local job_key="$1"
+	[ -f "$DEPLOY_STATE_FILE" ] && grep -Fxq "$job_key" "$DEPLOY_STATE_FILE"
+}
+
+deploy_mark_job_done() {
+	local job_key="$1"
+	mkdir -p "$(dirname "$DEPLOY_STATE_FILE")" 2>/dev/null || true
+	if ! deploy_is_job_done "$job_key"; then
+		echo "$job_key" >>"$DEPLOY_STATE_FILE"
+	fi
+}
+
+deploy_reset_state() {
+	rm -f "$DEPLOY_STATE_FILE"
+}
+
+deploy_has_completed_jobs() {
+	[ -f "$DEPLOY_STATE_FILE" ] && [ -s "$DEPLOY_STATE_FILE" ]
+}
+
+deploy_print_completed_jobs() {
+	if deploy_has_completed_jobs; then
+		prompt -m "以下步骤已完成，续跑时将自动跳过："
+		while IFS= read -r _line; do
+			[ -n "$_line" ] && prompt -k "  ✓" "$_line"
+		done <"$DEPLOY_STATE_FILE"
+	fi
+}
+
 do_job() {
 	local script="$1"
 	local log_file="$2"
+	local job_key
+	local _job_rc=0
 
-	# 获取当前工作目录
-	local current_dir=$(pwd)
+	job_key=$(deploy_job_key "$script")
 
-	# 记录任务开始的日志，包含当前目录和脚本名
-	log_message "日志：任务开始 - $current_dir/$(basename "$script")" "$log_file"
+	if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_is_job_done "$job_key"; then
+		prompt -m "跳过已完成步骤: $job_key"
+		log_message "日志：已跳过（续跑）- $job_key" "$log_file"
+		return 0
+	fi
 
-	{
-		# 通过进程替换处理标准错误，逐行读取并加上 [stderr]
-		source "$script" 2> >(while IFS= read -r line; do
-			echo -e "\033[1;31;47m [stderr] \033[0m $line" # 红字白底
-		done) |
-			while IFS= read -r line; do
-				echo "[stdout] $line" # 标准输出标记为 [stdout]
-			done
-	} | tee -a "$log_file" # 将输出追加到日志文件
+	log_message "日志：任务开始 - $job_key" "$log_file"
 
-	# 记录任务结束的日志，包含当前目录和脚本名
-	log_message "日志：任务结束 - $current_dir/$(basename "$script")" "$log_file"
+	# 当前 shell + 真实 TTY 中 source，不经过管道/tee。
+	source "$script"
+	_job_rc=$?
+	# 真正失败应走 quitThis（exit 1）。这里不把「脚本最后一条命令」的非零当成整步失败。
+	if [ "$_job_rc" -ne 0 ]; then
+		log_message "日志：任务结束（末条命令退出码 $_job_rc）- $job_key" "$log_file"
+	fi
+
+	if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ]; then
+		deploy_mark_job_done "$job_key"
+	fi
+	log_message "日志：任务结束 - $job_key" "$log_file"
 }
 
 # 将"【$xxx】"复制为真实变量xxx的值

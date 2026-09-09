@@ -1,6 +1,8 @@
 # README
 
-1. alternatives_manager.sh——交互式alternatives配置
+1. alternatives_manager.sh——交互式 alternatives（查看/添加/改优先级/按序号删除与切换）。选组名时 Tab 补全
+
+1b. env_manager.sh——像 Windows 那样改环境变量（用户/系统、增减、PATH 排序）。系统变量需 sudo，新开终端后生效
 
 2. check_pkgs_in_apt.sh——检查仓库中有无某软件包（虚拟软件包检测不出）
 

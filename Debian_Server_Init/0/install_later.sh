@@ -8,20 +8,7 @@
 docker-ce
 禁用第三方软件仓库更新(提升apt体验)
 安装时间较长的软件包
-# 安装later_task中的软件
-if [ "$SET_APT_INSTALL" -eq 1 ]; then
-    doApt install "${later_task[@]}"
-    if [ $? != 0 ]; then
-        prompt -e "安装出错，列表中有仓库中没有的软件包。下面将进行逐个安装，按任意键继续。"
-        sleep 2
-        num=1
-        for var in "${later_task[@]}"; do
-            prompt -m "正在安装第 $num 个软件包: $var。"
-            doApt install $var
-            num=$((num + 1))
-        done
-    fi
-fi
+# later_task（apt-listchanges 等）必须在 Docker 等全部装完之后再装，见文件末尾。
 
 # https://docs.docker.com/engine/install/
 # https://download.docker.com/linux/debian/dists/
@@ -101,9 +88,10 @@ if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
     # sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
     # sudo chmod g+rwx "$HOME/.docker" -R
     if [ "$SET_DOCKER_NON_ROOT" -eq 1 ]; then
-        sudo groupadd docker
-        sudo usermod -aG docker $CURRENT_USER
-        newgrp docker
+        prompt -x "将用户 $CURRENT_USER 加入 docker 组（免 sudo 跑 docker）"
+        sudo groupadd -f docker
+        sudo usermod -aG docker "$CURRENT_USER"
+        prompt -m "docker 组已写入账号。当前会话不会立刻生效，请部署结束后重新登录。不要在脚本里 newgrp（会开新 shell，卡住后续步骤）。"
     fi
     if [ "$SET_ENABLE_DOCKER_CE" -eq 0 ]; then
         prompt -x "禁用docker-ce服务开机自启"
@@ -141,4 +129,18 @@ if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ]; then
             sudo mv "$f" /etc/apt/sources.list.d/backup/
         fi
     done
+fi
+
+# 稍后安装黑名单：必须在本文件所有其它 apt 之后（否则 listchanges 会打断 Docker 等）
+if [ "$SET_APT_INSTALL" -eq 1 ]; then
+	if [ ${#later_task[@]} -eq 0 ]; then
+		prompt -m "稍后安装列表为空，跳过。"
+	else
+		num=1
+		for var in "${later_task[@]}"; do
+			prompt -m "正在安装稍后列表第 $num 个软件包: $var（可交互）"
+			doApt install "$var"
+			num=$((num + 1))
+		done
+	fi
 fi

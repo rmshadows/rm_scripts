@@ -88,7 +88,7 @@ APT_TO_INSTALL_INDEX_1="
 - pwgen——随机密码生成器。
 - qt5ct——配置Qt5应用的主题/字体/样式。
 - sed——流编辑器（文本处理基础工具）。
-- silversearcher-ag——快速文本搜索工具（ag，代码搜索利器）。
+- ripgrep——快速文本搜索（rg）。
 - slowhttptest——测试慢HTTPDoS攻击的工具（安全研究）。
 - smbclient——访问SMB/CIFS共享的命令行客户端。
 - sshfs——通过SSH挂载远程目录（FUSE）。
@@ -189,7 +189,7 @@ APT_TO_INSTALL_INDEX_2="
 - pwgen——随机密码生成器。
 - qt5ct——配置Qt5应用的主题/字体/样式。
 - sed——流编辑器（文本处理基础工具）。
-- silversearcher-ag——快速文本搜索工具（ag，代码搜索利器）。
+- ripgrep——快速文本搜索（rg）。
 - slowhttptest——测试慢HTTPDoS攻击的工具（安全研究）。
 - smbclient——访问SMB/CIFS共享的命令行客户端。
 - sshfs——通过SSH挂载远程目录（FUSE）。

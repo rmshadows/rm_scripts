@@ -141,7 +141,7 @@ APT_TO_INSTALL_INDEX="
 - reaver——无线WPS测试
 - screenfetch——显示系统信息
 - sed——文本编辑工具
-- silversearcher-ag——Ag快速搜索工具
+- ripgrep——快速文本搜索（rg）。
 - slowhttptest——慢速HTTP链接测试
 - smbclient——SMB共享查看
 - sqlmap——sqlmap

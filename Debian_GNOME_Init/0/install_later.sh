@@ -209,9 +209,10 @@ if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
     # sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
     # sudo chmod g+rwx "$HOME/.docker" -R
     if [ "$SET_DOCKER_NON_ROOT" -eq 1 ]; then
-        sudo groupadd docker
-        sudo usermod -aG docker $CURRENT_USER
-        newgrp docker
+        prompt -x "将用户 $CURRENT_USER 加入 docker 组（免 sudo 跑 docker）"
+        sudo groupadd -f docker
+        sudo usermod -aG docker "$CURRENT_USER"
+        prompt -m "docker 组已写入账号。当前会话不会立刻生效，请部署结束后重新登录。不要在脚本里 newgrp（会开新 shell，卡住后续步骤）。"
     fi
     if [ "$SET_ENABLE_DOCKER_CE" -eq 0 ]; then
         prompt -x "禁用docker-ce服务开机自启"

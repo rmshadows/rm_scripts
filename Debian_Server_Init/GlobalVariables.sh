@@ -20,6 +20,10 @@ TEMPORARILY_SUDOER=0
 FIRST_DO_AS_ROOT=1
 # 第一次运行APT任务
 FIRST_DO_APT=1
+# 部署脚本根目录（入口脚本设置）
+DEPLOY_SCRIPT_ROOT="${DEPLOY_SCRIPT_ROOT:-}"
+# 已完成步骤记录（用于失败后续跑）
+DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-${DEPLOY_SCRIPT_ROOT:-.}/.deploy_progress}"
 # 获取当前用户名（从这里开始才能使用此变量）
 CURRENT_USER=$USER
 # 主机名

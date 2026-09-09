@@ -1,6 +1,6 @@
 # Debian13_Server.sh
 
->Current Version: 0.1.4
+>Current Version: 0.1.5
 
 ## 目录结构
 
@@ -20,6 +20,19 @@
 2. 配置好`Config.sh`以及数字目录下的`cfg.sh`（如有必要）
 3. 补充需要的资源(比如一些个人个性化配置)
 4. 直接运行`Debian_13_Server_Setup.sh`脚本
+
+`SET_APT_TO_INSTALL_LATER` 是黑名单：只从**当前 INDEX** 挑出的包放到脚本末尾再装（如你把 apt-listbugs 写进 INDEX 3）。不在 INDEX 里的不会强行装。INDEX 2 = INDEX 1 + `4/cfg.sh` 里的增量。
+
+### 失败后续跑
+
+某检查点失败后，直接**再次运行**同一入口脚本即可；默认会跳过已成功的步骤（进度保存在 `.deploy_progress`）。
+
+- `SET_DEPLOY_RESUME=1`（默认）：启用续跑，跳过已完成步骤
+- `SET_DEPLOY_RESET=1`：清除进度，强制从头运行
+- `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：续跑时跳过 init 确认
+- `SET_DEPLOY_FULL_LOG=0`（默认）：不套 `script`，直接用真实终端（debconf / pager 可交互）。设为 `1` 才全文录像（`script -f`）
+
+`SET_APT_RUN_WITHOUT_ASKING=1` 时，`apt modernize-sources` 会带 `-y`，不会再停在 `Rewrite sources? [Y/n]`。检查点脚本在当前终端 `source`，不再用管道/`tee` 包一层（否则会像要按回车才能继续）。
 
 ## 脚本运行流程
 
@@ -47,7 +60,6 @@
 
 - 加载配置文件和函数库等等
 - 获取当前用户名
-- 检查是否时GNOME桌面，不是则警告、退出。
 - 与用户确认执行
 
 ### 检查点一
@@ -85,61 +97,11 @@
 
 ### 检查点四
 
-- 从APT源安装常用软件
-
-  ```
-  - atop——高级系统资源监控工具，能详细显示CPU、内存、磁盘等使用情况
-  - curl——数据传输工具，支持HTTP、HTTPS等协议，广泛用于API测试
-  - dstat——实时性能监控工具，能显示 CPU、磁盘、网络等信息
-  - grep——强大的文本搜索工具，适用于日志分析
-  - htop——交互式进程查看器，比top更强大，支持彩色显示和进程树
-  - iftop——实时网络流量监控工具，显示哪些进程占用最多带宽
-  - inotify-tools——基于inotify的工具集，用于监控文件和目录变化
-  - lsof——列出当前系统打开的文件及相关进程，有助于调试和故障排查
-  - mtr——网络诊断工具，结合ping和traceroute功能，实时显示网络路径信息
-  - nmap——网络扫描工具，用于发现网络中的设备和服务
-  - ping——基本的网络连通性测试工具
-  - rkhunter——检测系统是否存在 rootkit 的工具
-  - rsync——文件同步工具，常用于备份和增量复制
-  - rsyslog——系统日志服务，用于收集和处理日志
-  - screen——终端复用工具，适用于断开和恢复远程会话
-  - sed——流编辑器，用于批量编辑日志文件
-  - ssh——安全的远程Shell工具，用于远程管理Linux系统
-  - strace——系统调用跟踪工具，调试进程与系统的交互
-  - sysstat——系统监控工具包，包含iostat、mpstat等
-  - tar——用于打包和压缩备份文件
-  - tcpdump——网络抓包工具，用于捕获和分析网络数据包
-  - silversearcher-ag——快速文本搜索工具（ag，代码搜索利器）
-  - tmux——终端复用工具，支持多窗口和会话保持，适合长时间运行的任务
-  - traceroute——网络路径追踪工具，用于检查数据包传输的路径
-  - wget——文件下载工具，支持HTTP、HTTPS、FTP等协议，适用于脚本化下载
-  - zsh——zsh
-  - zsh-autosuggestions——zsh_plugin
-  - zsh-syntax-highlighting——zsh_plugin
-  ```
-  
-- 脚本最后再安装的应用(滞后)
-
-  ```
-    - apt-listbugs——apt显示bug信息。注意：阻碍自动安装，请过后手动安装
-    - apt-listchanges——apt显示更改。注意：阻碍自动安装，请过后手动安装
-  ```
-
-- 安装Python3
-
-- 配置Python3源为清华大学镜像
-
-- 配置Python3全局虚拟环境（Debian12中无法直接使用pip了）
-
-- 安装配置Git(配置User Email)
-
-- 安装配置SSH
-
-- 安装配置npm(是否安装hexo)
-
-- 安装docker-ce(滞后)
-
-- 禁用第三方软件仓库更新(提升apt体验)(滞后)
+- 从 APT 源安装常用软件。完整包名以 `4/cfg.sh` 为准：INDEX 1 轻量运维，INDEX 2 = 1 + 增量，INDEX 3 自定义（空）。
+- 黑名单 `SET_APT_TO_INSTALL_LATER`：仅当包出现在当前 INDEX 时，放到 Docker / 禁用第三方源之后再装。
+- 安装 Python3 / Git / SSH / npm（由 Config 开关）
+- 安装 docker-ce（滞后）
+- 禁用第三方软件仓库更新（滞后）
 
 ### 检查点五
 
@@ -202,7 +164,7 @@
 
 - `backupFile ()`——备份配置文件。先检查是否有bak结尾的备份文件，没有则创建，有则另外覆盖一个newbak文件。$1 :文件名
 
-- `doApt ()`——执行apt命令 注意，检查点一后才能使用这个方法
+- `doApt ()`——执行 apt。本机第一次部署会提示 unattended-upgrade 可能占锁（之后写入 `.deploy_apt_hint`，续跑不再提示）
 
 - `addFolder ()`——新建文件夹。只能有一个参数$1
 
@@ -210,7 +172,9 @@
 
 - `log_message()`——记录日志(会显示再终端) log_message_bg "信息" "日志文件"
 
-- `do_job()`——执行任务，执行脚本（日志+输出） do_job "setup.sh" "$ELOG_FILE"
+- `do_job()`——在当前终端 source 执行步骤（保留 TTY，apt 可交互）；开始/结束写入日志。整次运行可用 `script` 包一层记全文。
+
+- `deploy_*()`——部署进度：`deploy_is_job_done`、`deploy_mark_job_done`、`deploy_reset_state` 等（状态文件 `.deploy_progress`）
 
 - `replace_username()`——替换用户名为使用已定义的 $CURRENT_USER
 
@@ -219,6 +183,11 @@
 ## 更新日志
 
 >dev: Not available yet.
+
+- 2026.09.07——0.1.5
+  - 对齐 GNOME 部署：`do_job` 不再用管道/`tee` 抢走 TTY；`apt modernize-sources -y` 避免卡住等回车；支持失败后续跑（`.deploy_progress`）
+  - `SET_APT_TO_INSTALL_LATER` 从 INDEX 挑出后，放到 Docker / 禁用第三方源全部完成之后再装
+  - APT INDEX：1 轻量运维、2 为 1+增量、3 自定义空表；去掉系统自带包与检查点二重复项；黑名单不在 INDEX 则不强装
 
 - 2026.07.31——0.1.4
   - 检查点五新增可选安装 acme.sh（`SET_INSTALL_ACME_SH`，与 Certbot 并列，默认只装不签发）

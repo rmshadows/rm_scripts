@@ -74,10 +74,10 @@ SET_TTY_AUTOLOGIN=1
 SET_APT_INSTALL=1
 : <<注释
 有几个预选的安装列表供参考:
-0.自定义列表
-1.轻便安装
-2.部分安装
-3.全部安装
+0.自定义（空，建议用 3）
+1.轻量运维（默认）
+2.INDEX 1 + 运维增强（fail2ban / restic / ansible 等）
+3.自定义（空，自己在 4/cfg.sh 填）
 Preset=1
 注释
 SET_APT_INSTALL_LIST_INDEX=1
@@ -185,6 +185,16 @@ SET_DISABLE_THIRD_PARTY_REPO=1
 SET_ENABLE_GRUB_OS_PROBER=0
 # 最后一步 设置用户目录所属 Preset=1
 SET_USER_HOME=1
+
+## 部署续跑 ##
+# 失败后续跑时跳过已完成步骤 Preset:1
+SET_DEPLOY_RESUME=1
+# 设为1则清除进度、从头运行 Preset:0
+SET_DEPLOY_RESET=0
+# 续跑时跳过 init 确认提示 Preset:1
+SET_DEPLOY_SKIP_CONFIRM=1
+# 全文终端录像（script -f）。默认 0：直接用真实终端，debconf/pager 可交互。需要完整日志再设 1
+SET_DEPLOY_FULL_LOG=0
 
 ############################################################################
 #### 默认变量赋值
