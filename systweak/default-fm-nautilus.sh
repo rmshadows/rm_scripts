@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 默认文件管理器设为 Nautilus（非交互）
+# 通用查看/修改默认应用见 default-apps.sh
 # 用法: ./default-fm-nautilus.sh [--apply|--undo|--status]
 # 环境变量: TARGET_FM=org.gnome.Nautilus.desktop
 set -euo pipefail

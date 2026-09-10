@@ -36,6 +36,7 @@
 | `disable-sleep.sh` | 禁止休眠/挂起（systemd mask + GNOME/XFCE） | 中（还原 mask 与 gsettings） |
 | `lock-suspend.sh` | 启用或禁用「休眠+锁屏」相关项 | 中（快照 gsettings/logind 等） |
 | `gnome-idle-lock.sh` | GNOME：闲置 60s 锁屏、立即锁定 | 好（还原 gsettings） |
+| `default-apps.sh` | 交互修改默认应用（类似 alternatives，Tab 补全） | 好 |
 | `default-fm-nautilus.sh` | 默认文件管理器改为 Nautilus | 好 |
 | `python-env.sh` | Python3 + 清华 pip 源 + 默认 venv（`~/.PythonVenv`）+ shell `acpy`/`decpy` | 中（还原镜像/本脚本建的 venv；包不卸） |
 | `setup-zsh.sh` | 安装 zsh/插件，写入 **GNOME Init 同款 zshrc**（已内嵌），root+当前用户切 zsh | 中（还原 shell 与 `.zshrc`；包不卸） |
