@@ -1,0 +1,50 @@
+#!/bin/bash
+# 总入口：livectl ffmpegL-1 next    或    livectl 1 next
+set -u
+ROOT="${FFMPEGL_ROOT:-$HOME/Applications/broadcast}"
+
+usage() {
+	cat <<EOF
+用法: $(basename "$0") <实例> <命令> [参数]
+
+实例: ffmpegL-1  或  1
+
+命令:
+  status | list | next | prev | skip N | ff [秒] | rew [秒] | seek +30|1:30
+  set rtmp|dir|playlist|file|order|encode|step <值>
+  start | stop | restart | journal
+
+示例:
+  $(basename "$0") 1 status
+  $(basename "$0") ffmpegL-1 next
+  $(basename "$0") 1 ff              # 快进 30 秒
+  $(basename "$0") 1 ff 60
+  $(basename "$0") 1 seek 1:30
+  $(basename "$0") 1 set order seq
+  $(basename "$0") 1 set rtmp rtmp://example/live/key
+  $(basename "$0") 1 skip 3
+
+实例目录: $ROOT
+EOF
+}
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+	usage
+	echo
+	echo "已安装:"
+	ls -d "$ROOT"/ffmpegL-* 2>/dev/null || echo "  （还没有，先 cd ffmpegL && bash ffmpegL.sh）"
+	exit 0
+fi
+
+target="$1"
+shift
+if [[ "$target" =~ ^[0-9]+$ ]]; then
+	target="ffmpegL-${target}"
+fi
+dir="${ROOT}/${target}"
+if [[ ! -x "$dir/ctl.sh" ]]; then
+	echo "找不到 $dir/ctl.sh"
+	ls -d "$ROOT"/ffmpegL-* 2>/dev/null || true
+	exit 1
+fi
+exec "$dir/ctl.sh" "$@"

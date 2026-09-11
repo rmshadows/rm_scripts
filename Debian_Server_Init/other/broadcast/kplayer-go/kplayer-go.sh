@@ -1,5 +1,6 @@
 #!/bin/bash
-## 需要有人职守，需要sudo
+## 需要有人职守，需要 sudo（装服务时）
+## 1G 内存请用 ../ffmpegL/ffmpegL.sh，kplayer 会重编码，很容易把机器打满。
 # 加载全局变量
 source "../GlobalVariables.sh"
 # 加载全局函数
@@ -62,6 +63,15 @@ replace_placeholders_with_values removeServices.sh
 # 回到配置目录
 cd "$SET_DIR"
 replace_placeholders_with_values srv.service.src
+echo
+echo "MemoryMax 是可选的：1G 建议开（kplayer 重编码很吃内存），配置高的不必开。"
+read -p "给该服务加上 MemoryMax=512M？(y/N): " memc
+if [[ "$memc" =~ ^[Yy]$ ]]; then
+    sed -i 's/^# MemoryMax=/MemoryMax=/' srv.service
+    echo "✅ 已启用 MemoryMax=512M"
+else
+    echo "不限制内存。以后要加：sudo systemctl edit $new_srv_name"
+fi
 sudo mv srv.service /lib/systemd/system/$new_srv_name.service
 sudo systemctl daemon-reload
 

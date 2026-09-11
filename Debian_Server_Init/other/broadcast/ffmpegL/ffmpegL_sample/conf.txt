@@ -1,3 +1,11 @@
 RTMP=""
-# 配置视频文件(默认安装目录上一级文件夹的videos)
-MP4_FILE="【$INSTALL_DIR】/videos/xxx.mp4"
+# 素材三选一（优先级：VIDEO_DIR > PLAYLIST > MP4_FILE）
+VIDEO_DIR="【$INSTALL_DIR】/videos"
+PLAYLIST=""
+MP4_FILE=""
+# seq=按文件名顺序  shuffle=加载/reload 时乱序（切下一首不会再洗牌）
+ORDER=shuffle
+# 快进默认秒数（livectl 1 ff）
+SEEK_STEP=30
+# copy=不重编码（1G 必用，源需 h264+aac）  light=ultrafast 480p
+ENCODE=copy

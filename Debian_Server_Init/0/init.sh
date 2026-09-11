@@ -7,28 +7,14 @@
 确认运行
 !预先检查
 
-### 这里是确认运行的模块
-_resume_skip_confirm=0
-if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_has_completed_jobs; then
-	deploy_print_completed_jobs
-	if [ "${SET_DEPLOY_SKIP_CONFIRM:-1}" -eq 1 ]; then
-		_resume_skip_confirm=1
-		prompt -m "检测到未完成部署，续跑模式：跳过已完成步骤…"
-	fi
-fi
+### 部署前警告 + 必须确认（续跑才跳过 y/N）
+# 直接跑 Debian_13_Server_Setup.sh 也会走到这里：没生成账号就警告，确认后才自动生成。
+deploy_print_preflight
+deploy_confirm_start $'\e[1;31m 已阅读以上警告？输入 y 开始部署（将改系统；若无账号文件会自动生成）。直接回车取消 [y/N]\e[0m'
 
-if [ "$_resume_skip_confirm" -eq 1 ]; then
-	prompt -m "开始部署……"
-else
-	comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车谢谢」[y/N]\e[0m"
-	choice=$?
-	if [ $choice == 1 ]; then
-		prompt -m "开始部署……"
-	elif [ $choice == 2 ]; then
-		prompt -w "感谢您的关注！——  https://github.com/rmshadows"
-		exit 0
-	fi
-fi
+# 有 .deploy_credentials 就用；否则自动生成。发生在确认之后。
+force_change_default_credentials
+
 t_pkg="acl"
 if ! command -v setfacl &>/dev/null; then
     echo -e "\033[31m$t_pkg not found! Installing $t_pkg...\033[0m" # 输出红色提示

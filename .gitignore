@@ -1,2 +1,9 @@
 # Release 构建产物（勿提交）
 /release/build/
+# 部署自动生成的登录账号与本机进度
+/Debian_Server_Init/.deploy_credentials
+/Debian_Server_Init/.deploy_progress
+/Debian_Server_Init/.deploy_apt_hint
+/Debian_GNOME_Init/.deploy_progress
+/Debian_GNOME_Init/.deploy_apt_hint
+

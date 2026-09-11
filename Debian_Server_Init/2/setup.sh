@@ -17,24 +17,23 @@ prompt -i "——————————  检查点二  ———————�
 
 source "cfg.sh"
 
-# 新建用户 如果已经存在，不添加，直接配置该用户
+# 新建用户 如果已经存在，不添加，直接配置该用户（密码用 chpasswd，避免 perl crypt 弱盐且出现在进程列表）
 if [ "$SET_USER" -eq 1 ];then
     prompt -x "Creating user $CURRENT_USER...."
-    # 检测是否存在该用户
-    grep -Eq "^$CURRENT_USER" /etc/passwd
-    if [ $? -eq 0 ]; then
-        # 存在用户 
-        prompt -e "Failed to add $CURRENT_USER. Username already exists! Continue with $CURRENT_USER"
+    if cred_password_is_weak "$SET_USER_PASSWD" "$CURRENT_USER" || cred_username_is_weak "$CURRENT_USER"; then
+        prompt -e "拒绝使用弱用户名/弱密码创建账号。请回到开始的提示处修改。"
+        exit 1
+    fi
+    if grep -Eq "^${CURRENT_USER}:" /etc/passwd; then
+        prompt -w "用户 $CURRENT_USER 已存在，同步登录密码并继续配置"
+        cred_set_user_password "$CURRENT_USER" "$SET_USER_PASSWD"
     else
-        # 不存在则新建
-        encrypt_pass=$(perl -e 'print crypt($ARGV[0], "password")' $SET_USER_PASSWD)
-        useradd -m -s /bin/zsh -G sudo -p $encrypt_pass $CURRENT_USER
-        if [ $? -eq 0 ];then
-            prompt -i "User has been added to system!"
-        else
-            echo "Failed to add a user!"
+        if ! useradd -m -s /bin/zsh -G sudo "$CURRENT_USER"; then
+            prompt -e "Failed to add a user!"
             exit 1
         fi
+        cred_set_user_password "$CURRENT_USER" "$SET_USER_PASSWD"
+        prompt -i "User has been added to system!"
     fi
 fi
 

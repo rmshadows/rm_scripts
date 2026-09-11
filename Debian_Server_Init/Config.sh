@@ -24,10 +24,18 @@ SET_APT_UPGRADE=1
 ## 检查点二 ##==
 # Set to 1 will specify a user.User will be created if not exist.If set to 0, continue with root(是否指定某用户进行配置，否的话将以root用户继续)  Preset:1
 SET_USER="${SET_USER:-1}"
-# User Name in lower case(要新建的用户名-必须小写英文！) Preset="admin" SET_USER=1时生效
+# ! 下面两个是占位。不要用 admin/passwd 上公网。
+# 推荐先跑：bash gen_credentials.sh （写入 .deploy_credentials，部署会自动读）
+# 若不跑，部署时也会自动生成。SET_CREDENTIALS_MANUAL=1 才改成手输。
 SET_USER_NAME="${SET_USER_NAME:-admin}"
-# User password(要新建的用户密码) Preset="passwd" SET_USER=1时生效
 SET_USER_PASSWD="${SET_USER_PASSWD:-passwd}"
+_CRED_FILE="${DEPLOY_SCRIPT_ROOT:-.}/.deploy_credentials"
+if [ -f "$_CRED_FILE" ]; then
+    if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+        # shellcheck disable=SC1090
+        source "$_CRED_FILE"
+    fi
+fi
 # 是否加入sudo组 Preset:1
 SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
@@ -191,61 +199,64 @@ SET_USER_HOME=1
 SET_DEPLOY_RESUME=1
 # 设为1则清除进度、从头运行 Preset:0
 SET_DEPLOY_RESET=0
-# 续跑时跳过 init 确认提示 Preset:1
+# 续跑时跳过「是否开始」确认（首次仍必须输入 y） Preset:1
 SET_DEPLOY_SKIP_CONFIRM=1
 # 全文终端录像（script -f）。默认 0：直接用真实终端，debconf/pager 可交互。需要完整日志再设 1
 SET_DEPLOY_FULL_LOG=0
 
 ############################################################################
-#### 默认变量赋值
-# 获取当前用户名和家目录 root 和 /root (如果有指定会在下面被修改，这里只是避免出现Null情况)
-# 注意:CURRENT_USER可以被指定
-CURRENT_USER="$USER"
-HOME_INDEX="$HOME"
-# 设置用户目录(如果有指定)
-if [ "$SET_USER" -eq 1 ]; then
-    CURRENT_USER="$SET_USER_NAME"
-    HOME_INDEX="/home/$SET_USER_NAME"
-else
-    CURRENT_USER=root
-    HOME_INDEX="/root"
-fi
+#### 默认变量赋值（用户名改完后会再跑一遍 config_resolve_identity）
+# 记住「还是默认 0」的项，改用户名后才能重新推导
+: "${_CFG_GIT_USER_RAW:=$SET_GIT_USER}"
+: "${_CFG_GIT_EMAIL_RAW:=$SET_GIT_EMAIL}"
+: "${_CFG_SSH_KEY_COMMENT_RAW:=$SET_SSH_KEY_COMMENT}"
+: "${_CFG_ACME_HOME_RAW:=$SET_ACME_HOME}"
+: "${_CFG_ACME_EMAIL_RAW:=$SET_ACME_EMAIL}"
+: "${_CFG_HTTP_ROOT_RAW:=$SET_HTTP_SERVER_ROOT}"
 
-# 初始化主机名
-if [ "$SET_HOST_NAME" == 0 ]; then
-    # 如果没有配置主机名
-    if [ "$HOSTNAME" == "" ]; then
-        HOSTNAME="$HOST"
-    fi
-else
-    HOSTNAME="$SET_HOST_NAME"
-fi
-
-# Git
-if [ "$SET_GIT_USER" -eq 0 ]; then
-    SET_GIT_USER=$CURRENT_USER
-fi
-if [ "$SET_GIT_EMAIL" -eq 0 ]; then
-    SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
-fi
-# SSH
-if [ "$SET_SSH_KEY_COMMENT" -eq 0 ]; then
-    SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian_Deploy_Script"
-fi
-# acme.sh
-if [ "$SET_ACME_HOME" = "0" ]; then
-    SET_ACME_HOME="$HOME_INDEX/.acme.sh"
-fi
-if [ "$SET_ACME_EMAIL" = "0" ]; then
-    SET_ACME_EMAIL="$CURRENT_USER@$HOSTNAME"
-fi
-# HTTP ROOT
-if [ "$SET_HTTP_SERVER_ROOT" -eq 0 ]; then
-    if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
-        SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/nginx"
-    elif [ "$SET_INSTALL_HTTP_SERVER" -eq 2 ]; then
-        SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/apache2"
+config_resolve_identity() {
+    CURRENT_USER="${USER:-root}"
+    HOME_INDEX="${HOME:-/root}"
+    if [ "${SET_USER:-0}" -eq 1 ]; then
+        CURRENT_USER="$SET_USER_NAME"
+        HOME_INDEX="/home/$SET_USER_NAME"
     else
-        SET_HTTP_SERVER_ROOT="/home/HTML"
+        CURRENT_USER=root
+        HOME_INDEX="/root"
     fi
-fi
+
+    if [ "$SET_HOST_NAME" == 0 ]; then
+        if [ "$HOSTNAME" == "" ]; then
+            HOSTNAME="$HOST"
+        fi
+    else
+        HOSTNAME="$SET_HOST_NAME"
+    fi
+
+    if [ "$_CFG_GIT_USER_RAW" = "0" ]; then
+        SET_GIT_USER=$CURRENT_USER
+    fi
+    if [ "$_CFG_GIT_EMAIL_RAW" = "0" ]; then
+        SET_GIT_EMAIL=$CURRENT_USER@$HOSTNAME
+    fi
+    if [ "$_CFG_SSH_KEY_COMMENT_RAW" = "0" ]; then
+        SET_SSH_KEY_COMMENT="A New SSH Key Generate for "$CURRENT_USER"@"$HOSTNAME" By Debian_Deploy_Script"
+    fi
+    if [ "$_CFG_ACME_HOME_RAW" = "0" ]; then
+        SET_ACME_HOME="$HOME_INDEX/.acme.sh"
+    fi
+    if [ "$_CFG_ACME_EMAIL_RAW" = "0" ]; then
+        SET_ACME_EMAIL="$CURRENT_USER@$HOSTNAME"
+    fi
+    if [ "$_CFG_HTTP_ROOT_RAW" = "0" ]; then
+        if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
+            SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/nginx"
+        elif [ "$SET_INSTALL_HTTP_SERVER" -eq 2 ]; then
+            SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/apache2"
+        else
+            SET_HTTP_SERVER_ROOT="/home/HTML"
+        fi
+    fi
+}
+
+config_resolve_identity

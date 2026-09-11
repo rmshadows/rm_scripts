@@ -1,0 +1,240 @@
+#!/bin/bash
+# ffmpegL 实例控制：切歌 / 顺序 / 改配置（不经过 nano）
+set -u
+INSTANCE_DIR="【$new_srv_path】"
+SERVICE_NAME="【$new_srv_name】"
+cd "$INSTANCE_DIR" || exit 1
+
+CONF=conf.txt
+STATE=.state
+PLAYFILE=.playlist
+CMDFILE=.cmd
+SUP_PIDFILE=.supervisor.pid
+
+usage() {
+	cat <<EOF
+用法: $(basename "$0") <命令>
+
+直播控制（对正在跑的 ${SERVICE_NAME} 立即生效，切歌/快进会短暂重连 RTMP）:
+  status              当前曲目 / 时间 / 顺序 / systemd
+  list                播放列表（当前曲目前面有 >）
+  next                下一首
+  prev                上一首
+  skip <N>            跳到第 N 首（从 1 开始）
+  ff [秒]             快进（默认 conf 里 SEEK_STEP，一般 30）
+  rew [秒]            快退
+  seek +30|-10|1:30   相对秒 / 当前片绝对时间（copy 按关键帧对齐）
+  reload              重新扫描目录/列表（ORDER=shuffle 会重新洗牌）
+  reshuffle           同 reload + 洗牌并从头播
+
+配置（写入 conf.txt，reload 后生效；rtmp/encode 会立刻重启推流）:
+  set rtmp <url>
+  set dir <目录>           VIDEO_DIR，清空 PLAYLIST/MP4_FILE 优先权
+  set playlist <文件>
+  set file <单个视频>
+  set order seq|shuffle
+  set encode copy|light
+
+服务:
+  start | stop | restart | journal
+
+也可用总入口:  livectl ${SERVICE_NAME} next
+EOF
+}
+
+die() { echo "$*" >&2; exit 1; }
+
+supervisor_pid() {
+	local p=""
+	if [[ -f "$SUP_PIDFILE" ]]; then
+		p=$(cat "$SUP_PIDFILE")
+		if [[ -n "$p" ]] && kill -0 "$p" 2>/dev/null; then
+			echo "$p"
+			return 0
+		fi
+	fi
+	if command -v systemctl >/dev/null; then
+		p=$(systemctl show -p MainPID --value "$SERVICE_NAME" 2>/dev/null || true)
+		if [[ -n "$p" && "$p" != "0" ]] && kill -0 "$p" 2>/dev/null; then
+			echo "$p"
+			return 0
+		fi
+	fi
+	return 1
+}
+
+send_cmd() {
+	local line="$1"
+	printf '%s\n' "$line" >"$CMDFILE"
+	local pid
+	if pid=$(supervisor_pid); then
+		kill -USR1 "$pid"
+		echo "已发送: $line"
+	else
+		echo "服务没在跑，命令已写入 $CMDFILE。启动后生效："
+		echo "  sudo systemctl start $SERVICE_NAME"
+	fi
+}
+
+conf_set() {
+	local k="$1" v="$2"
+	local tmp
+	tmp=$(mktemp)
+	awk -v k="$k" -v v="$v" '
+		BEGIN { gsub(/\\/, "\\\\", v); gsub(/"/, "\\\"", v) }
+		$0 ~ "^" k "=" { print k "=\"" v "\""; found=1; next }
+		{ print }
+		END { if (!found) print k "=\"" v "\"" }
+	' "$CONF" >"$tmp"
+	mv "$tmp" "$CONF"
+}
+
+cmd_status() {
+	# shellcheck disable=SC1091
+	[[ -f "$CONF" ]] && source "$CONF"
+	# shellcheck disable=SC1091
+	[[ -f "$STATE" ]] && source "$STATE"
+	local st
+	st=$(systemctl is-active "$SERVICE_NAME" 2>/dev/null || echo inactive)
+	echo "服务:   $SERVICE_NAME  ($st)"
+	echo "目录:   $INSTANCE_DIR"
+	echo "顺序:   ${ORDER:-${SHUFFLE:+shuffle}}"
+	echo "编码:   ${ENCODE:-copy}"
+	echo "RTMP:   ${RTMP:-（空）}"
+	echo "素材:   VIDEO_DIR=${VIDEO_DIR:-} PLAYLIST=${PLAYLIST:-} MP4_FILE=${MP4_FILE:-}"
+	echo "进度:   $((${INDEX:-0} + 1))/${COUNT:-?}  @ ${OFFSET:-0}s"
+	echo "当前:   ${NOW:-}"
+}
+
+cmd_list() {
+	local i=0 idx=0 line
+	# shellcheck disable=SC1091
+	[[ -f "$STATE" ]] && source "$STATE"
+	idx=${INDEX:-0}
+	if [[ ! -s "$PLAYFILE" ]]; then
+		echo "播放列表为空。先放视频再: $0 reload"
+		return 1
+	fi
+	while IFS= read -r line; do
+		if [[ "$i" -eq "$idx" ]]; then
+			printf '> %2d  %s\n' $((i + 1)) "$line"
+		else
+			printf '  %2d  %s\n' $((i + 1)) "$line"
+		fi
+		i=$((i + 1))
+	done <"$PLAYFILE"
+}
+
+parse_hms() {
+	local t="$1" h m s
+	if [[ "$t" =~ ^[0-9]+$ ]]; then
+		echo "$t"
+		return
+	fi
+	if [[ "$t" =~ ^([0-9]+):([0-9]{1,2}):([0-9]{1,2})$ ]]; then
+		h=${BASH_REMATCH[1]}
+		m=${BASH_REMATCH[2]}
+		s=${BASH_REMATCH[3]}
+		echo $((10#$h * 3600 + 10#$m * 60 + 10#$s))
+		return
+	fi
+	if [[ "$t" =~ ^([0-9]+):([0-9]{1,2})$ ]]; then
+		m=${BASH_REMATCH[1]}
+		s=${BASH_REMATCH[2]}
+		echo $((10#$m * 60 + 10#$s))
+		return
+	fi
+	return 1
+}
+
+default_step() {
+	local step=30
+	# shellcheck disable=SC1091
+	[[ -f "$CONF" ]] && source "$CONF"
+	[[ "${SEEK_STEP:-}" =~ ^[0-9]+$ ]] && step=$SEEK_STEP
+	echo "$step"
+}
+
+cmd="${1:-status}"
+shift || true
+
+case "$cmd" in
+-h | --help | help) usage ;;
+status) cmd_status ;;
+list | ls | playlist) cmd_list ;;
+next) send_cmd next ;;
+prev | previous) send_cmd prev ;;
+skip)
+	[[ "${1:-}" =~ ^[0-9]+$ ]] || die "skip 需要数字，从 1 开始"
+	send_cmd "skip $1"
+	;;
+ff | forward)
+	send_cmd "seekrel ${1:-$(default_step)}"
+	;;
+rew | rewind | back)
+	send_cmd "seekrel -${1:-15}"
+	;;
+seek)
+	[[ -n "${1:-}" ]] || die "seek 示例: +30  -10  90  1:30"
+	if [[ "$1" =~ ^[+-] ]]; then
+		send_cmd "seekrel $1"
+	else
+		send_cmd "seekabs $(parse_hms "$1" || die "无法解析时间: $1")"
+	fi
+	;;
+reload) send_cmd reload ;;
+reshuffle) send_cmd reshuffle ;;
+set)
+	key="${1:-}"
+	val="${2:-}"
+	[[ -n "$key" ]] || die "$(usage)"
+	case "$key" in
+	rtmp | RTMP)
+		conf_set RTMP "$val"
+		send_cmd reload
+		;;
+	dir | VIDEO_DIR)
+		conf_set VIDEO_DIR "$val"
+		conf_set PLAYLIST ""
+		conf_set MP4_FILE ""
+		send_cmd reload
+		;;
+	playlist | PLAYLIST)
+		conf_set PLAYLIST "$val"
+		conf_set VIDEO_DIR ""
+		conf_set MP4_FILE ""
+		send_cmd reload
+		;;
+	file | MP4_FILE)
+		conf_set MP4_FILE "$val"
+		conf_set VIDEO_DIR ""
+		conf_set PLAYLIST ""
+		send_cmd reload
+		;;
+	order | ORDER)
+		[[ "$val" == "seq" || "$val" == "shuffle" ]] || die "order 只能是 seq 或 shuffle"
+		conf_set ORDER "$val"
+		send_cmd reload
+		;;
+	step | SEEK_STEP)
+		[[ "$val" =~ ^[0-9]+$ ]] || die "step 用秒数，如 30"
+		conf_set SEEK_STEP "$val"
+		echo "快进默认步长: ${val}s"
+		;;
+	encode | ENCODE)
+		[[ "$val" == "copy" || "$val" == "light" ]] || die "encode 只能是 copy 或 light"
+		conf_set ENCODE "$val"
+		send_cmd reload
+		;;
+	*) die "未知配置: $key" ;;
+	esac
+	;;
+start) sudo systemctl start "$SERVICE_NAME" ;;
+stop) sudo systemctl stop "$SERVICE_NAME" ;;
+restart) sudo systemctl restart "$SERVICE_NAME" ;;
+journal | log) journalctl -u "$SERVICE_NAME" -e -f ;;
+*)
+	usage
+	exit 1
+	;;
+esac

@@ -5,7 +5,7 @@ export DEPLOY_SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DEPLOY_SCRIPT_ROOT" || exit 1
 
 :<<!说明
-Version：0.1.5
+Version：0.1.6
 !说明
 
 

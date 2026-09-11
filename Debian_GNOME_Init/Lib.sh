@@ -206,6 +206,77 @@ deploy_tty_ok() {
 	[ -t 0 ] && [ -t 1 ] && [ -t 2 ]
 }
 
+deploy_is_resume_skip_confirm() {
+	[ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_has_completed_jobs && [ "${SET_DEPLOY_SKIP_CONFIRM:-1}" -eq 1 ]
+}
+
+# 首次必须在终端输入 y；直接回车 = 取消。仅续跑可跳过。
+deploy_confirm_start() {
+	if deploy_is_resume_skip_confirm; then
+		deploy_print_completed_jobs
+		prompt -m "续跑：跳过「是否开始部署」确认"
+		return 0
+	fi
+	if ! deploy_tty_ok; then
+		prompt -e "首次部署必须在真实终端里确认（输入 y）。请在 GNOME 终端直接运行："
+		prompt -w "bash Debian_13_GNOME_Setup.sh"
+		exit 1
+	fi
+	comfirm "${1:-$'\e[1;31m输入 y 开始部署，直接回车取消 [y/N]\e[0m'}"
+	local choice=$?
+	if [ "$choice" -eq 1 ]; then
+		prompt -m "开始部署……"
+		return 0
+	fi
+	prompt -w "已取消。没看过 Config.sh 就先看再跑。"
+	exit 0
+}
+
+deploy_print_preflight() {
+	echo
+	prompt -e "==================== 部署前确认（GNOME） ===================="
+	prompt -w "这是 Debian 13 GNOME 一键部署，会改 APT、sudo、zsh、输入法、扩展等。"
+	prompt -e "请用普通用户跑，不要 root。当前用户：$CURRENT_USER"
+	prompt -k "桌面会话：" "${DESKTOP_SESSION:-未知}"
+	prompt -k "是否 sudo 组成员：" "${is_sudoer:--}"
+	prompt -k "当前 sudo 是否免密：" "${is_sudo_nopasswd:--}"
+	if [ "${SET_SUDOER_NOPASSWD:-0}" -eq 1 ]; then
+		prompt -w "Config：SET_SUDOER_NOPASSWD=1，将把当前用户设为 sudo 免密。"
+	fi
+	if [ "${SET_BASH_TO_ZSH:-0}" -eq 1 ]; then
+		prompt -w "Config：会把 Bash 换成 Zsh（含 root）。"
+	fi
+	if dpkg-query -W -f='${Status}' raspi-firmware 2>/dev/null | grep -q "install ok installed"; then
+		prompt -e "检测到 raspi-firmware。Debian 12+ 系统升级经常被它搞挂。"
+		prompt -w "建议先另开终端执行： sudo apt purge raspi-firmware"
+	fi
+	if [ "${IS_SUDOER:-0}" -ne 1 ] && [ -z "${ROOT_PASSWD:-}" ]; then
+		prompt -w "你不在 sudo 组，且未设置 ROOT_PASSWD。确认后会要 root 密码。"
+	fi
+	prompt -w "直接跑本脚本可以，但请确认已经看过 Config.sh。"
+	prompt -e "=============================================================="
+	echo
+}
+
+# 确认前做能做的检查：TTY、root 密码（若需要）
+deploy_gnome_prepare() {
+	if ! deploy_tty_ok && ! deploy_is_resume_skip_confirm; then
+		prompt -e "没有交互终端。debconf / wireshark / 显示管理器会卡住。"
+		prompt -w "请在 GNOME 终端运行： bash Debian_13_GNOME_Setup.sh"
+		exit 1
+	fi
+	if [ "${IS_SUDOER:-0}" -ne 1 ] && [ -z "${ROOT_PASSWD:-}" ]; then
+		if ! deploy_tty_ok; then
+			prompt -e "需要 root 密码，但当前无终端。"
+			exit 1
+		fi
+		prompt -w "未在 GlobalVariables/环境变量里设置 ROOT_PASSWD，请输入 root 密码: "
+		read -r ROOT_PASSWD
+		checkRootPasswd
+		prompt -s "root 密码可用"
+	fi
+}
+
 deploy_prepare_interactive() {
 	if ! deploy_tty_ok; then
 		prompt -e "stdin/stdout/stderr 不是终端。debconf / pager / ncurses 无法显示，也无法接收按键。"

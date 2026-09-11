@@ -1,6 +1,6 @@
 # Debian_13_GNOME.sh
 
->Current Version: 0.1.1
+>Current Version: 0.1.2
 
 ## 目录结构
 
@@ -16,10 +16,10 @@
 
 适用：Debian 13 GNOME
 
-1. 检查是否符合脚本系统要求
+1. 检查是否符合脚本系统要求（Debian 13 GNOME，**普通用户**，不要 root）
 2. 配置好`Config.sh`以及数字目录下的`cfg.sh`（如有必要）
 3. 补充需要的资源(比如一些个人个性化配置)
-4. 直接运行`Debian_13_GNOME_Setup.sh`脚本
+4. 在 GNOME 终端运行`Debian_13_GNOME_Setup.sh`。直接跑也可以，**首次必须输入 y**；脚本会先警告（sudo 免密、zsh、raspi-firmware 等）并做必要检查（TTY、缺 ROOT_PASSWD 时先要 root 密码）。直接回车 = 取消。
 
 白霜拼音词库在仓库 `5/RIME_FROST/`（精简离线包，部署时本地拷贝，不访问 GitHub）。`SET_APT_TO_INSTALL_LATER` 是黑名单：从当前 INDEX 挑出的包放到脚本末尾再装（如 apt-listbugs）。
 
@@ -29,7 +29,7 @@
 
 - `SET_DEPLOY_RESUME=1`（默认）：启用续跑，跳过已完成步骤
 - `SET_DEPLOY_RESET=1`：清除进度，强制从头运行
-- `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：续跑时跳过 init 确认
+- `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：**仅续跑**时跳过「是否开始」；首次部署仍必须输入 `y`
 - `SET_DEPLOY_FULL_LOG=0`（默认）：不套 `script`，直接用真实终端（wireshark / 显示管理器等 debconf 可交互）。设为 `1` 才全文录像（`script -f`）
 
 ## 脚本运行流程
@@ -62,7 +62,8 @@
 - 检查是否在sudo组中
 - 是的话检查是否免密码
 - 检查是否时GNOME桌面，不是则警告、退出。
-- 与用户确认执行
+- **部署前警告**：列出将改的项目；检测 raspi-firmware；无 sudo 且未设 ROOT_PASSWD 时先要 root 密码。
+- 与用户确认执行（首次必须输入 `y`，回车取消）
 
 ### 检查点一
 
@@ -255,6 +256,9 @@
 GNOME 扩展对照表见 `4/README.md`。
 
 ## 更新日志
+
+- 2026.09.11——0.1.2
+  - 直接跑部署脚本会先警告并做必要检查（TTY / raspi-firmware / root 密码）；首次必须输入 `y`，回车取消
 
 - 2026年8月29日——0.1.1
   - 失败后续跑（`.deploy_progress`）；apt 交互保留真实 TTY（debconf / wireshark / 显示管理器）

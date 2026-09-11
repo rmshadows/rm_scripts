@@ -1,6 +1,6 @@
 # Debian13_Server.sh
 
->Current Version: 0.1.5
+>Current Version: 0.1.6
 
 ## 目录结构
 
@@ -18,8 +18,11 @@
 
 1. 检查是否符合脚本系统要求
 2. 配置好`Config.sh`以及数字目录下的`cfg.sh`（如有必要）
-3. 补充需要的资源(比如一些个人个性化配置)
-4. 直接运行`Debian_13_Server_Setup.sh`脚本
+3. **先生成登录账号（推荐）**：`bash gen_credentials.sh`  
+   `Config.sh` 占位仍是 `admin` / `passwd`，不能直接上公网。该脚本会自动生成用户名和强密码，写入 `.deploy_credentials`。  
+   **也可以直接跑部署脚本**：首次会警告「还没生成账号」，必须输入 `y` 才继续，然后自动生成并显示一次。直接回车 = 取消。手输用 `SET_CREDENTIALS_MANUAL=1` 或 `bash gen_credentials.sh --manual`。
+4. 补充需要的资源(比如一些个人个性化配置)
+5. 用 **root** 运行`Debian_13_Server_Setup.sh`（首次必须 `y` 确认）
 
 `SET_APT_TO_INSTALL_LATER` 是黑名单：只从**当前 INDEX** 挑出的包放到脚本末尾再装（如你把 apt-listbugs 写进 INDEX 3）。不在 INDEX 里的不会强行装。INDEX 2 = INDEX 1 + `4/cfg.sh` 里的增量。
 
@@ -29,7 +32,7 @@
 
 - `SET_DEPLOY_RESUME=1`（默认）：启用续跑，跳过已完成步骤
 - `SET_DEPLOY_RESET=1`：清除进度，强制从头运行
-- `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：续跑时跳过 init 确认
+- `SET_DEPLOY_SKIP_CONFIRM=1`（默认）：**仅续跑**时跳过「是否开始」；首次部署仍必须输入 `y`
 - `SET_DEPLOY_FULL_LOG=0`（默认）：不套 `script`，直接用真实终端（debconf / pager 可交互）。设为 `1` 才全文录像（`script -f`）
 
 `SET_APT_RUN_WITHOUT_ASKING=1` 时，`apt modernize-sources` 会带 `-y`，不会再停在 `Rewrite sources? [Y/n]`。检查点脚本在当前终端 `source`，不再用管道/`tee` 包一层（否则会像要按回车才能继续）。
@@ -60,7 +63,8 @@
 
 - 加载配置文件和函数库等等
 - 获取当前用户名
-- 与用户确认执行
+- 与用户确认执行（首次必须输入 `y`，回车取消；直接跑也会先警告）
+- **登录账号**：确认**之后**才处理。有 `.deploy_credentials` 就用；没有则自动生成（`gen_credentials.sh` 可事先生成）。`SET_CREDENTIALS_MANUAL=1` 才手输。
 
 ### 检查点一
 
@@ -183,6 +187,10 @@
 ## 更新日志
 
 >dev: Not available yet.
+
+- 2026.09.11——0.1.6
+  - 默认 `admin`/`passwd` 过弱：`gen_credentials.sh` 预先自动生成；直接跑部署会先警告，必须 `y` 确认后才生成并写入 `.deploy_credentials`
+  - 新建用户改用 `chpasswd`（不再用 perl crypt 弱盐）
 
 - 2026.09.07——0.1.5
   - 对齐 GNOME 部署：`do_job` 不再用管道/`tee` 抢走 TTY；`apt modernize-sources -y` 避免卡住等回车；支持失败后续跑（`.deploy_progress`）

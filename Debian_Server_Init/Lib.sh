@@ -354,6 +354,312 @@ deploy_reset_state() {
 	rm -f "$DEPLOY_STATE_FILE"
 }
 
+deploy_unmark_job() {
+	local job_key="$1"
+	local tmp
+	[ -f "$DEPLOY_STATE_FILE" ] || return 0
+	tmp=$(mktemp)
+	grep -Fxv "$job_key" "$DEPLOY_STATE_FILE" >"$tmp" || true
+	mv "$tmp" "$DEPLOY_STATE_FILE"
+}
+
+# ---------- 默认账号过弱：自动生成用户名/密码 ----------
+# Config 占位 admin/passwd 上过公网爆破（Vultr 等会直接关机）。
+# 默认自动生成并写入 .deploy_credentials；SET_CREDENTIALS_MANUAL=1 才手输。
+
+cred_file_path() {
+	echo "${DEPLOY_SCRIPT_ROOT:-.}/.deploy_credentials"
+}
+
+cred_username_is_weak() {
+	local u
+	u=$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')
+	case "$u" in
+	admin | administrator | user | test | debian | ubuntu | guest | linux | server | root | passwd)
+		return 0
+		;;
+	esac
+	return 1
+}
+
+cred_password_is_weak() {
+	local p="${1:-}"
+	local u
+	u=$(printf '%s' "${2:-}" | tr '[:upper:]' '[:lower:]')
+	local pl
+	pl=$(printf '%s' "$p" | tr '[:upper:]' '[:lower:]')
+	[ -z "$p" ] && return 0
+	[ "${#p}" -lt 8 ] && return 0
+	[ -n "$u" ] && [ "$pl" = "$u" ] && return 0
+	case "$pl" in
+	passwd | password | admin | 123456 | 12345678 | 123456789 | 111111 | qwerty | debian | ubuntu | toor | root | password123 | admin123 | passwd123 | 00000000)
+		return 0
+		;;
+	esac
+	return 1
+}
+
+cred_username_ok() {
+	local u="$1"
+	if [[ ! "$u" =~ ^[a-z][a-z0-9_-]{0,31}$ ]]; then
+		prompt -e "用户名必须小写字母开头，仅字母/数字/_/-，最长 32"
+		return 1
+	fi
+	if cred_username_is_weak "$u"; then
+		prompt -e "用户名「$u」太常见，爆破字典里有。请换一个（不要用 admin/user/test/debian）"
+		return 1
+	fi
+	if [ "$u" = "root" ]; then
+		prompt -e "不要用 root 当业务账号"
+		return 1
+	fi
+	return 0
+}
+
+cred_set_user_password() {
+	local user="$1" pass="$2"
+	if ! echo "${user}:${pass}" | chpasswd; then
+		prompt -e "chpasswd 失败，密码未写入"
+		return 1
+	fi
+	prompt -s "已更新用户 $user 的登录密码"
+}
+
+cred_rand_from() {
+	local n="$1" alphabet="$2" out="" rnd idx alen
+	alen=${#alphabet}
+	[ "$alen" -gt 0 ] && [ "$n" -gt 0 ] || return 1
+	while [ ${#out} -lt "$n" ]; do
+		rnd=$(od -An -N2 -tu2 /dev/urandom | tr -d '[:space:]')
+		idx=$((rnd % alen))
+		out+="${alphabet:$idx:1}"
+	done
+	printf '%s' "$out"
+}
+
+cred_generate_username() {
+	local u i=0
+	local alph='abcdefghijklmnopqrstuvwxyz0123456789'
+	while [ "$i" -lt 40 ]; do
+		u="s$(cred_rand_from 7 "$alph")"
+		if [[ "$u" =~ ^[a-z][a-z0-9_-]{0,31}$ ]] && ! cred_username_is_weak "$u"; then
+			printf '%s' "$u"
+			return 0
+		fi
+		i=$((i + 1))
+	done
+	return 1
+}
+
+cred_generate_password() {
+	local alph='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#%+=_'
+	cred_rand_from 20 "$alph"
+}
+
+cred_save_file() {
+	local f="$1" name="$2" pass="$3"
+	local dir
+	dir=$(dirname "$f")
+	mkdir -p "$dir"
+	umask 077
+	cat >"$f" <<EOF
+# Debian_Server_Init 自动生成的登录账号。勿提交 git。
+# $(date -Iseconds 2>/dev/null || date)
+SET_USER_NAME=$(printf '%q' "$name")
+SET_USER_PASSWD=$(printf '%q' "$pass")
+EOF
+	chmod 600 "$f"
+}
+
+cred_apply_identity() {
+	local old_name="${1:-}"
+	if declare -F config_resolve_identity >/dev/null; then
+		config_resolve_identity
+	else
+		CURRENT_USER="$SET_USER_NAME"
+		HOME_INDEX="/home/$SET_USER_NAME"
+	fi
+	if [ -n "$old_name" ] && [ "$old_name" != "$SET_USER_NAME" ] && deploy_is_job_done "2/setup.sh"; then
+		prompt -w "用户名已改，检查点二将重新执行以便创建新用户。"
+		deploy_unmark_job "2/setup.sh"
+	fi
+	if id -u "$SET_USER_NAME" >/dev/null 2>&1; then
+		cred_set_user_password "$SET_USER_NAME" "$SET_USER_PASSWD"
+	fi
+}
+
+cred_print_login() {
+	local name="$1" pass="$2" file="$3"
+	echo
+	echo -e "\e[1;31m==================== 请立刻抄下登录信息 ====================\e[0m"
+	echo -e "\e[1;33m  用户名: ${name}\e[0m"
+	echo -e "\e[1;33m  密  码: ${pass}\e[0m"
+	echo -e "\e[1;32m  已写入: ${file} （权限 600，不要提交仓库）\e[0m"
+	echo -e "\e[1;31m===========================================================\e[0m"
+	echo
+}
+
+cred_prompt_manual() {
+	local new_name new_pass new_pass2
+	while true; do
+		echo -n "新用户名: "
+		read -r new_name
+		if cred_username_ok "$new_name"; then
+			break
+		fi
+	done
+	while true; do
+		echo -n "新密码（输入不可见，至少 8 位）: "
+		read -r -s new_pass
+		echo
+		if cred_password_is_weak "$new_pass" "$new_name"; then
+			prompt -e "密码太弱：至少 8 位，不能等于用户名，不能是 passwd/123456 等常见口令"
+			continue
+		fi
+		echo -n "再输入一遍密码: "
+		read -r -s new_pass2
+		echo
+		if [ "$new_pass" != "$new_pass2" ]; then
+			prompt -e "两次密码不一致"
+			continue
+		fi
+		break
+	done
+	SET_USER_NAME="$new_name"
+	SET_USER_PASSWD="$new_pass"
+}
+
+# 弱则自动生成（或手输）；已自定义则直接用。
+force_change_default_credentials() {
+	if [ "${SET_USER:-0}" -ne 1 ]; then
+		prompt -w "SET_USER=0：以 root 继续。公网请先改掉 root 密码，并考虑禁止 SSH 密码登录。"
+		return 0
+	fi
+
+	local cred_file old_name
+	cred_file=$(cred_file_path)
+	old_name="$SET_USER_NAME"
+
+	if ! cred_username_is_weak "$SET_USER_NAME" && ! cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+		prompt -s "账号已自定义：$SET_USER_NAME"
+		return 0
+	fi
+
+	if [ -f "$cred_file" ]; then
+		# shellcheck disable=SC1090
+		source "$cred_file"
+		if ! cred_username_is_weak "$SET_USER_NAME" && ! cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+			prompt -s "已读取生成的账号文件: $cred_file （用户 $SET_USER_NAME）"
+			cred_apply_identity "$old_name"
+			return 0
+		fi
+	fi
+
+	if [ "${SET_CREDENTIALS_MANUAL:-0}" -eq 1 ]; then
+		if ! deploy_tty_ok; then
+			prompt -e "SET_CREDENTIALS_MANUAL=1 需要终端。请改跑 bash gen_credentials.sh，或去掉该变量以自动生成。"
+			exit 1
+		fi
+		prompt -e "手动输入模式（默认是自动生成：bash gen_credentials.sh）"
+		cred_prompt_manual
+	else
+		SET_USER_NAME=$(cred_generate_username) || {
+			prompt -e "自动生成用户名失败"
+			exit 1
+		}
+		SET_USER_PASSWD=$(cred_generate_password) || {
+			prompt -e "自动生成密码失败"
+			exit 1
+		}
+		if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+			prompt -e "自动生成结果仍过弱，请重跑或改用 --manual"
+			exit 1
+		fi
+	fi
+
+	cred_save_file "$cred_file" "$SET_USER_NAME" "$SET_USER_PASSWD"
+	if [ "$(id -u)" -eq 0 ]; then
+		cred_save_file "/root/.debian_server_init_login" "$SET_USER_NAME" "$SET_USER_PASSWD"
+	fi
+	cred_print_login "$SET_USER_NAME" "$SET_USER_PASSWD" "$cred_file"
+	if [ "$(id -u)" -eq 0 ]; then
+		prompt -m "另外备份: /root/.debian_server_init_login"
+	fi
+	if [ "${SET_ENABLE_SSH:-0}" -eq 1 ]; then
+		prompt -w "即将启用 SSH。上面这组账号请存好，丢了只能上云控制台改。"
+	fi
+	if deploy_tty_ok; then
+		echo -e "\e[1;33m已经抄下来了？按回车继续部署。\e[0m"
+		read -r _
+	else
+		prompt -w "无终端：账号已生成并写入文件。请立刻打开 $cred_file 抄下来。"
+	fi
+
+	cred_apply_identity "$old_name"
+	prompt -s "已采用用户 $SET_USER_NAME"
+}
+
+deploy_is_resume_skip_confirm() {
+	[ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_has_completed_jobs && [ "${SET_DEPLOY_SKIP_CONFIRM:-1}" -eq 1 ]
+}
+
+# 首次必须在终端输入 y；直接回车 = 取消。仅续跑可跳过。
+deploy_confirm_start() {
+	if deploy_is_resume_skip_confirm; then
+		deploy_print_completed_jobs
+		prompt -m "续跑：跳过「是否开始部署」确认"
+		return 0
+	fi
+	if ! deploy_tty_ok; then
+		prompt -e "首次部署必须在真实终端里确认（输入 y）。不要用管道或没分配 TTY 的 ssh 直接跑。"
+		prompt -w "Server：也可以先 bash gen_credentials.sh，再在终端里跑部署脚本。"
+		exit 1
+	fi
+	comfirm "${1:-$'\e[1;31m输入 y 开始部署，直接回车取消 [y/N]\e[0m'}"
+	local choice=$?
+	if [ "$choice" -eq 1 ]; then
+		prompt -m "开始部署……"
+		return 0
+	fi
+	prompt -w "已取消。没准备好就先看 README / Config.sh。"
+	exit 0
+}
+
+# 直接跑部署脚本时的警告；确认之后才会自动生成账号。
+deploy_print_preflight() {
+	local cred_file
+	cred_file=$(cred_file_path)
+	echo
+	prompt -e "==================== 部署前确认（Server） ===================="
+	prompt -w "这是 Debian 13 Server 一键部署：会改 APT、建用户、装软件，默认还启用 SSH。"
+	prompt -k "当前身份：" "$(whoami) uid=${UID}"
+	if [ "$UID" -ne 0 ]; then
+		prompt -e "必须用 root 跑（不要只 sudo）。0_start 会拦，这里再提醒一次。"
+	fi
+	if [ "${SET_USER:-0}" -eq 1 ]; then
+		if [ -f "$cred_file" ]; then
+			prompt -s "已有账号文件：$cred_file （不会使用默认 admin/passwd）"
+		elif ! cred_username_is_weak "$SET_USER_NAME" && ! cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+			prompt -s "Config/环境变量已是自定义账号：$SET_USER_NAME"
+		else
+			prompt -e "你像是直接运行了部署脚本，还没有 bash gen_credentials.sh"
+			prompt -e "占位账号 admin/passwd 上公网会被爆破（云厂商可能直接关机）。"
+			prompt -w "若现在输入 y：将自动生成用户名和强密码，只显示一次，请立刻抄下来。"
+			prompt -w "若想先生成再部署：Ctrl+C，然后： bash gen_credentials.sh"
+		fi
+	else
+		prompt -w "SET_USER=0：将以 root 继续。公网请先改掉 root 密码。"
+	fi
+	if [ "${SET_ENABLE_SSH:-0}" -eq 1 ]; then
+		prompt -w "Config：SET_ENABLE_SSH=1，将启用 SSH 开机自启。"
+	fi
+	if [ "${SET_SUDOER_NOPASSWD:-0}" -eq 1 ]; then
+		prompt -w "Config：SET_SUDOER_NOPASSWD=1，将设置 sudo 免密。"
+	fi
+	prompt -e "=============================================================="
+	echo
+}
+
 deploy_has_completed_jobs() {
 	[ -f "$DEPLOY_STATE_FILE" ] && [ -s "$DEPLOY_STATE_FILE" ]
 }

@@ -1,17 +1,289 @@
 #!/bin/bash
-cd 【$new_srv_path】
-source conf.txt
-echo Start ffmpegL living....
-echo "$RTMP"
-echo "$MP4_FILE"
+# ffmpegL 督导进程：循环推流 + 信号控制（next/prev/reload）
+# 不要用 set -e：wait/trap 会误退出
+cd 【$new_srv_path】 || exit 1
 
-st=`date`
-echo "$st 开始推流">> stream.log
-ffmpeg -re -stream_loop -1 -i "$MP4_FILE" -vcodec copy -acodec copy -f flv -flvflags no_duration_filesize "$RTMP"
+CONF=conf.txt
+PLAYFILE=.playlist
+CONCAT=.concat.txt
+STATE=.state
+CMDFILE=.cmd
+SUP_PIDFILE=.supervisor.pid
+FF_PIDFILE=.ffmpeg.pid
 
-# Adv -r 帧率 -b 比特率
-# ffmpeg -re -stream_loop -1 -i "$MP4_FILE" -r 10 -b 10k -f flv -flvflags no_duration_filesize "$RTMP"&
-#while true
-#do
-#    ffmpeg -re -i "1.mp4" -stream_loop -1 -vcodec copy -acodec copy -f flv "$RTMP_ADDR"
-#done
+REQUEST=""
+FFPID=""
+INDEX=0
+OFFSET=0
+NOW=""
+files=()
+
+log() { echo "$(date '+%F %T') $*" | tee -a stream.log; }
+
+load_conf() {
+	# shellcheck disable=SC1091
+	source "$CONF"
+	if [[ -z "${ORDER:-}" ]]; then
+		if [[ "${SHUFFLE:-0}" == "1" ]]; then ORDER=shuffle; else ORDER=seq; fi
+	fi
+}
+
+save_state() {
+	cat >"$STATE" <<EOF
+INDEX=${INDEX}
+OFFSET=${OFFSET}
+NOW=$(printf '%q' "${NOW}")
+COUNT=${#files[@]}
+ORDER=$(printf '%q' "${ORDER:-seq}")
+ENCODE=$(printf '%q' "${ENCODE:-copy}")
+EOF
+}
+
+stop_ffmpeg() {
+	if [[ -n "${FFPID:-}" ]] && kill -0 "$FFPID" 2>/dev/null; then
+		kill "$FFPID" 2>/dev/null || true
+	fi
+}
+
+cleanup() {
+	trap - EXIT TERM INT
+	if [[ -n "${FFPID:-}" ]] && kill -0 "$FFPID" 2>/dev/null; then
+		kill "$FFPID" 2>/dev/null || true
+		wait "$FFPID" 2>/dev/null || true
+	fi
+	FFPID=""
+	rm -f "$SUP_PIDFILE" "$FF_PIDFILE"
+}
+
+on_usr1() {
+	REQUEST=1
+	if [[ -n "${FFPID:-}" ]]; then
+		kill "$FFPID" 2>/dev/null || true
+	fi
+}
+
+trap cleanup EXIT TERM INT
+trap on_usr1 USR1
+trap 'echo reload >"$CMDFILE"; on_usr1' HUP
+
+echo $$ >"$SUP_PIDFILE"
+
+collect_files() {
+	files=()
+	local f line
+	load_conf
+	if [[ -n "${VIDEO_DIR:-}" && -d "$VIDEO_DIR" ]]; then
+		while IFS= read -r -d '' f; do
+			files+=("$f")
+		done < <(find "$VIDEO_DIR" -maxdepth 2 -type f \( \
+			-iname '*.mp4' -o -iname '*.flv' -o -iname '*.mkv' -o -iname '*.ts' -o -iname '*.mov' \
+			\) -print0 | sort -z)
+	elif [[ -n "${PLAYLIST:-}" && -f "$PLAYLIST" ]]; then
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			line="${line#"${line%%[![:space:]]*}"}"
+			[[ -z "$line" || "$line" == \#* ]] && continue
+			files+=("$line")
+		done <"$PLAYLIST"
+	elif [[ -n "${MP4_FILE:-}" && -f "$MP4_FILE" ]]; then
+		files+=("$MP4_FILE")
+	fi
+	if [[ ${#files[@]} -gt 0 && "${ORDER:-seq}" == "shuffle" ]] && command -v shuf >/dev/null; then
+		mapfile -t files < <(printf '%s\n' "${files[@]}" | shuf)
+	fi
+	printf '%s\n' "${files[@]}" >"$PLAYFILE"
+}
+
+load_playlist_file() {
+	files=()
+	[[ -s "$PLAYFILE" ]] || return 1
+	mapfile -t files <"$PLAYFILE"
+	[[ ${#files[@]} -gt 0 ]]
+}
+
+write_concat() {
+	local out="$1" i n f
+	n=${#files[@]}
+	: >"$out"
+	[[ "$n" -gt 0 ]] || return 1
+	INDEX=$((INDEX % n))
+	for ((i = 0; i < n; i++)); do
+		f="${files[$(((INDEX + i) % n))]}"
+		if [[ "$f" == *"'"* ]]; then
+			log "跳过含单引号的路径: $f"
+			continue
+		fi
+		printf "file '%s'\n" "$f" >>"$out"
+	done
+	NOW="${files[$INDEX]}"
+}
+
+file_duration() {
+	local f="$1" d
+	[[ -f "$f" ]] || { echo 0; return; }
+	d=$(ffprobe -v error -show_entries format=duration -of default=nk=1:nw=1 "$f" 2>/dev/null || echo 0)
+	d="${d%.*}"
+	[[ "$d" =~ ^[0-9]+$ ]] || d=0
+	echo "$d"
+}
+
+fmt_mmss() {
+	local s="${1:-0}"
+	((s < 0)) && s=0
+	printf '%d:%02d' $((s / 60)) $((s % 60))
+}
+
+# 快进超过片尾则切下一首
+clamp_offset() {
+	local dur
+	[[ ${#files[@]} -gt 0 ]] || { OFFSET=0; return; }
+	INDEX=$((INDEX % ${#files[@]}))
+	NOW="${files[$INDEX]}"
+	dur=$(file_duration "$NOW")
+	((OFFSET < 0)) && OFFSET=0
+	if [[ "$dur" -gt 1 && "$OFFSET" -ge $((dur - 1)) ]]; then
+		INDEX=$(((INDEX + 1) % ${#files[@]}))
+		OFFSET=0
+		NOW="${files[$INDEX]}"
+		log "超过片尾，下一首 $NOW"
+	fi
+}
+
+start_ffmpeg() {
+	load_conf
+	[[ -n "${RTMP:-}" ]] || return 2
+	write_concat "$CONCAT" || return 1
+	clamp_offset
+	write_concat "$CONCAT" || return 1
+	save_state
+	log "推流 [$INDEX/$((${#files[@]} - 1))] $(fmt_mmss "$OFFSET")  $NOW  ENCODE=${ENCODE:-copy}"
+	local ff=(ffmpeg -hide_banner -nostdin -loglevel warning)
+	local ss=() loop=()
+	if [[ "${OFFSET:-0}" -gt 0 ]]; then
+		ss=(-ss "$OFFSET")
+	else
+		loop=(-stream_loop -1)
+	fi
+	local out=(-f flv -flvflags no_duration_filesize "$RTMP")
+	if [[ "${ENCODE:-copy}" == "light" ]]; then
+		"${ff[@]}" "${ss[@]}" -re "${loop[@]}" -f concat -safe 0 -i "$CONCAT" \
+			-vf "scale=780:480:force_original_aspect_ratio=decrease,pad=780:480:(ow-iw)/2:(oh-ih)/2" \
+			-r 10 -c:v libx264 -preset ultrafast -tune zerolatency -crf 28 -threads 1 \
+			-c:a aac -b:a 64k -ac 2 -ar 44100 \
+			"${out[@]}" &
+	else
+		"${ff[@]}" "${ss[@]}" -re "${loop[@]}" -f concat -safe 0 -i "$CONCAT" -c copy "${out[@]}" &
+	fi
+	FFPID=$!
+	echo "$FFPID" >"$FF_PIDFILE"
+}
+
+handle_cmd() {
+	local cmd args
+	cmd=$(head -n1 "$CMDFILE" 2>/dev/null || true)
+	rm -f "$CMDFILE"
+	REQUEST=""
+	args="${cmd#* }"
+	cmd="${cmd%% *}"
+	[[ -z "$cmd" ]] && cmd=next
+	load_conf
+	case "$cmd" in
+	next)
+		[[ ${#files[@]} -gt 0 ]] && INDEX=$(((INDEX + 1) % ${#files[@]}))
+		OFFSET=0
+		log "CLI next -> $INDEX"
+		;;
+	prev)
+		[[ ${#files[@]} -gt 0 ]] && INDEX=$(((INDEX - 1 + ${#files[@]}) % ${#files[@]}))
+		OFFSET=0
+		log "CLI prev -> $INDEX"
+		;;
+	skip)
+		if [[ "$args" =~ ^[0-9]+$ ]] && [[ ${#files[@]} -gt 0 ]]; then
+			INDEX=$(((args - 1) % ${#files[@]}))
+			((INDEX < 0)) && INDEX=0
+			OFFSET=0
+			log "CLI skip -> $INDEX"
+		fi
+		;;
+	seekrel)
+		if [[ "$args" =~ ^[+-]?[0-9]+$ ]]; then
+			OFFSET=$((${OFFSET:-0} + args))
+			clamp_offset
+			log "CLI seek $(fmt_mmss "$OFFSET")  $NOW"
+		fi
+		;;
+	seekabs)
+		if [[ "$args" =~ ^[0-9]+$ ]]; then
+			OFFSET=$args
+			clamp_offset
+			log "CLI seek $(fmt_mmss "$OFFSET")  $NOW"
+		fi
+		;;
+	reload | reshuffle)
+		collect_files
+		INDEX=0
+		OFFSET=0
+		log "CLI $cmd ，共 ${#files[@]} 个文件"
+		;;
+	*)
+		log "未知命令: $cmd"
+		;;
+	esac
+	save_state
+}
+
+log "Start ffmpegL supervisor pid=$$"
+load_conf
+if ! load_playlist_file; then
+	collect_files
+fi
+if [[ -f "$STATE" ]]; then
+	# shellcheck disable=SC1091
+	source "$STATE" 2>/dev/null || true
+fi
+OFFSET=${OFFSET:-0}
+INDEX=${INDEX:-0}
+
+while true; do
+	load_conf
+	if [[ ${#files[@]} -eq 0 ]]; then
+		collect_files
+	fi
+	if [[ ${#files[@]} -eq 0 ]]; then
+		log "没有视频。放到 VIDEO_DIR 或 ctl reload。20 秒后重试。"
+		save_state
+		sleep 20
+		continue
+	fi
+	if [[ -z "${RTMP:-}" ]]; then
+		log "RTMP 为空。ctl set rtmp rtmp://...  8 秒后重试。"
+		sleep 8
+		continue
+	fi
+
+	if start_ffmpeg; then
+		wait "$FFPID" 2>/dev/null || true
+		FFPID=""
+		rm -f "$FF_PIDFILE"
+	else
+		rc=$?
+		if [[ "$rc" -eq 2 ]]; then
+			sleep 8
+			continue
+		fi
+		log "无法启动 ffmpeg"
+	fi
+
+	if [[ -n "$REQUEST" || -f "$CMDFILE" ]]; then
+		handle_cmd
+		continue
+	fi
+	if [[ "${OFFSET:-0}" -gt 0 ]]; then
+		INDEX=0
+		OFFSET=0
+		log "seek 后播完一轮，从头循环"
+		continue
+	fi
+	log "ffmpeg 退出（断流/源不兼容）。8 秒后重连。copy 失败可 ctl set encode light"
+	sleep 8
+done

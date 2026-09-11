@@ -53,7 +53,10 @@ NoNewPrivileges=true
 # 限制系统调用，只允许安全的系统调用  
 # SystemCallFilter=~@system-service   
 
-# 启动失败后的重启机制
+# 可选内存上限（1G 建议开，配置高的不用）
+# 安装时会询问；也可: sudo systemctl edit 【$new_srv_name】
+# MemoryMax=512M
+
 # 如果服务失败，则自动重启
 Restart=on-failure
 # 重启之间的延迟时间，避免快速重启造成负担 

@@ -60,30 +60,11 @@ prompt -k "是否为Sudo组成员：" "$is_sudoer"
 prompt -k "Sudo是否免密码：" "$is_sudo_nopasswd"
 prompt -k "是否是GNOME：" "$IS_GNOME_DE ( $DESKTOP_SESSION )"
 prompt -i "__________________________________________________________"
-prompt -e "以上信息如有错误，或者出现了-1，请按 Ctrl + c 中止运行。"
 
-### 这里是确认运行的模块
-_resume_skip_confirm=0
-if [ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_has_completed_jobs; then
-	deploy_print_completed_jobs
-	if [ "${SET_DEPLOY_SKIP_CONFIRM:-1}" -eq 1 ]; then
-		_resume_skip_confirm=1
-		prompt -m "检测到未完成部署，续跑模式：跳过已完成步骤…"
-	fi
-fi
-
-if [ "$_resume_skip_confirm" -eq 1 ]; then
-	prompt -m "开始部署……"
-else
-	comfirm "\e[1;31m 您已知晓该一键部署脚本的内容、作用、使用方法以及对您的计算机可能造成的潜在的危害「如果你不知道你在做什么，请直接回车谢谢」[y/N]\e[0m"
-	choice=$?
-	if [ $choice == 1 ]; then
-		prompt -m "开始部署……"
-	elif [ $choice == 2 ]; then
-		prompt -w "感谢您的关注！——  https://github.com/rmshadows"
-		exit 0
-	fi
-fi
+### 部署前警告 + 必要检查 + 必须确认（续跑才跳过 y/N）
+deploy_print_preflight
+deploy_gnome_prepare
+deploy_confirm_start $'\e[1;31m 已阅读以上警告、并看过 Config.sh？输入 y 开始部署。直接回车取消 [y/N]\e[0m'
 
 # 如果没有sudo免密码，临时加入。
 # 这里之后才能使用quitThis
