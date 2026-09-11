@@ -25,8 +25,8 @@ SET_APT_UPGRADE=1
 # Set to 1 will specify a user.User will be created if not exist.If set to 0, continue with root(是否指定某用户进行配置，否的话将以root用户继续)  Preset:1
 SET_USER="${SET_USER:-1}"
 # ! 下面两个是占位。不要用 admin/passwd 上公网。
-# 推荐先跑：bash gen_credentials.sh （写入 .deploy_credentials，部署会自动读）
-# 若不跑，部署时也会自动生成。SET_CREDENTIALS_MANUAL=1 才改成手输。
+# 部署时若仍是占位：终端询问 1=自动生成 / 2=自己输入，写入 .deploy_credentials。
+# 跳过菜单：SET_CREDENTIALS_AUTO=1 或 SET_CREDENTIALS_MANUAL=1；也可先 bash gen_credentials.sh。
 SET_USER_NAME="${SET_USER_NAME:-admin}"
 SET_USER_PASSWD="${SET_USER_PASSWD:-passwd}"
 _CRED_FILE="${DEPLOY_SCRIPT_ROOT:-.}/.deploy_credentials"
@@ -117,8 +117,8 @@ SET_INSTALL_HEXO=0
 #### 下列软件安装时间较长，故放在最后安装
 # 是否安装docker-ce
 SET_INSTALL_DOCKER_CE=0
-# 是否重装docker？
-SET_DOCKER_PURGE_REINSTALL=1
+# 是否彻底清除后重装 Docker（1=删除镜像/容器数据再装；0=保留已有数据）Preset=0
+SET_DOCKER_PURGE_REINSTALL=0
 # Manage Docker as a non-root user?
 SET_DOCKER_NON_ROOT=0
 # 设置Docker-ce仓库来源 0:官方 1:清华大学镜像仓库 Preset：1

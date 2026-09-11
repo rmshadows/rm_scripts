@@ -131,7 +131,7 @@ SET_ENABLE_TEAMVIEWER=0
 SET_INSTALL_WPS_OFFICE=0
 # 是否安装Docker-ce Preset=0
 SET_INSTALL_DOCKER_CE=0
-# 是否重装docker？ Preset=0
+# 是否彻底清除后重装 Docker（1=删除镜像/容器数据再装；0=保留已有数据）Preset=0
 SET_DOCKER_PURGE_REINSTALL=0
 # Manage Docker as a non-root user? Preset=0
 SET_DOCKER_NON_ROOT=0

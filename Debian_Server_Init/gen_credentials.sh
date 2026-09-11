@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # 生成部署用登录账号（用户名+强密码），写入 .deploy_credentials
 # 用法:
-#   bash gen_credentials.sh           # 没有文件就生成；已有则只显示用户名
-#   bash gen_credentials.sh --force   # 重新生成
+#   bash gen_credentials.sh           # 没有文件则询问：自动生成或自己输入
+#   bash gen_credentials.sh --force   # 丢掉旧文件，再询问
+#   bash gen_credentials.sh --auto    # 不询问，直接自动生成
+#   bash gen_credentials.sh --manual  # 不询问，自己输入
 #   bash gen_credentials.sh --show    # 显示已保存的用户名和密码
-#   bash gen_credentials.sh --manual  # 自己输入（不要用 admin/passwd）
 set -eo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,25 +15,46 @@ source "$ROOT/Lib.sh"
 
 usage() {
 	cat <<EOF
-用法: $(basename "$0") [--force|--show|--manual|--help]
+用法: $(basename "$0") [--force] [--auto|--manual] [--show] [--help]
 
-默认自动生成一组登录账号，写入:
+写入:
   $ROOT/.deploy_credentials
 
-之后跑 Debian_13_Server_Setup.sh 会自动读这个文件，不必再手输。
+之后跑 Debian_13_Server_Setup.sh 会自动读这个文件。
 
-  --force    丢掉旧文件，重新生成
+  --force    丢掉旧文件再生成/输入
+  --auto     不询问，自动生成
+  --manual   不询问，自己输入（不要用 admin/passwd）
   --show     打印已保存的用户名和密码
-  --manual   自己输入用户名和密码
 EOF
 }
 
 CRED_FILE=$(cred_file_path)
+SET_CREDENTIALS_FORCE=0
+SET_CREDENTIALS_SHOW=0
 
-case "${1:-}" in
-"" ) ;;
---force | -f) SET_CREDENTIALS_FORCE=1 ;;
---show)
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--force | -f) SET_CREDENTIALS_FORCE=1 ;;
+	--show)
+		SET_CREDENTIALS_SHOW=1
+		;;
+	--manual | -m) SET_CREDENTIALS_MANUAL=1 ;;
+	--auto | -a) SET_CREDENTIALS_AUTO=1 ;;
+	-h | --help | help)
+		usage
+		exit 0
+		;;
+	*)
+		prompt -e "未知参数: $1"
+		usage
+		exit 1
+		;;
+	esac
+	shift
+done
+
+if [ "$SET_CREDENTIALS_SHOW" -eq 1 ]; then
 	if [ ! -f "$CRED_FILE" ]; then
 		prompt -e "还没有 $CRED_FILE ，先运行: bash gen_credentials.sh"
 		exit 1
@@ -41,18 +63,7 @@ case "${1:-}" in
 	source "$CRED_FILE"
 	cred_print_login "$SET_USER_NAME" "$SET_USER_PASSWD" "$CRED_FILE"
 	exit 0
-	;;
---manual | -m) SET_CREDENTIALS_MANUAL=1 ;;
--h | --help | help)
-	usage
-	exit 0
-	;;
-*)
-	prompt -e "未知参数: $1"
-	usage
-	exit 1
-	;;
-esac
+fi
 
 if [ -f "$CRED_FILE" ] && [ "${SET_CREDENTIALS_FORCE:-0}" -ne 1 ] && [ "${SET_CREDENTIALS_MANUAL:-0}" -ne 1 ]; then
 	# shellcheck disable=SC1090
@@ -64,11 +75,14 @@ if [ -f "$CRED_FILE" ] && [ "${SET_CREDENTIALS_FORCE:-0}" -ne 1 ] && [ "${SET_CR
 	exit 0
 fi
 
-if [ "${SET_CREDENTIALS_MANUAL:-0}" -eq 1 ]; then
+cred_choose_mode
+if [ "$CRED_MODE" = manual ]; then
 	cred_prompt_manual
 else
-	SET_USER_NAME=$(cred_generate_username)
-	SET_USER_PASSWD=$(cred_generate_password)
+	cred_generate_pair || {
+		prompt -e "自动生成失败"
+		exit 1
+	}
 fi
 
 if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then

@@ -8,11 +8,11 @@
 !预先检查
 
 ### 部署前警告 + 必须确认（续跑才跳过 y/N）
-# 直接跑 Debian_13_Server_Setup.sh 也会走到这里：没生成账号就警告，确认后才自动生成。
+# 直接跑也会走到这里。没现成账号时，确认后选择自动生成或自己输入。
 deploy_print_preflight
-deploy_confirm_start $'\e[1;31m 已阅读以上警告？输入 y 开始部署（将改系统；若无账号文件会自动生成）。直接回车取消 [y/N]\e[0m'
+deploy_confirm_start $'\e[1;31m 已阅读以上警告？输入 y 开始部署（将改系统）。直接回车取消 [y/N]\e[0m'
 
-# 有 .deploy_credentials 就用；否则自动生成。发生在确认之后。
+# 有 .deploy_credentials 或强账号就用；否则询问 1=自动生成 / 2=自己输入。
 force_change_default_credentials
 
 t_pkg="acl"

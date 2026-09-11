@@ -259,6 +259,7 @@ GNOME 扩展对照表见 `4/README.md`。
 
 - 2026.09.11——0.1.2
   - 直接跑部署脚本会先警告并做必要检查（TTY / raspi-firmware / root 密码）；首次必须输入 `y`，回车取消
+  - 修复 `SET_DOCKER_PURGE_REINSTALL`：仅当为 1 才清除 `/var/lib/docker`（原先 0 才会清）
 
 - 2026年8月29日——0.1.1
   - 失败后续跑（`.deploy_progress`）；apt 交互保留真实 TTY（debconf / wireshark / 显示管理器）

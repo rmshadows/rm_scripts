@@ -1,6 +1,6 @@
 # Debian13_Server.sh
 
->Current Version: 0.1.6
+>Current Version: 0.1.7
 
 ## 目录结构
 
@@ -18,9 +18,9 @@
 
 1. 检查是否符合脚本系统要求
 2. 配置好`Config.sh`以及数字目录下的`cfg.sh`（如有必要）
-3. **先生成登录账号（推荐）**：`bash gen_credentials.sh`  
-   `Config.sh` 占位仍是 `admin` / `passwd`，不能直接上公网。该脚本会自动生成用户名和强密码，写入 `.deploy_credentials`。  
-   **也可以直接跑部署脚本**：首次会警告「还没生成账号」，必须输入 `y` 才继续，然后自动生成并显示一次。直接回车 = 取消。手输用 `SET_CREDENTIALS_MANUAL=1` 或 `bash gen_credentials.sh --manual`。
+3. **登录账号（不要用 admin/passwd）**  
+   直接跑部署脚本：输入 `y` 之后会问 **1) 自动生成** 或 **2) 自己输入**。  
+   也可事先 `bash gen_credentials.sh`（同样会问）；或 `SET_USER_NAME` / `SET_USER_PASSWD` 传入足够强的账号。跳过菜单：`SET_CREDENTIALS_AUTO=1` / `SET_CREDENTIALS_MANUAL=1`。直接回车取消部署。
 4. 补充需要的资源(比如一些个人个性化配置)
 5. 用 **root** 运行`Debian_13_Server_Setup.sh`（首次必须 `y` 确认）
 
@@ -64,7 +64,7 @@
 - 加载配置文件和函数库等等
 - 获取当前用户名
 - 与用户确认执行（首次必须输入 `y`，回车取消；直接跑也会先警告）
-- **登录账号**：确认**之后**才处理。有 `.deploy_credentials` 就用；没有则自动生成（`gen_credentials.sh` 可事先生成）。`SET_CREDENTIALS_MANUAL=1` 才手输。
+- **登录账号**：确认 **y** 之后处理。已有 `.deploy_credentials` 或足够强的环境变量就用；否则询问 **1=自动生成 / 2=自己输入**（写入 `.deploy_credentials`）。`SET_CREDENTIALS_AUTO=1` / `SET_CREDENTIALS_MANUAL=1` 可跳过菜单。
 
 ### 检查点一
 
@@ -187,6 +187,10 @@
 ## 更新日志
 
 >dev: Not available yet.
+
+- 2026.09.11——0.1.7
+  - 无现成账号时询问：1 自动生成用户名和强密码，或 2 自己输入（不再默认 admin/passwd）
+  - 修复 `SET_DOCKER_PURGE_REINSTALL`：仅当为 1 才清除 Docker 数据；默认改为 0
 
 - 2026.09.11——0.1.6
   - 默认 `admin`/`passwd` 过弱：`gen_credentials.sh` 预先自动生成；直接跑部署会先警告，必须 `y` 确认后才生成并写入 `.deploy_credentials`

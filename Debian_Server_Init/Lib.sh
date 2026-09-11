@@ -365,7 +365,8 @@ deploy_unmark_job() {
 
 # ---------- 默认账号过弱：自动生成用户名/密码 ----------
 # Config 占位 admin/passwd 上过公网爆破（Vultr 等会直接关机）。
-# 默认自动生成并写入 .deploy_credentials；SET_CREDENTIALS_MANUAL=1 才手输。
+# 没有现成账号时：终端里选 1=自动生成 / 2=自己输入。
+# 跳过菜单：SET_CREDENTIALS_AUTO=1 或 SET_CREDENTIALS_MANUAL=1。
 
 cred_file_path() {
 	echo "${DEPLOY_SCRIPT_ROOT:-.}/.deploy_credentials"
@@ -529,7 +530,57 @@ cred_prompt_manual() {
 	SET_USER_PASSWD="$new_pass"
 }
 
-# 弱则自动生成（或手输）；已自定义则直接用。
+cred_generate_pair() {
+	SET_USER_NAME=$(cred_generate_username) || return 1
+	SET_USER_PASSWD=$(cred_generate_password) || return 1
+	if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+		return 1
+	fi
+	return 0
+}
+
+# 设置 CRED_MODE=auto|manual
+cred_choose_mode() {
+	CRED_MODE=auto
+	if [ "${SET_CREDENTIALS_MANUAL:-0}" -eq 1 ]; then
+		CRED_MODE=manual
+		return 0
+	fi
+	if [ "${SET_CREDENTIALS_AUTO:-0}" -eq 1 ]; then
+		CRED_MODE=auto
+		return 0
+	fi
+	if ! deploy_tty_ok; then
+		prompt -w "无终端：自动生成登录账号（不能交互选择）。"
+		CRED_MODE=auto
+		return 0
+	fi
+	echo
+	prompt -w "登录账号不能用 admin/passwd（公网会被爆破）。请选择："
+	echo "  1) 自动生成用户名和强密码（推荐）"
+	echo "  2) 自己输入用户名和密码"
+	local ans
+	while true; do
+		echo -n "请选择 [1/2]，直接回车 = 1: "
+		read -r ans || ans=1
+		ans=$(printf '%s' "${ans:-1}" | tr -d '[:space:]')
+		case "$ans" in
+		1)
+			CRED_MODE=auto
+			return 0
+			;;
+		2)
+			CRED_MODE=manual
+			return 0
+			;;
+		*)
+			prompt -e "请输入 1 或 2"
+			;;
+		esac
+	done
+}
+
+# 弱则询问自动生成或手输；已自定义 / 已有凭据文件则直接用。
 force_change_default_credentials() {
 	if [ "${SET_USER:-0}" -ne 1 ]; then
 		prompt -w "SET_USER=0：以 root 继续。公网请先改掉 root 密码，并考虑禁止 SSH 密码登录。"
@@ -555,26 +606,18 @@ force_change_default_credentials() {
 		fi
 	fi
 
-	if [ "${SET_CREDENTIALS_MANUAL:-0}" -eq 1 ]; then
+	cred_choose_mode
+	if [ "$CRED_MODE" = manual ]; then
 		if ! deploy_tty_ok; then
-			prompt -e "SET_CREDENTIALS_MANUAL=1 需要终端。请改跑 bash gen_credentials.sh，或去掉该变量以自动生成。"
+			prompt -e "自己输入账号需要终端。请改跑 bash gen_credentials.sh --manual，或去掉 SET_CREDENTIALS_MANUAL 以自动生成。"
 			exit 1
 		fi
-		prompt -e "手动输入模式（默认是自动生成：bash gen_credentials.sh）"
 		cred_prompt_manual
 	else
-		SET_USER_NAME=$(cred_generate_username) || {
-			prompt -e "自动生成用户名失败"
+		cred_generate_pair || {
+			prompt -e "自动生成失败，请重跑或改选手动输入"
 			exit 1
 		}
-		SET_USER_PASSWD=$(cred_generate_password) || {
-			prompt -e "自动生成密码失败"
-			exit 1
-		}
-		if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
-			prompt -e "自动生成结果仍过弱，请重跑或改用 --manual"
-			exit 1
-		fi
 	fi
 
 	cred_save_file "$cred_file" "$SET_USER_NAME" "$SET_USER_PASSWD"
@@ -642,10 +685,9 @@ deploy_print_preflight() {
 		elif ! cred_username_is_weak "$SET_USER_NAME" && ! cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
 			prompt -s "Config/环境变量已是自定义账号：$SET_USER_NAME"
 		else
-			prompt -e "你像是直接运行了部署脚本，还没有 bash gen_credentials.sh"
-			prompt -e "占位账号 admin/passwd 上公网会被爆破（云厂商可能直接关机）。"
-			prompt -w "若现在输入 y：将自动生成用户名和强密码，只显示一次，请立刻抄下来。"
-			prompt -w "若想先生成再部署：Ctrl+C，然后： bash gen_credentials.sh"
+			prompt -e "占位账号 admin/passwd 不能上公网（会被爆破，云厂商可能直接关机）。"
+			prompt -w "确认开始后将询问：1) 自动生成  2) 自己输入。不要用 admin/passwd。"
+			prompt -w "也可先： bash gen_credentials.sh   或传入足够强的 SET_USER_NAME / SET_USER_PASSWD"
 		fi
 	else
 		prompt -w "SET_USER=0：将以 root 继续。公网请先改掉 root 密码。"

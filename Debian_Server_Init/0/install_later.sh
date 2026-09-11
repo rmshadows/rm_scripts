@@ -25,14 +25,15 @@ docker-ce
 if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
     doApt remove docker docker-engine docker.io
     for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do doApt remove $pkg; done
-    if [ "$SET_DOCKER_PURGE_REINSTALL" -eq 0 ]; then
+    if [ "$SET_DOCKER_PURGE_REINSTALL" -eq 1 ]; then
+        prompt -w "SET_DOCKER_PURGE_REINSTALL=1：将清除 Docker 数据（/var/lib/docker、/var/lib/containerd）后重装"
         for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do doApt remove $pkg; done
         # 彻底清除Docker
         for pkg in docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras; do doApt purge $pkg; done
         sudo rm -rf /var/lib/docker
         sudo rm -rf /var/lib/containerd
-        sudo rm /etc/apt/sources.list.d/docker.list
-        sudo rm /etc/apt/keyrings/docker.asc
+        sudo rm -f /etc/apt/sources.list.d/docker.list
+        sudo rm -f /etc/apt/keyrings/docker.asc /etc/apt/keyrings/docker.gpg
     fi
     if ! [ -x "$(command -v docker)" ]; then
         prompt -x "安装Docker-ce"

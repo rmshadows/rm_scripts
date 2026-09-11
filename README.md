@@ -7,9 +7,14 @@
 
 ## 一键拉取（无需 git）
 
-将下面 URL 中的 `latest` 换成具体 tag（例如 `download/v0.1.0/`）也可。
+两种来源：
 
-### 1. 仅拉取（不解压后不运行）
+- **Release 附件**（精简包，推荐日常部署）：不含 `archive/`、日志和凭据文件。URL 里的 `latest` 换成具体 tag（例如 `download/v0.1.0/`）也可。需要先发版：仓库 **Actions → Publish Init Release → Run workflow**（选要打包的分支；tag 可留空用当天日期；勾选标为 latest）。本地也可：`bash release/build.sh && bash release/publish.sh v0.1.6 --latest`。
+- **GitHub 分支压缩包**（`main` / `dev`，不用等发版）：拿最新代码。下载的是**整个仓库**，体积更大，且含 `archive/`。需要 GNU tar（Debian 自带）。
+
+**拉取后跑部署仍然可以**，但不再是完全无人值守：必须在**真实终端**里运行入口脚本，**首次输入 `y`**（直接回车 = 取消）。管道/`curl | bash`、没分配 TTY 的 SSH 会直接退出。GNOME 会先警告并检查；Server 不会再用默认 `admin`/`passwd`（太弱），确认后自动生成账号并显示一次，或用环境变量传入**足够强**的 `SET_USER_NAME` / `SET_USER_PASSWD`。
+
+### 1. 仅拉取 Release（不解压后不运行）
 
 **Debian GNOME Init**
 
@@ -36,9 +41,35 @@ curl -fsSL -O https://github.com/rmshadows/rm_scripts/releases/latest/download/S
 sha256sum -c SHA256SUMS
 ```
 
-### 2. 拉取 + 运行（命令行传入必要参数）
+### 2. 从 GitHub 分支拉取（main / dev）
 
-参数通过**环境变量**覆盖配置（勿把密码写进可分享的截图/日志）。
+下面命令把对应目录**直接解到当前文件夹**。把 `dev` 换成 `main` 即主分支；目录前缀跟着改成 `rm_scripts-main/`。
+
+**只要 GNOME Init**
+
+```bash
+curl -fsSL https://github.com/rmshadows/rm_scripts/archive/refs/heads/dev.tar.gz \
+  | tar -xz --strip-components=1 rm_scripts-dev/Debian_GNOME_Init
+```
+
+**只要 Server Init**
+
+```bash
+curl -fsSL https://github.com/rmshadows/rm_scripts/archive/refs/heads/dev.tar.gz \
+  | tar -xz --strip-components=1 rm_scripts-dev/Debian_Server_Init
+```
+
+**整个仓库解到当前目录**（会把仓库根文件混进当前文件夹，建议先建空目录再执行）：
+
+```bash
+mkdir -p rm_scripts && cd rm_scripts
+curl -fsSL https://github.com/rmshadows/rm_scripts/archive/refs/heads/dev.tar.gz \
+  | tar -xz --strip-components=1
+```
+
+### 3. 拉取 + 运行（命令行传入必要参数）
+
+先按上面任一方式拉到目录，再在**终端**里跑。参数通过**环境变量**覆盖配置（勿把密码写进可分享的截图/日志）。
 
 **GNOME**（普通用户跑；若还不是免密 sudo，请提供 `ROOT_PASSWD`）
 
@@ -48,23 +79,25 @@ curl -fsSL \
   | tar -xz
 cd Debian_GNOME_Init
 ROOT_PASSWD='你的root密码' bash Debian_13_GNOME_Setup.sh
-# 已是免密 sudo 时可直接：
-# bash Debian_13_GNOME_Setup.sh
+# 首次输入 y 开始；已是免密 sudo 时可省略 ROOT_PASSWD
 ```
 
-**Server**（建议 root 或已有 sudo；创建用户时请改用户名/密码）
+**Server**（建议 **root** 跑；首次输入 `y`。不要再用 `admin`/`passwd`）
 
 ```bash
 curl -fsSL \
   https://github.com/rmshadows/rm_scripts/releases/latest/download/Debian_Server_Init.tar.gz \
   | tar -xz
 cd Debian_Server_Init
-SET_USER_NAME='admin' SET_USER_PASSWD='你的用户密码' bash Debian_13_Server_Setup.sh
-# 可选：SET_HOST_NAME='myserver' SET_USER=1
-# 若 SET_USER=0 则以 root 继续，无需 SET_USER_NAME / SET_USER_PASSWD
+bash Debian_13_Server_Setup.sh
+# 输入 y 后选：1 自动生成账号（回车默认）或 2 自己输入；生成的密码只显示一次，请立刻抄下
+# 或事先指定强账号：
+# SET_USER_NAME='mysvc' SET_USER_PASSWD='足够长的密码' bash Debian_13_Server_Setup.sh
+# 可选：SET_HOST_NAME='myserver'
+# SET_USER=0 则以 root 继续，不建普通用户
 ```
 
-更稳妥做法：先「仅拉取」，打开 `Config.sh` 确认后再跑入口脚本。
+更稳妥做法：先「仅拉取」，打开 `Config.sh` 确认后再跑入口脚本。Server 也可先 `bash gen_credentials.sh` 再部署。
 
 ## 脚本文件夹
 
@@ -95,6 +128,14 @@ SET_USER_NAME='admin' SET_USER_PASSWD='你的用户密码' bash Debian_13_Server
 ## 大事件记录
 
 >各脚本更新日志请分别查看文件夹中的README
+
+- 2026年9月11日——0.1.2
+  - 新增 GitHub Action「Publish Init Release」（手动触发）：打包 `Debian_GNOME_Init` / `Debian_Server_Init` 并发布 Release 附件，一键 curl（`releases/latest/download/`）可用
+  - 主 README：补充从 `main`/`dev` 分支 curl 解压；说明首次部署须终端输入 `y`，Server 不再接受默认 `admin`/`passwd`
+  - Debian_GNOME_Init 0.1.2：部署前警告与检查，首次必须 `y` 确认；修复 Docker 清除开关逻辑反了
+  - Debian_Server_Init 0.1.7：无现成账号时询问自动生成或自己输入（不再默认 admin/passwd）；修复 Docker 清除开关逻辑反了
+  - 直播 ffmpegL：`livectl` 切歌/跳转；内存上限改为安装时可选
+  - systweak：`wechat-recv-writable.sh`（微信接收文件目录可写）
 
 - 2026年8月29日——0.1.1
   - Debian_GNOME_Init：续跑、TTY 交互、精简白霜离线包入库、fcitx5 登录自启
