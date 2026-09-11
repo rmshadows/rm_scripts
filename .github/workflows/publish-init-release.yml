@@ -1,20 +1,15 @@
 # 手动打包 Debian_*_Init 并发布 GitHub Release。
-# 一键 curl（releases/latest/download/...）依赖本 workflow 打出的附件。
+# 一键 curl 使用固定 tag debian-init，不走 /releases/latest/（后者可能是 PDF 手动发版）。
 name: Publish Init Release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag，如 v0.1.6。留空则用 UTC 日期 vYYYY.MM.DD'
+        description: '版本快照 tag，如 v0.1.6。留空则用 UTC 日期 vYYYY.MM.DD。同时会更新滚动通道 debian-init'
         required: false
         type: string
         default: ''
-      mark_latest:
-        description: '标为 latest（README 一键拉取用 /releases/latest/download/）'
-        required: true
-        type: boolean
-        default: true
       notes:
         description: '额外 Release 说明（可选）'
         required: false
@@ -41,8 +36,12 @@ jobs:
           if [ -z "$TAG" ]; then
             TAG="v$(date -u +%Y.%m.%d)"
           fi
+          if [ "$TAG" = "debian-init" ]; then
+            echo "不要把版本 tag 设成 debian-init（那是滚动通道）。请留空或填 v0.1.6 这类。" >&2
+            exit 1
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "将发布 tag: $TAG  (commit ${GITHUB_SHA})"
+          echo "将发布版本 tag: $TAG ，并更新 debian-init  (commit ${GITHUB_SHA})"
 
       - name: Build tarballs
         run: bash release/build.sh
@@ -51,16 +50,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.meta.outputs.tag }}
-          MARK_LATEST: ${{ inputs.mark_latest }}
           EXTRA_NOTES: ${{ inputs.notes }}
         run: |
           set -euo pipefail
-          args=("$TAG")
-          if [ "$MARK_LATEST" = "true" ]; then
-            args+=(--latest)
-          else
-            args+=(--no-latest)
-          fi
+          args=("$TAG" --no-latest --rolling)
           if [ -n "${EXTRA_NOTES:-}" ]; then
             args+=(--notes "$EXTRA_NOTES")
           fi

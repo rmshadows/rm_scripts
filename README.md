@@ -9,10 +9,10 @@
 
 两种来源：
 
-- **Release 附件**（精简包，推荐日常部署）：不含 `archive/`、日志和凭据文件。URL 里的 `latest` 换成具体 tag（例如 `download/v0.1.0/`）也可。需要先发版：仓库 **Actions → Publish Init Release → Run workflow**（选要打包的分支；tag 可留空用当天日期；勾选标为 latest）。本地也可：`bash release/build.sh && bash release/publish.sh v0.1.6 --latest`。
+- **Release 附件**（精简包，推荐日常部署）：不含 `archive/`、日志和凭据文件。一键 URL 用固定 tag **`debian-init`**，不是 `/releases/latest/`（仓库里的 latest 可能是你手动发的 PDF 工具）。发版：仓库 **Actions → Publish Init Release → Run workflow**（选要打包的分支；会同时打一个版本快照 tag，并覆盖 `debian-init`）。本地也可：`bash release/build.sh && bash release/publish.sh v0.1.6`。
 - **GitHub 分支压缩包**（`main` / `dev`，不用等发版）：拿最新代码。下载的是**整个仓库**，体积更大，且含 `archive/`。需要 GNU tar（Debian 自带）。
 
-**拉取后跑部署仍然可以**，但不再是完全无人值守：必须在**真实终端**里运行入口脚本，**首次输入 `y`**（直接回车 = 取消）。管道/`curl | bash`、没分配 TTY 的 SSH 会直接退出。GNOME 会先警告并检查；Server 不会再用默认 `admin`/`passwd`（太弱），确认后自动生成账号并显示一次，或用环境变量传入**足够强**的 `SET_USER_NAME` / `SET_USER_PASSWD`。
+**拉取后跑部署仍然可以**，但不再是完全无人值守：必须在**真实终端**里运行入口脚本，**首次输入 `y`**（直接回车 = 取消）。管道/`curl | bash`、没分配 TTY 的 SSH 会直接退出。GNOME 会先警告并检查；Server 不会再用默认 `admin`/`passwd`（太弱），确认后会问自动生成或自己输入，或用环境变量传入**足够强**的 `SET_USER_NAME` / `SET_USER_PASSWD`。
 
 ### 1. 仅拉取 Release（不解压后不运行）
 
@@ -20,7 +20,7 @@
 
 ```bash
 curl -fsSL -o Debian_GNOME_Init.tar.gz \
-  https://github.com/rmshadows/rm_scripts/releases/latest/download/Debian_GNOME_Init.tar.gz
+  https://github.com/rmshadows/rm_scripts/releases/download/debian-init/Debian_GNOME_Init.tar.gz
 tar -xzf Debian_GNOME_Init.tar.gz
 # 得到目录 Debian_GNOME_Init/ ，自行改 Config.sh / GlobalVariables.sh 后再运行
 ```
@@ -29,7 +29,7 @@ tar -xzf Debian_GNOME_Init.tar.gz
 
 ```bash
 curl -fsSL -o Debian_Server_Init.tar.gz \
-  https://github.com/rmshadows/rm_scripts/releases/latest/download/Debian_Server_Init.tar.gz
+  https://github.com/rmshadows/rm_scripts/releases/download/debian-init/Debian_Server_Init.tar.gz
 tar -xzf Debian_Server_Init.tar.gz
 # 得到目录 Debian_Server_Init/ ，自行改 Config.sh 后再运行
 ```
@@ -37,9 +37,11 @@ tar -xzf Debian_Server_Init.tar.gz
 可选校验：
 
 ```bash
-curl -fsSL -O https://github.com/rmshadows/rm_scripts/releases/latest/download/SHA256SUMS
+curl -fsSL -O https://github.com/rmshadows/rm_scripts/releases/download/debian-init/SHA256SUMS
 sha256sum -c SHA256SUMS
 ```
+
+钉死某一版时把 `debian-init` 换成快照 tag（例如 `v0.1.6` / `v2026.09.11`）。
 
 ### 2. 从 GitHub 分支拉取（main / dev）
 
@@ -75,7 +77,7 @@ curl -fsSL https://github.com/rmshadows/rm_scripts/archive/refs/heads/dev.tar.gz
 
 ```bash
 curl -fsSL \
-  https://github.com/rmshadows/rm_scripts/releases/latest/download/Debian_GNOME_Init.tar.gz \
+  https://github.com/rmshadows/rm_scripts/releases/download/debian-init/Debian_GNOME_Init.tar.gz \
   | tar -xz
 cd Debian_GNOME_Init
 ROOT_PASSWD='你的root密码' bash Debian_13_GNOME_Setup.sh
@@ -86,7 +88,7 @@ ROOT_PASSWD='你的root密码' bash Debian_13_GNOME_Setup.sh
 
 ```bash
 curl -fsSL \
-  https://github.com/rmshadows/rm_scripts/releases/latest/download/Debian_Server_Init.tar.gz \
+  https://github.com/rmshadows/rm_scripts/releases/download/debian-init/Debian_Server_Init.tar.gz \
   | tar -xz
 cd Debian_Server_Init
 bash Debian_13_Server_Setup.sh
@@ -130,7 +132,7 @@ bash Debian_13_Server_Setup.sh
 >各脚本更新日志请分别查看文件夹中的README
 
 - 2026年9月11日——0.1.2
-  - 新增 GitHub Action「Publish Init Release」（手动触发）：打包 `Debian_GNOME_Init` / `Debian_Server_Init` 并发布 Release 附件，一键 curl（`releases/latest/download/`）可用
+  - 新增 GitHub Action「Publish Init Release」（手动触发）：打包 Init 并覆盖固定 tag `debian-init`（一键 curl 用这个，不走 `/releases/latest/`，避免和 PDF 手动 Release 抢 latest）
   - 主 README：补充从 `main`/`dev` 分支 curl 解压；说明首次部署须终端输入 `y`，Server 不再接受默认 `admin`/`passwd`
   - Debian_GNOME_Init 0.1.2：部署前警告与检查，首次必须 `y` 确认；修复 Docker 清除开关逻辑反了
   - Debian_Server_Init 0.1.7：无现成账号时询问自动生成或自己输入（不再默认 admin/passwd）；修复 Docker 清除开关逻辑反了
