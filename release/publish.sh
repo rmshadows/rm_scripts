@@ -150,7 +150,8 @@ publish_tag() {
       --target "$TARGET" \
       "${LATEST_ARGS[@]}"
   fi
-  gh release view "$tag" --json url,tagName,isLatest,assets -q '{url:.url,tag:.tagName,latest:.isLatest,assets:[.assets[].name]}'
+  # 旧版 gh（Actions runner）没有 isLatest 字段
+  gh release view "$tag" --json url,tagName,assets -q '{url:.url,tag:.tagName,assets:[.assets[].name]}'
 }
 
 # 版本快照（可 pinned）；默认不标 GitHub latest
