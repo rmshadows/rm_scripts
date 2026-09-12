@@ -5,8 +5,8 @@ host: "0.0.0.0"
 # Listen port
 port: 【$RUN_PORT】
 
-# App Key (for generation of JWT) pwgen 15 -y -s
-app_key: "<\V"EK.;b<K7wfv"
+# App Key (for generation of JWT) 由脚本自动生成或在 CONF 中设置 APP_KEY
+app_key: "【$APP_KEY】"
 
 # Debug mode
 debug: false
@@ -31,7 +31,7 @@ admin_users:
     email: 【$ADMIN_EMAIL】
     password: (bcrypt)【$ENCRYPTED_PASSWD】
     badge_name: 【$BADGE_NAME】
-    badge_color: 【$BADGE_COLOR】
+    badge_color: "【$BADGE_COLOR】"
 #  - name: admin2
 #    email: admin2@example.com
 #    password: (bcrypt)$2y$10$ti4vZYIrxVN8rLcYXVgXCO.GJND0dyI49r7IoF3xqIx8bBRmIBZRm

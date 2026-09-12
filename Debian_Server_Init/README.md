@@ -1,6 +1,6 @@
 # Debian13_Server.sh
 
->Current Version: 0.1.7
+>Current Version: 0.1.9
 
 ## 目录结构
 
@@ -37,6 +37,14 @@
 
 `SET_APT_RUN_WITHOUT_ASKING=1` 时，`apt modernize-sources` 会带 `-y`，不会再停在 `Rewrite sources? [Y/n]`。检查点脚本在当前终端 `source`，不再用管道/`tee` 包一层（否则会像要按回车才能继续）。
 
+### GitHub Actions
+
+- 静态：`bash Debian_Server_Init/ci/static.sh`（语法、弱口令/域名判定、模板渲染、Shorewall 模板存在）
+- 冒烟：Debian 13 容器里再跑 `ci/smoke.sh`（`nginx -t`、证书助手拷文件、sudoers）。**不**整机全量、不签发真证书、不 enable Shorewall。
+- CI 专用：`SET_DEPLOY_CI=1` 才跳过首次 `y` 确认。真机不要开。
+
+工作流：`.github/workflows/debian-server-init-ci.yml`
+
 ## 脚本运行流程
 
 ### 初始化脚本
@@ -65,6 +73,7 @@
 - 获取当前用户名
 - 与用户确认执行（首次必须输入 `y`，回车取消；直接跑也会先警告）
 - **SSH 空闲保活**（`SET_SSH_KEEPALIVE=1`）：确认后立刻写入并 reload（不踢当前会话），避免后面 apt/装软件时空闲被云防火墙掐断。默认每 60s 探活。
+- **UFW**（`SET_UFW_SYNC=1`）：若已安装且 **active**，按 Config 预先放行实际 SSH 端口、HTTP 80、HTTPS 443。不自动安装、不 `ufw enable`。PHP-FPM 端口不对公网放行。
 - **登录账号**：确认 **y** 之后处理。已有 `.deploy_credentials` 或足够强的环境变量就用；否则询问 **1=自动生成 / 2=自己输入**（写入 `.deploy_credentials`）。`SET_CREDENTIALS_AUTO=1` / `SET_CREDENTIALS_MANUAL=1` 可跳过菜单。
 
 ### 检查点一
@@ -111,15 +120,15 @@
 ### 检查点五
 
 - 安装配置php-fpm
-- 安装http服务器
-- 配置Let's encrypt Certbot（可选，`SET_INSTALL_CERTBOT`）
-- 配置 acme.sh（可选，`SET_INSTALL_ACME_SH`；默认只安装，需手动签发；说明写入 `~/acme.sh使用说明.md` 与安装目录 `README-Debian_Server_Init.md`）
+- 安装 nginx：`acme.conf`（80，校验+测试页，默认启用）、`ssl.conf`（443 模板，默认不启用）。管理站点：`sudo ngx-site`
+- acme.sh：只用 Config 里的业务用户跑（不用 root/sudo）。`SET_ACME_ISSUE=1` 且域名为真时签发；拷到 `/etc/ssl` 和 reload 由 `acme-deploy-cert` 做。说明在 `~/acme.sh使用说明.md`。签发后改 `ssl.conf` 再 `sudo ngx-site`。
+- Certbot 仍可选（`SET_INSTALL_CERTBOT`，默认关）
 
 
 ### 检查点六
 
-- 生成SSH　Ｋｅｙ
-- 配置Shorewall防火墙(需要手动启用)
+- 生成 SSH Key
+- 配置 Shorewall（只拷配置，不自动启用）。选模板：`sudo sw-rules`（`normal` / `web` / `off` / `gov_only`）。规则里已写好注释条，取消注释后 `sudo shorewall check && sudo shorewall reload`
 
 ### 脚本收尾
 
@@ -187,7 +196,25 @@
 
 ## 更新日志
 
->dev: Not available yet.
+- 2026.09.13——0.1.9
+  - 应用 Nginx 配置统一：反代片段改为 `*.conf.src` 模板 + `write_nginx_snippet()`（主站 include 一行即可）；独立站用 `write_nginx_available_site()`；各脚本注释区分 SITE_NAME / YOUR_DOMAIN / REVERSE_PROXY_PATH
+  - 应用卸载：artalk、hackchat、isso、rsshub、frp、linx、jitsi、webmin、golang、matterbridge、fmgr、证书助手、ffmpegL 等补齐 `uninstall.sh`；删除用户数据前强制确认，默认保留
+  - hackchat：npm 官方源失败自动切 npmmirror 镜像；systemd 服务 PATH 注入 nvm；固定上游 commit SHA；npm 加 `--ignore-scripts`；自动生成 session.key/salt.key/config.json；适配 pm2.config 改名为 .cjs
+  - artalk：反代改为子路径片段（REVERSE_PROXY_PATH）；修复 ip2region 数据文件改名 ip2region_v4.xdb 导致的 404
+  - frp：仓库不再保存 frpc.toml 实物，统一为 .src 模板；配置拆分 frp.conf / frp-site.conf
+  - nvm：钉版 v0.40.1 → v0.40.7；新增 `update-nvm.sh`（查上游 tag 一键更新钉版）；修复三个开关变量为空时整数比较报错；文档合并精简
+  - 禁用第三方源：改为检查点一后快照白名单（deploy_apt_snapshot_keep），只挪走新出现的 sources.list.d，不误伤系统源
+  - webmin：新增独立反代站点模板与 setupNginx 脚本；移除仓库内 miniserv.conf 实物
+  - 幂等性：go / matterbridge / jitsi / 自签证书助手等检测到已存在则跳过；fmgr 反代配置支持覆盖式重跑
+  - ffmpegL：兼容旧库 heredoc 注释在 set -u 下的变量展开；新增卸载脚本
+
+- 2026.09.12——0.1.8
+  - 检测到 UFW 已启用时，按将启用的服务预先放行 SSH/80/443（不自动开启 UFW）
+  - nginx 默认 80 精简为 ACME + 测试页；`SET_ACME_ISSUE=1` 可自动签发；HTTPS 模板不自动启用
+  - 站点改名为 `acme.conf` / `ssl.conf`；`sudo ngx-site` 开关站点；拷到系统的脚本会 `chmod +x`
+  - Shorewall：`crules` 模板（`normal` / `web` / `off` / `gov_only`）带注释条；`sudo sw-rules` 选用
+  - acme.sh 只用业务用户跑（`runuser`，清掉 SUDO_*）；`/usr/local/bin/acme.sh` 遇到 sudo/root 会拒绝。拷证书和 reload 走 `acme-deploy-cert`
+  - GitHub Actions：`ci/static.sh` + Debian 13 容器 `ci/smoke.sh`；`SET_DEPLOY_CI=1` 仅给 CI 跳过确认
 
 - 2026.09.11——0.1.7
   - 确认开始后立刻写 SSH keepalive（`ClientAliveInterval 60`），避免部署中途空闲断线

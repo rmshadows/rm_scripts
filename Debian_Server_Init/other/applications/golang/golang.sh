@@ -27,9 +27,16 @@ if ! command -v $t_pkg &>/dev/null; then
 fi
 
 ### 安装软件
-wget -c "$golangtar" -O golang.tar.gz
-sudo tar -C /usr/local -xzf golang.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-go version
+# 检测：/usr/local/go/bin/go 已存在则跳过
+if [ -f "/usr/local/go/bin/go" ]; then
+  prompt -i "[跳过] golang 已安装"
+  export PATH=$PATH:/usr/local/go/bin
+  go version
+else
+  wget -c "$golangtar" -O golang.tar.gz
+  sudo tar -C /usr/local -xzf golang.tar.gz
+  export PATH=$PATH:/usr/local/go/bin
+  go version
+fi
 
 

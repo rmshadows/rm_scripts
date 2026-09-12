@@ -200,6 +200,44 @@ backupFile() {
 	fi
 }
 
+# 检查点一改完源后的保留清单（modernize / 写入的官方源）。之后多出来的当第三方。
+deploy_apt_keep_file() {
+	printf '%s' "${DEPLOY_APT_KEEP_FILE:-${DEPLOY_SCRIPT_ROOT:-.}/.deploy_apt_keep}"
+}
+
+deploy_apt_snapshot_keep() {
+	local keep f base
+	keep=$(deploy_apt_keep_file)
+	: >"$keep"
+	for f in /etc/apt/sources.list.d/*; do
+		[ -f "$f" ] || continue
+		base=$(basename "$f")
+		printf '%s\n' "$base" >>"$keep"
+		prompt -k "保留源" "$base"
+	done
+	prompt -s "已记录检查点一之后的 APT 源: $keep"
+}
+
+deploy_apt_disable_third_party() {
+	local keep f base
+	keep=$(deploy_apt_keep_file)
+	if [ ! -s "$keep" ]; then
+		prompt -w "没有检查点一的源清单（$keep），不挪 sources.list.d，以免误删主库。"
+		return 0
+	fi
+	addFolder /etc/apt/sources.list.d/backup
+	for f in /etc/apt/sources.list.d/*; do
+		[ -e "$f" ] || continue
+		[ -d "$f" ] && continue
+		base=$(basename "$f")
+		if grep -qxF "$base" "$keep"; then
+			continue
+		fi
+		prompt -x "挪走检查点一之后新增的源: $base"
+		sudo mv "$f" /etc/apt/sources.list.d/backup/
+	done
+}
+
 # 交互式安装（wireshark / 显示管理器 / apt-listchanges 等）必须连真实 TTY。
 # 管道、tee、未 flush 的 script 都会让界面画不出来、按键进不去。
 deploy_tty_ok() {

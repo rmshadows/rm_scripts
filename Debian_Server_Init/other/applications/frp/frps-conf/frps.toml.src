@@ -1,16 +1,15 @@
-bindPort = 7000
+bindPort = 【$FRPS_BIND_PORT】
 auth.method = "token"
-auth.token = "passwd"
-webServer.port = 7500
-# dashboard 用户名密码，可选，默认为空
-webServer.user = "admin"
-webServer.password = "admin"
+auth.token = "【$FRPS_AUTH_TOKEN】"
+webServer.port = 【$FRPS_WEB_PORT】
+# dashboard 用户名密码
+webServer.user = "【$FRPS_WEB_USER】"
+webServer.password = "【$FRPS_WEB_PASSWORD】"
 Log.to = "【$HOME】/Logs/frp/frps.log"
-Log.maxDays=30
+Log.maxDays = 30
 # 是否返回详细报错
 detailedErrorsToClient = false
-# 允许的端口
+# 允许客户端映射的端口范围
 allowPorts = [
-  { single = 5000 },
-  { start = 2000, end = 3000 }
+  【$FRPS_ALLOW_PORTS】
 ]

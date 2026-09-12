@@ -1,0 +1,13 @@
+serverAddr = "【$FRPC_SERVER_ADDR】"
+serverPort = 【$FRPC_SERVER_PORT】
+auth.method = "token"
+auth.token = "【$FRPS_AUTH_TOKEN】"
+
+[[proxies]]
+name = "【$FRPC_PROXY_NAME】"
+type = "【$FRPC_PROXY_TYPE】"
+localIP = "【$FRPC_LOCAL_IP】"
+localPort = 【$FRPC_LOCAL_PORT】
+remotePort = 【$FRPC_REMOTE_PORT】
+transport.useEncryption = true
+transport.useCompression = true

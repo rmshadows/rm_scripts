@@ -1,0 +1,39 @@
+# Debian_Server_Init：静态检查 + Debian 13 容器冒烟。
+# 不跑整机全量（无 systemd、不签发真证书、不 enable Shorewall）。
+name: Debian Server Init CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Debian_Server_Init/**"
+      - ".github/workflows/debian-server-init-ci.yml"
+  push:
+    paths:
+      - "Debian_Server_Init/**"
+      - ".github/workflows/debian-server-init-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Static checks
+        run: bash Debian_Server_Init/ci/static.sh
+
+  smoke:
+    name: smoke (debian:13)
+    runs-on: ubuntu-latest
+    container:
+      image: debian:13
+    steps:
+      - uses: actions/checkout@v5
+      - name: Smoke
+        env:
+          SET_DEPLOY_CI: "1"
+          DEBIAN_FRONTEND: noninteractive
+        run: bash Debian_Server_Init/ci/smoke.sh

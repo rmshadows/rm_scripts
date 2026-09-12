@@ -206,7 +206,19 @@ deploy_tty_ok() {
 	[ -t 0 ] && [ -t 1 ] && [ -t 2 ]
 }
 
+# 仅当显式 SET_DEPLOY_CI=1。不要单凭 CI=true 跳过确认。
+deploy_is_ci() {
+	[ "${SET_DEPLOY_CI:-0}" -eq 1 ]
+}
+
 deploy_prepare_interactive() {
+	if deploy_is_ci; then
+		export DEBIAN_FRONTEND=noninteractive
+		export DEBCONF_NONINTERACTIVE_SEEN=true
+		export NEEDRESTART_MODE="${NEEDRESTART_MODE:-a}"
+		prompt -m "SET_DEPLOY_CI=1：非交互（debconf noninteractive）"
+		return 0
+	fi
 	if ! deploy_tty_ok; then
 		prompt -e "stdin/stdout/stderr 不是终端。debconf / pager / ncurses 无法显示，也无法接收按键。"
 		prompt -w "请直接在终端运行：bash Debian_13_Server_Setup.sh（不要再套一层管道或无 -t 的 ssh）"
@@ -546,6 +558,11 @@ cred_choose_mode() {
 		CRED_MODE=manual
 		return 0
 	fi
+	if deploy_is_ci; then
+		SET_CREDENTIALS_AUTO=1
+		CRED_MODE=auto
+		return 0
+	fi
 	if [ "${SET_CREDENTIALS_AUTO:-0}" -eq 1 ]; then
 		CRED_MODE=auto
 		return 0
@@ -694,8 +711,174 @@ ClientAliveCountMax ${countmax}
 	fi
 }
 
+# 只在 UFW 已经 active 时放行端口：不安装、不 enable，避免误关入站把自己锁外面。
+deploy_ufw_is_active() {
+	command -v ufw >/dev/null 2>&1 || return 1
+	LANG=C ufw status 2>/dev/null | head -n 1 | grep -qi 'status: active'
+}
+
+deploy_ssh_listen_ports() {
+	local ports=""
+	if [ -x /usr/sbin/sshd ]; then
+		ports=$(/usr/sbin/sshd -T 2>/dev/null | awk '/^port / { print $2 }')
+	fi
+	if [ -z "$ports" ]; then
+		ports=$(grep -hE '^[[:space:]]*Port[[:space:]]+[0-9]+' /etc/ssh/sshd_config /etc/ssh/sshd_config.d/*.conf 2>/dev/null | awk '{ print $2 }')
+	fi
+	if [ -z "$ports" ]; then
+		echo 22
+	else
+		printf '%s\n' "$ports" | sort -u
+	fi
+}
+
+deploy_ufw_allow_tcp() {
+	local port="$1" comment="$2" st
+	[ -n "$port" ] || return 0
+	st=$(LANG=C ufw status 2>/dev/null || true)
+	if printf '%s\n' "$st" | grep -qE "^${port}/tcp[[:space:]]+ALLOW"; then
+		prompt -s "UFW 已放行 ${port}/tcp"
+		return 0
+	fi
+	prompt -x "UFW 预先放行 ${port}/tcp （${comment}）"
+	if ! ufw allow "${port}/tcp" comment "$comment"; then
+		prompt -e "ufw allow ${port}/tcp 失败"
+		return 1
+	fi
+}
+
+# 按 Config 将启用的服务端口写入已启用的 UFW。SSH 端口从实际 sshd 读取（不一定是 22）。
+deploy_ufw_sync_ports() {
+	if [ "${SET_UFW_SYNC:-1}" -ne 1 ]; then
+		return 0
+	fi
+	if systemctl is-active --quiet firewalld 2>/dev/null; then
+		prompt -w "firewalld 正在运行：本脚本只同步 UFW。请自行放行 SSH / 80 / 443。"
+	fi
+	if ! command -v ufw >/dev/null 2>&1; then
+		prompt -m "未安装 UFW，跳过防火墙放行。"
+		return 0
+	fi
+	if ! deploy_ufw_is_active; then
+		prompt -m "UFW 已安装但未启用，不改规则、也不自动 enable。"
+		return 0
+	fi
+
+	prompt -w "检测到 UFW 已启用：按本脚本将启用的服务预先放行端口（不改默认策略）。"
+	local p
+	while IFS= read -r p; do
+		[ -n "$p" ] && deploy_ufw_allow_tcp "$p" "Debian_Server_Init SSH"
+	done < <(deploy_ssh_listen_ports)
+
+	if [ "${SET_INSTALL_HTTP_SERVER:-0}" -ne 0 ]; then
+		if [ "${SET_ENABLE_HTTP_SERVICE:-0}" -eq 1 ] || [ "${SET_ENABLE_SITE:-0}" -ne 0 ]; then
+			deploy_ufw_allow_tcp 80 "Debian_Server_Init HTTP"
+		fi
+		if [ "${SET_ENABLE_SITE:-0}" -eq 2 ] || [ "${SET_ACME_ISSUE:-0}" -eq 1 ]; then
+			deploy_ufw_allow_tcp 443 "Debian_Server_Init HTTPS"
+		fi
+	fi
+	if [ "${SET_PHP_FPM_PORT:-0}" -ne 0 ]; then
+		prompt -w "SET_PHP_FPM_PORT=${SET_PHP_FPM_PORT}：不自动对公网放行 PHP-FPM（应只听本机）。"
+	fi
+}
+
+# 检查点一改完源后的保留清单（modernize / 写入的官方源）。之后多出来的当第三方。
+deploy_apt_keep_file() {
+	printf '%s' "${DEPLOY_APT_KEEP_FILE:-${DEPLOY_SCRIPT_ROOT:-.}/.deploy_apt_keep}"
+}
+
+deploy_apt_snapshot_keep() {
+	local keep f base
+	keep=$(deploy_apt_keep_file)
+	: >"$keep"
+	for f in /etc/apt/sources.list.d/*; do
+		[ -f "$f" ] || continue
+		base=$(basename "$f")
+		printf '%s\n' "$base" >>"$keep"
+		prompt -k "保留源" "$base"
+	done
+	prompt -s "已记录检查点一之后的 APT 源: $keep"
+}
+
+deploy_apt_disable_third_party() {
+	local keep f base
+	keep=$(deploy_apt_keep_file)
+	if [ ! -s "$keep" ]; then
+		prompt -w "没有检查点一的源清单（$keep），不挪 sources.list.d，以免误删主库。"
+		return 0
+	fi
+	addFolder /etc/apt/sources.list.d/backup
+	for f in /etc/apt/sources.list.d/*; do
+		[ -e "$f" ] || continue
+		[ -d "$f" ] && continue
+		base=$(basename "$f")
+		if grep -qxF "$base" "$keep"; then
+			continue
+		fi
+		prompt -x "挪走检查点一之后新增的源: $base"
+		sudo mv "$f" /etc/apt/sources.list.d/backup/
+	done
+}
+
+# 拷到系统里的脚本一律可执行
+deploy_install_exec() {
+	local src="$1" dest="$2"
+	if [ ! -f "$src" ]; then
+		prompt -e "找不到脚本: $src"
+		return 1
+	fi
+	cp "$src" "$dest"
+	chmod 755 "$dest"
+}
+
+# 以 CURRENT_USER 执行命令，且不带 SUDO_*（acme.sh 检测到 sudo/root 会拒绝）。
+# 部署若是 root，用 runuser，不用 sudo -u。
+deploy_as_acme_user() {
+	if [ "$(id -un)" = "$CURRENT_USER" ]; then
+		"$@"
+	elif [ "$(id -u)" -eq 0 ]; then
+		runuser -u "$CURRENT_USER" -- env -u SUDO_USER -u SUDO_UID -u SUDO_GID -u SUDO_COMMAND \
+			HOME="$HOME_INDEX" USER="$CURRENT_USER" LOGNAME="$CURRENT_USER" "$@"
+	else
+		prompt -e "acme.sh 必须由用户 $CURRENT_USER 执行，不要 sudo / root。"
+		return 1
+	fi
+}
+
+# 调 acme.sh：永远不是 root，也不经过 sudo。
+deploy_run_acme() {
+	if [ ! -x "$SET_ACME_HOME/acme.sh" ]; then
+		prompt -e "找不到 $SET_ACME_HOME/acme.sh"
+		return 1
+	fi
+	deploy_as_acme_user "$SET_ACME_HOME/acme.sh" --home "$SET_ACME_HOME" "$@"
+}
+
+# 能否用 Let's Encrypt 签这个名字（localhost / 裸 IP 不行）
+deploy_acme_domain_usable() {
+	local d
+	d=$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')
+	[ -n "$d" ] || return 1
+	case "$d" in
+	localhost | localhost.localdomain | *.local)
+		return 1
+		;;
+	esac
+	case "$d" in
+	*.*) ;;
+	*) return 1 ;;
+	esac
+	[[ "$d" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && return 1
+	return 0
+}
+
 # 首次必须在终端输入 y；直接回车 = 取消。仅续跑可跳过。
 deploy_confirm_start() {
+	if deploy_is_ci; then
+		prompt -m "SET_DEPLOY_CI=1：跳过交互确认（仅 CI / 冒烟，真机不要开）"
+		return 0
+	fi
 	if deploy_is_resume_skip_confirm; then
 		deploy_print_completed_jobs
 		prompt -m "续跑：跳过「是否开始部署」确认"
@@ -745,6 +928,11 @@ deploy_print_preflight() {
 	fi
 	if [ "${SET_SSH_KEEPALIVE:-1}" -eq 1 ]; then
 		prompt -s "确认后立刻写入 SSH keepalive（每 ${SET_SSH_CLIENT_ALIVE_INTERVAL:-60}s 探活），避免部署中途空闲断线。"
+	fi
+	if [ "${SET_UFW_SYNC:-1}" -eq 1 ] && command -v ufw >/dev/null 2>&1; then
+		if deploy_ufw_is_active; then
+			prompt -w "UFW 已启用：确认后会按 Config 预先放行 SSH/HTTP(S) 端口，不会自动 enable/disable UFW。"
+		fi
 	fi
 	if [ "${SET_SUDOER_NOPASSWD:-0}" -eq 1 ]; then
 		prompt -w "Config：SET_SUDOER_NOPASSWD=1，将设置 sudo 免密。"

@@ -1,0 +1,16 @@
+# frpc 客户端连接示例
+# 将本文件复制到客户端机器，改名为 frpc.toml 后运行：./frpc -c frpc.toml
+# 如有多个代理，复制 [[proxies]] 段落即可
+serverAddr = "【$FRPC_SERVER_ADDR】"
+serverPort = 【$FRPC_SERVER_PORT】
+auth.method = "token"
+auth.token = "【$FRPS_AUTH_TOKEN】"
+
+[[proxies]]
+name = "【$FRPC_PROXY_NAME】"
+type = "【$FRPC_PROXY_TYPE】"
+localIP = "【$FRPC_LOCAL_IP】"
+localPort = 【$FRPC_LOCAL_PORT】
+remotePort = 【$FRPC_REMOTE_PORT】
+transport.useEncryption = true
+transport.useCompression = true

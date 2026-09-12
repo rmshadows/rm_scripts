@@ -1,37 +1,65 @@
-# 防火墙规则配置文件
-# Shorewall version 4 - Rules File
+# 模板：normal
+# 默认。已开 SSH。其余服务找到注释条，去掉行首 # 即可。
+# 选用：sudo sw-rules
+# 改完：sudo shorewall check && sudo shorewall reload
 #
-# For information on the settings in this file, type "man shorewall-rules"
-#
-# The manpage is also online at
-# https://shorewall.org/manpages/shorewall-rules.html
-#
-######################################################################################################################################################################################################
-#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME		HEADERS		SWITCH		HELPER
-#							PORT	PORT(S)		DEST		LIMIT		GROUP
+# ACTION		SOURCE		DEST		PROTO	DEST	SOURCE
+#							PORT	PORT(S)
 ?SECTION ALL
 ?SECTION ESTABLISHED
 ?SECTION RELATED
 ?SECTION INVALID
 ?SECTION UNTRACKED
 ?SECTION NEW
-# Drop packets in the INVALID state
 Invalid(DROP)	net		$FW		tcp
 
-?COMMENT 自定义规则
-# 不允许别人Ping自己
+# ============================================================
+# SSH（已启用）
+# 换端口时改成：ACCEPT	net	$FW	tcp	你的端口
+# 只允许某 IP：SSH(ACCEPT)	net:1.2.3.4/32	$FW
+# ============================================================
+SSH(ACCEPT)	net		$FW
+# ACCEPT	net	$FW	tcp	2053,2083,2087,2096
+# ACCEPT	net	$FW	tcp	2082,2086
+
+# ============================================================
+# Ping
+# ============================================================
 Ping(DROP)	net		$FW
-SSH(ACCEPT)	net		$FW # 允许SSH
-# 生产环境若为 Web 服务器，需放行 80/443，取消下面一行注释（或改用 net:你的管理IP/32 限制来源）
+# Ping(ACCEPT)	net		$FW
+
+# ============================================================
+# HTTP / HTTPS（nginx + acme：80 续期，443 正式站）
+# ============================================================
 # Web(ACCEPT)	net		$FW
-# 或按端口写：
 # ACCEPT	net	$FW	tcp	80,443
 
-#### 示例
-# ?COMMENT Nginx
-# ACCEPT:info	net:192.168.0.0/24,192.168.1.0/24	$FW	tcp	80
-# Permit all ICMP traffic FROM the firewall TO the net zone # 自己没法发送Ping，但是可以回复Ping
-# DROP		$FW		net		icmp
-# SSH(ACCEPT)	net		$FW # 允许SSH
+# ============================================================
+# 邮件
+# ============================================================
+# ACCEPT	net	$FW	tcp	25,465,587
+# ACCEPT	net	$FW	tcp	110,143,993,995
 
+# ============================================================
+# DNS（本机当解析器才开；一般 VPS 不要对公网开）
+# ============================================================
+# ACCEPT	net	$FW	udp	53
+# ACCEPT	net	$FW	tcp	53
 
+# ============================================================
+# 数据库 / 面板（尽量只放行内网或管理 IP）
+# ============================================================
+# ACCEPT	net:192.168.1.0/24	$FW	tcp	3306
+# ACCEPT	net:192.168.1.0/24	$FW	tcp	5432
+# ACCEPT	net:192.168.1.0/24	$FW	tcp	6379
+# ACCEPT	net:1.2.3.4/32		$FW	tcp	9090
+
+# ============================================================
+# 自定义 TCP 端口（改数字后取消注释）
+# ============================================================
+# ACCEPT	net	$FW	tcp	8080
+# ACCEPT	net	$FW	tcp	8443
+
+# ============================================================
+# 本机主动出站已由 policy 的 $FW→net ACCEPT 放行，一般不用再写。
+# ============================================================

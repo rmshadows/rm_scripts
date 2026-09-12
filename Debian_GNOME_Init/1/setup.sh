@@ -59,8 +59,12 @@ if [ "$SET_DEB822" -eq 1 ]; then
     else
         sudo apt modernize-sources
     fi
-    # 清空文件内容！
-    sudo tee /etc/apt/sources.list </dev/null
+    # 只换源时才清空 sources.list。SET_APT_SOURCE=0 只转 DEB822，不清空。
+    if [ "$SET_APT_SOURCE" -eq 0 ]; then
+        prompt -m "SET_APT_SOURCE=0：只做 DEB822 转换，不换镜像、不清空 sources.list"
+    else
+        sudo tee /etc/apt/sources.list </dev/null
+    fi
     # 添加清华大学 Debian 13 镜像源
     if [ "$SET_APT_SOURCE" -eq 1 ]; then
         prompt -x "添加清华大学 Debian 13 镜像源"
@@ -139,6 +143,7 @@ deb https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free
         sudo echo "$SET_YOUR_APT_SOURCE" | sudo tee /etc/apt/sources.list
     fi
 fi
+deploy_apt_snapshot_keep
 
 # 检测当前自动更新状态(临时函数)
 check_unattended_status() {

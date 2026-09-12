@@ -19,6 +19,7 @@ TAR_EXCLUDES=(
   --exclude='.deploy_progress'
   --exclude='.deploy_credentials'
   --exclude='.deploy_apt_hint'
+  --exclude='.deploy_apt_keep'
   --exclude='*.log'
   --exclude='.git'
   --exclude='.gitignore'

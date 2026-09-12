@@ -14,6 +14,8 @@ deploy_confirm_start $'\e[1;31m 已阅读以上警告？输入 y 开始部署（
 
 # 先于 apt/建用户：防止部署中途 SSH 空闲被云防火墙踢掉
 deploy_apply_ssh_keepalive
+# UFW 若已启用：先放行 SSH / 即将启用的 80、443，再装 nginx，避免服务起来却进不来
+deploy_ufw_sync_ports
 
 # 有 .deploy_credentials 或强账号就用；否则询问 1=自动生成 / 2=自己输入。
 force_change_default_credentials

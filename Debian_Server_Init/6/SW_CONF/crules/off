@@ -1,26 +1,22 @@
-# 防火墙规则配置文件
-# Shorewall version 4 - Rules File
+# 模板：off
+# 进出全丢。应急断网用。恢复：sudo sw-rules 再选 normal 或 web。
+# 选用：sudo sw-rules
+# 改完：sudo shorewall check && sudo shorewall reload
 #
-# For information on the settings in this file, type "man shorewall-rules"
-#
-# The manpage is also online at
-# https://shorewall.org/manpages/shorewall-rules.html
-#
-######################################################################################################################################################################################################
-#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME		HEADERS		SWITCH		HELPER
-#							PORT	PORT(S)		DEST		LIMIT		GROUP
+# ACTION		SOURCE		DEST		PROTO	DEST	SOURCE
+#							PORT	PORT(S)
 ?SECTION ALL
 ?SECTION ESTABLISHED
 ?SECTION RELATED
 ?SECTION INVALID
 ?SECTION UNTRACKED
 ?SECTION NEW
-# Drop packets in the INVALID state
-Invalid(DROP)  net    	        $FW		tcp
+Invalid(DROP)	net		$FW		tcp
 
-# 阻止所有从外部网络到防火墙的流量
-DROP    net     $FW    all
-# 阻止所有从防火墙到外部网络的流量
-DROP    $FW     net    all
-
-
+# ============================================================
+# 全关（已启用）
+# 需要留一条 SSH 救命时，取消下面 SSH 那行，并注释掉两条 DROP。
+# ============================================================
+DROP	net	$FW	all
+DROP	$FW	net	all
+# SSH(ACCEPT)	net		$FW

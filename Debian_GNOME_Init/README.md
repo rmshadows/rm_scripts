@@ -1,6 +1,6 @@
 # Debian_13_GNOME.sh
 
->Current Version: 0.1.2
+>Current Version: 0.1.3
 
 ## 目录结构
 
@@ -256,6 +256,11 @@
 GNOME 扩展对照表见 `4/README.md`。
 
 ## 更新日志
+
+- 2026.09.13——0.1.3
+  - nvm：钉版升级 v0.40.7，脚本/文档与 Server 侧统一（删除 NVM_README.md 与旧版 install-nvm-v0.40.1.sh，只留一份 README）
+  - 禁用第三方源：改用快照白名单（Lib.sh 新增 deploy_apt_snapshot_keep 等），只挪走检查点一后新增的 sources.list.d
+  - Config.sh 订正「禁用第三方源」开关的注释说明
 
 - 2026.09.11——0.1.2
   - 直接跑部署脚本会先警告并做必要检查（TTY / raspi-firmware / root 密码）；首次必须输入 `y`，回车取消

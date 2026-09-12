@@ -215,7 +215,7 @@ SET_GNOME_EXTENSIONS_CONFIG=1
 SET_SHOREWALL_SETTING=1
 
 ###
-# 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
+# 是否禁用第三方软件仓库更新（检查点一之后新增的 sources.list.d 挪到 backup）。Preset=1
 SET_DISABLE_THIRD_PARTY_REPO=1
 # 是否启用 os-prober -> 自Debian 12 开始，GRUB检测其他系统的 os-prober 被禁用了。0:不处理 1:启用 2:禁用 Preset=0
 SET_ENABLE_GRUB_OS_PROBER=0

@@ -137,13 +137,9 @@ SET_INSTALL_HTTP_SERVER=1
 SET_HTTP_SERVER_ROOT=0
 # Enable http server (允许开机自启) Preset=1
 SET_ENABLE_HTTP_SERVICE=1
-# Disable default site and enable http/https site 
-# (禁用默认网页，启用https网页。) Preset=1
-# 使用Let's Encrypt的用户请使用HTTP站点
-# HTTPS证书默认 /etc/ssl/SET_SERVER_NAME.pem 
-# 0:不做处理 1:启用http 2:启用https
+# 启用站点：0=不动 1=只开 acme.conf（80，默认） 2=再开 ssl.conf（443，证书未签好会起不来）
 SET_ENABLE_SITE=1
-# Set server domain (设置域名) Preset=localhost
+# 域名。localhost 不能签 Let's Encrypt。要自动签发请填已解析到本机的域名。
 SET_SERVER_NAME=localhost
 # If NGINX: set ~/nginx/res passwd (如果是nginx，配置~/nginx/res的访问用户、密码) Preset:default nginxLogin
 SET_NGINX_RES_USER=default
@@ -158,8 +154,10 @@ SET_PHP_FPM_PORT=0
 SET_PHP_FPM_ENABLE=1
 # 是否安装CertBot? 启用LetsEncrypt的ＳＳＬ证书（只安装，需手动激活） Preset=0
 SET_INSTALL_CERTBOT=0
-# 是否安装 acme.sh（只安装与设默认 CA，需手动签发；可与 Certbot 并存，一般二选一） Preset=1
+# 是否安装 acme.sh（可与 Certbot 并存，一般二选一） Preset=1
 SET_INSTALL_ACME_SH=1
+# 安装后是否自动签发（需 SET_SERVER_NAME 为已解析到本机的真域名，且 80 已通）。失败不中断部署。Preset=1
+SET_ACME_ISSUE=1
 # acme.sh 安装目录：0=默认 $HOME_INDEX/.acme.sh ；其它填绝对路径（如 /usr/local/acme.sh）
 SET_ACME_HOME=0
 # 证书存放目录：0=默认(随安装目录) ；其它填绝对路径
@@ -187,11 +185,13 @@ SET_EXISTED_SSH_KEY_SRC=SSH_KEY
 SET_SSH_KEY_PRIVATE_TEXT=""
 # 公钥
 SET_SSH_KEY_PUBLIC_TEXT=""
-# 是否配置Shorewall防火墙(但是需要手动启用) Preset=1
+# 是否配置 Shorewall（只拷配置+模板，不自动启用）。事后 sudo sw-rules。Preset=1
 SET_SHOREWALL_SETTING=1
+# 若检测到 UFW 已启用，按本脚本将启用的服务预先放行端口（不安装、不 enable UFW）。Preset=1
+SET_UFW_SYNC=1
 
 ###
-# 是否禁用第三方软件仓库更新(提升apt体验) Preset=1
+# 是否禁用第三方软件仓库更新（检查点一之后新增的 sources.list.d 挪到 backup）。Preset=1
 SET_DISABLE_THIRD_PARTY_REPO=1
 # 是否启用 os-prober -> 自Debian 12 开始，GRUB检测其他系统的 os-prober 被禁用了。0:不处理 1:启用 2:禁用 Preset=0
 SET_ENABLE_GRUB_OS_PROBER=0
@@ -207,6 +207,8 @@ SET_DEPLOY_RESET=0
 SET_DEPLOY_SKIP_CONFIRM=1
 # 全文终端录像（script -f）。默认 0：直接用真实终端，debconf/pager 可交互。需要完整日志再设 1
 SET_DEPLOY_FULL_LOG=0
+# CI / 非交互冒烟：跳过首次 y 确认，apt 用 noninteractive，账号默认自动生成。真机不要开。可用环境变量覆盖。
+SET_DEPLOY_CI="${SET_DEPLOY_CI:-0}"
 
 ############################################################################
 #### 默认变量赋值（用户名改完后会再跑一遍 config_resolve_identity）

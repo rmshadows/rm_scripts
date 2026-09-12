@@ -11,9 +11,10 @@ source "../ServiceInit.sh"
 SRV_NAME=artalk
 # 指定运行端口
 RUN_PORT=23366
-# 反向代理的地址
-REVERSE_PROXY_URL=/artalk/
-# 域名
+# Nginx 子路径（挂在主站域名下，不用独立端口）
+REVERSE_PROXY_PATH="/artalk/"
+# 应用访问域名：用于 artalk.yml 的 site_url（默认站点 URL），即前端评论区实际访问的域名。
+# 例：civiccccc.ltd
 YOUR_DOMAIN="example.com"
 # 管理员
 ADMIN_NAME=admin
@@ -25,6 +26,8 @@ ADMIN_PASSWD=your_password
 BADGE_NAME=管理员
 # 颜色
 BADGE_COLOR='#0083FF'
+# App Key (JWT 密钥)，留空则自动生成随机字符串
+APP_KEY=""
 
 # 生成密码(根据需要注释)
 # 临时禁用 history 防止密码在历史记录中出现
@@ -34,6 +37,11 @@ unset HISTFILE
 ENCRYPTED_PASSWD=$(htpasswd -bnBC 10 "" "$ADMIN_PASSWD" | tr -d ':')
 # 输出加密后的密码（仅为验证）
 echo "(bcrypt)$ENCRYPTED_PASSWD"
+
+# 生成 App Key（留空则随机生成 32 位字母数字，确保 YAML 安全）
+if [ -z "$APP_KEY" ]; then
+  APP_KEY=$(head -c 32 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 32)
+fi
 
 # 保存当前目录（运行脚本时应在 artalk/ 下）
 SET_DIR=$(pwd)
@@ -54,6 +62,10 @@ if ! command -v $t_pkg &>/dev/null; then
 fi
 
 ### 安装软件
+# 检测最终产物：本地已解压 或 已部署到 /home/artalk，任一存在则跳过下载
+if [ -f "/home/artalk/artalk" ] || [ -f "$SET_DIR/artalk/artalk" ]; then
+  prompt -i "[跳过] artalk 已下载解压"
+else
 # 获取非pre-release版本的最新版本 https://github.com/ArtalkJS/Artalk/releases
 # 设置 GitHub 仓库
 REPO="ArtalkJS/Artalk"
@@ -92,73 +104,58 @@ else
 fi
 cd artalk
 chmod +x artalk
+fi
 
-### 服务生成
+### 部署：用户 + 文件 + 配置（幂等，可重复运行）
 cd "$SET_DIR"
-prompt -e "创建名为 artalk 的用户组"
-sudo groupadd --system artalk
-prompt -e "创建一个名为 artalk 的用户，并且拥有一个可写的 home 目录"
-sudo useradd --system \
-    --gid artalk \
-    --create-home \
-    --home-dir /home/artalk \
-    --shell /usr/sbin/nologin \
-    --comment "Artalk server" \
-    artalk
-
-# 移动文件夹
-# artalk
-# artalk.yml
-# LICENSE
-# README.md
-# README.zh.md
-sudo mv artalk/* /home/artalk/
+# 用户/组：存在则跳过
+getent group artalk >/dev/null 2>&1 || { prompt -e "创建名为 artalk 的用户组"; sudo groupadd --system artalk; }
+id artalk >/dev/null 2>&1 || {
+  prompt -e "创建一个名为 artalk 的用户，并且拥有一个可写的 home 目录"
+  sudo useradd --system \
+      --gid artalk \
+      --create-home \
+      --home-dir /home/artalk \
+      --shell /usr/sbin/nologin \
+      --comment "Artalk server" \
+      artalk
+}
+# 移动文件：源目录非空才移动（已移动过则跳过）
+if [ -d "artalk" ] && [ -n "$(ls -A artalk 2>/dev/null)" ]; then
+  sudo mv artalk/* /home/artalk/
+fi
 # 新建数据文件夹
 sudo mkdir -p /home/artalk/data/
-sudo chown artalk /home/artalk/data/
-sudo chgrp artalk /home/artalk/data/
-# ip数据库
-sudo wget https://github.com/lionsoul2014/ip2region/raw/master/data/ip2region.xdb -O /home/artalk/data/ip2region.xdb
-sudo chown artalk /home/artalk/data/*
-sudo chgrp artalk /home/artalk/data/*
-sudo chown artalk /home/artalk/*
-sudo chgrp artalk /home/artalk/*
+sudo chown artalk:artalk /home/artalk/data/
+# ip数据库（始终覆盖最新）
+sudo wget https://github.com/lionsoul2014/ip2region/raw/master/data/ip2region_v4.xdb -O /home/artalk/data/ip2region.xdb
+sudo chown -R artalk:artalk /home/artalk/data/
+sudo chown artalk:artalk /home/artalk/* 2>/dev/null || true
 
+# 配置文件：始终覆盖
 cd "$SET_DIR"
 replace_placeholders_with_values artalk.yml.src
 backupFile /home/artalk/artalk.yml
 sudo cp artalk.yml /home/artalk/artalk.yml
 
-# 创建应用专门的服务文件夹
-if ! [ -d "$HOME/Services/$SRV_NAME" ];then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    sudo mkdir "$HOME/Services/$SRV_NAME"
-fi
-# 生成服务
+### 服务（始终重跑，幂等覆盖）
+sudo mkdir -p "$HOME/Services/$SRV_NAME"
 cd "$SET_DIR"
 prompt -x "Making Service..."
 replace_placeholders_with_values artalk.service.src 2>/dev/null || true
-sudo mv artalk.service "$HOME/Services/$SRV_NAME.service"
-# 安装服务
+sudo cp artalk.service "$HOME/Services/$SRV_NAME.service"
 prompt -x "Install service..."
 cd "$HOME/Services/"
 sudo "$HOME/Services/Install_Services.sh"
 cd "$SET_DIR"
 
-### Nginx 配置（与 fmgr 一致：配置写入 nginx 目录，不覆盖原机 site）
-cd "$SET_DIR"
+### Nginx 子路径片段（始终重跑，覆盖式更新）
 if [ -f setupNginxForArtalk.sh ]; then
-    prompt -x "运行 setupNginxForArtalk.sh（写入 /etc/nginx/snippets/artalk.conf）"
-    export RUN_PORT REVERSE_PROXY_URL
+    prompt -x "运行 setupNginxForArtalk.sh（写入 /etc/nginx/snippets/artalk.conf，子路径 $REVERSE_PROXY_PATH）"
+    export RUN_PORT REVERSE_PROXY_PATH
     bash setupNginxForArtalk.sh
+    prompt -i "启用：在主站 server { } 内加 include /etc/nginx/snippets/artalk.conf; 然后 sudo nginx -t && sudo systemctl reload nginx"
 else
-    prompt -w "未找到 setupNginxForArtalk.sh，请手动运行以写入 nginx 片段。"
+    prompt -w "未找到 setupNginxForArtalk.sh。"
 fi
-
-replace_placeholders_with_values reverse_proxy.txt.src
-prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
-prompt -i "========================================================"
-cat reverse_proxy.txt
-prompt -i "========================================================"
-prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/artalk.conf;"
 

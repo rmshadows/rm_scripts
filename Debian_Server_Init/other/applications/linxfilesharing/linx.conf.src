@@ -1,0 +1,31 @@
+# 安装后：/etc/nginx/sites-available/linx.conf
+# linx-server 独立站。不占用 80/443。默认不启用。启用：sudo ngx-site
+# 访问：https://__SITE_NAME__:__SITE_LISTEN__/
+# 后端 FastCGI：127.0.0.1:__RUN_PORT__
+
+server {
+    listen __SITE_LISTEN__ ssl;
+    listen [::]:__SITE_LISTEN__ ssl;
+    http2 on;
+    server_name __SITE_NAME__;
+
+    ssl_certificate /etc/ssl/__SITE_NAME__.pem;
+    ssl_certificate_key /etc/ssl/__SITE_NAME__.key;
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_tickets off;
+
+    error_page 497 =301 https://$host:$server_port$request_uri;
+
+    access_log __HOME__/Logs/nginx/linx.log;
+    error_log __HOME__/Logs/nginx/linx_error.log;
+
+    client_max_body_size 4096M;
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP $remote_addr;
+        fastcgi_pass 127.0.0.1:__RUN_PORT__;
+        include fastcgi_params;
+    }
+}

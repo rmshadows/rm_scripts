@@ -4,12 +4,16 @@
 
 set -e
 
+# 加载全局函数
+source "../Lib.sh"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 证书输出目录（在脚本所在目录下）
 CERT_DIR="$SCRIPT_DIR/nginx_ssl"
 CONFIG_FILE="$SCRIPT_DIR/openssl.cnf"
 
-# 域名，按需修改
+# 证书所属域名（CN / SAN）：同时用作证书文件名 <DOMAIN>.key / <DOMAIN>.pem。
+# 也可通过环境变量覆盖：DOMAIN=your.com ./generate_nginx_ssl.sh
 DOMAIN="${DOMAIN:-example.com}"
 PRIVATE_KEY="$CERT_DIR/$DOMAIN.key"
 CERTIFICATE="$CERT_DIR/$DOMAIN.pem"
@@ -21,6 +25,12 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
+# 检测：证书已存在则跳过
+if [ -f "$CERTIFICATE" ] && [ -f "$PRIVATE_KEY" ]; then
+  prompt -i "[跳过] SSL 证书已存在（如需重新生成，请先运行 uninstall.sh）"
+  echo "证书: $CERTIFICATE"
+  echo "私钥: $PRIVATE_KEY"
+else
 echo "生成私钥和证书签名请求 (CSR)..."
 openssl req -new -newkey rsa:2048 -days 3650 -nodes \
   -keyout "$PRIVATE_KEY" -out "$CSR" \
@@ -33,3 +43,4 @@ openssl x509 -req -in "$CSR" -signkey "$PRIVATE_KEY" -out "$CERTIFICATE" -days 3
 echo "SSL 证书和私钥已生成："
 echo "证书: $CERTIFICATE"
 echo "私钥: $PRIVATE_KEY"
+fi

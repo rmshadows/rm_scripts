@@ -10,20 +10,35 @@ source "../ServiceInit.sh"
 #### CONF
 # 服务名
 SRV_NAME=webmin
-# 修改端口号和语言 获取新的端口 默认１００００
+# Webmin 本机端口（默认 10000）
 NEW_PORT=20001
 # 新的语言
 NEW_LANG="zh"
+# 有 nginx 时写入独立站 sites-available/webmin.conf（默认不启用）。设 0 则只改端口/语言。
+SET_NGINX_PROXY=1
+# 独立站监听端口（不要用 80/443）
+SITE_LISTEN=2053
+# 独立站标识：用于生成 nginx 站点配置的 server_name，以及 SSL 证书文件名。
+# 留空 = 从 ssl.conf / acme.conf 自动读取 server_name。
+SITE_NAME=
 
 # 保存当前目录
 SET_DIR=$(pwd)
-# 返回之前的目录
-# cd "$SET_DIR"
 
 #### 正文
-# 目标配置文件路径（安装后才有）
 WEBMIN_CONFIG_FILE="/etc/webmin/config"
 MINISERV_CONFIG_FILE="/etc/webmin/miniserv.conf"
+
+set_webmin_kv() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  if sudo grep -q "^${key}=" "$file"; then
+    sudo sed -i "s|^${key}=.*$|${key}=${value}|" "$file"
+  else
+    echo "${key}=${value}" | sudo tee -a "$file" >/dev/null
+  fi
+}
 
 ### 安装 Webmin（仅未安装时执行）
 if [ ! -d /etc/webmin ]; then
@@ -37,45 +52,62 @@ if [ ! -d /etc/webmin ]; then
     exit 1
   fi
 else
-  echo -e "\033[33mWebmin 已安装，仅修改端口/语言配置。\033[0m"
+  echo -e "\033[33mWebmin 已安装，仅修改端口/语言/反代配置。\033[0m"
 fi
 
 ### 修改端口与语言
-
-# 检查是否提供了端口和语言
 if [ -z "$NEW_PORT" ]; then
   echo "端口未提供，跳过端口设置。"
 else
-  # 修改 Webmin 配置中的端口
   echo "修改 Webmin 端口为 $NEW_PORT ..."
-  sed -i "s/^port=.*$/port=$NEW_PORT/" "$MINISERV_CONFIG_FILE"
-  # 如果配置文件中没有 `port`，手动添加
-  grep -q "^port=" "$MINISERV_CONFIG_FILE" || echo "port=$NEW_PORT" | sudo tee -a "$MINISERV_CONFIG_FILE"
+  set_webmin_kv "$MINISERV_CONFIG_FILE" port "$NEW_PORT"
+  set_webmin_kv "$MINISERV_CONFIG_FILE" listen "$NEW_PORT"
 fi
 
 if [ -z "$NEW_LANG" ]; then
   echo "语言未提供，跳过语言设置。"
 else
-  # 修改 Webmin 配置中的语言
   echo "修改 Webmin 语言为 $NEW_LANG ..."
-  sed -i "s/^lang_root=.*$/lang_root=$NEW_LANG/" "$WEBMIN_CONFIG_FILE"
-  # 如果配置文件中没有 `lang_root`，手动添加
-  grep -q "^lang_root=" "$WEBMIN_CONFIG_FILE" || echo "lang_root=$NEW_LANG" | sudo tee -a "$WEBMIN_CONFIG_FILE"
+  set_webmin_kv "$WEBMIN_CONFIG_FILE" lang_root "$NEW_LANG"
 fi
 
-# 重启 Webmin 服务使改动生效
+### 有 nginx 时只听本机，对外走独立站
+USE_NGINX_PROXY=0
+if [ "$SET_NGINX_PROXY" = "1" ] && [ -d /etc/nginx ] && command -v nginx >/dev/null 2>&1; then
+  USE_NGINX_PROXY=1
+fi
+
+if [ "$USE_NGINX_PROXY" = "1" ]; then
+  echo "Webmin 只听 127.0.0.1:$NEW_PORT，对外用独立 Nginx 站"
+  set_webmin_kv "$MINISERV_CONFIG_FILE" bind "127.0.0.1"
+  set_webmin_kv "$MINISERV_CONFIG_FILE" ipv6 "0"
+  if [ -z "$SITE_NAME" ]; then
+    SITE_NAME="$(guess_nginx_site_name || true)"
+  fi
+  if [ -n "$SITE_NAME" ]; then
+    echo "Webmin 可信推荐人：$SITE_NAME $SITE_NAME:$SITE_LISTEN"
+    set_webmin_kv "$WEBMIN_CONFIG_FILE" referers "$SITE_NAME $SITE_NAME:$SITE_LISTEN"
+    set_webmin_kv "$WEBMIN_CONFIG_FILE" relative_redir "1"
+  else
+    prompt -w "SITE_NAME 未确定，跳过 referers。请在 CONF 里填写后重跑。"
+  fi
+fi
+
 echo "重启 Webmin 服务 ..."
 sudo systemctl restart webmin
 
-# 输出修改后的配置
 echo "Webmin 配置已更新："
 echo "端口: $NEW_PORT"
 echo "语言: $NEW_LANG"
 
-### 反向代理配置
+### Nginx 独立站（始终重跑，覆盖式）
 cd "$SET_DIR"
-prompt -i "Check manually and set up reverse proxy by yourself."
-replace_placeholders_with_values reverse_proxy.txt.src
-prompt -i "========================================================"
-cat reverse_proxy.txt
-prompt -i "========================================================"
+if [ "$USE_NGINX_PROXY" = "1" ] && [ -f setupNginxForWebmin.sh ]; then
+  prompt -x "运行 setupNginxForWebmin.sh（写入 /etc/nginx/sites-available/webmin.conf，不启用）"
+  export NEW_PORT SITE_LISTEN SITE_NAME HOME
+  bash setupNginxForWebmin.sh
+  prompt -i "启用独立站： sudo ngx-site"
+elif [ "$SET_NGINX_PROXY" = "1" ]; then
+  prompt -w "未检测到 nginx，Webmin 仍听 0.0.0.0:$NEW_PORT。"
+  prompt -i "访问：https://<主机>:${NEW_PORT}/"
+fi

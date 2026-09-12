@@ -140,7 +140,7 @@ pwd
 }
 
 ## 询问函数 Yes:1 No:2 ???:5
-: <<!询问函数
+: <<'!询问函数'
 函数调用请使用：
 comfirm "\e[1;33m? [y/N]\e[0m"
 choice=$?
@@ -273,7 +273,7 @@ log_message() {
 }
 
 # 执行脚本（日志+输出） do_job "setup.sh" "$ELOG_FILE"
-: <<!说明
+: <<'!说明'
 # 原本是这样:
 cd 1
 log_message "日志：任务开始 - setup.sh" "$ELOG_FILE"
@@ -325,12 +325,14 @@ replace_placeholders_with_values() {
     echo "文件不存在: $src_file"
     return 1
   fi
-  # 复制文件内容到目标文件，如果需要新建
-  cp "$src_file" "$dest_file"
+  # .src → 去掉后缀；本来就不是 .src 则原地替换，不要 cp 到自己
+  if [ "$src_file" != "$dest_file" ]; then
+    cp "$src_file" "$dest_file"
+  fi
   # 匹配占位符格式【$varName】，使用 sed 替换变量
   grep -oP '【\$\w+】' "$dest_file" | while read -r placeholder; do
     varName=$(echo "$placeholder" | sed -E 's/【\$(\w+)】/\1/')
-    varValue=${!varName}
+    varValue="${!varName-}"
     if [[ -n "$varValue" ]]; then
       sed -i "s|${placeholder}|${varValue}|g" "$dest_file"
     else

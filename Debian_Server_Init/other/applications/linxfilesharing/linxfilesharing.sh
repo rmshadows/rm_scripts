@@ -16,7 +16,14 @@ source "../ServiceInit.sh"
 SRV_NAME=linx-server
 # 指定运行端口
 RUN_PORT=8087
-# 你的域名
+# Nginx 独立站端口（不要用 80/443）
+SITE_LISTEN=8083
+# 独立站标识：用于生成 nginx 站点配置的 server_name，以及 SSL 证书文件名 /etc/ssl/<SITE_NAME>.pem。
+# 留空 = 不生成独立站点，仅做子路径反代（需在主站 include linx.conf）。
+# 独立域名部署时，通常与 YOUR_DOMAIN 填同一个域名。
+SITE_NAME=
+# 应用访问域名：linx 生成的下载链接前缀 https://<YOUR_DOMAIN>/...
+# （子路径反代时填主站域名，如 example.com；独立站时填本站域名）
 YOUR_DOMAIN="example.com"
 # 运行的共享文件目录
 LFSS_ROOT="/home/lfss-file-share"
@@ -53,13 +60,17 @@ else
 fi
 
 ### 安装软件
+# 检测最终产物：linx-server 二进制已部署到 $LFSS_ROOT 则跳过编译
+if [ -f "$LFSS_ROOT/linx-server" ]; then
+  prompt -i "[跳过] linx-server 已编译安装"
+else
 mkdir -p "$HOME/Applications"
 sudo mkdir -p "$LFSS_ROOT"
 
 # 安装
 cd "$HOME/Applications"
 if [ -d linx-file-share-repo ]; then
-    echo "linx-file-share-repo 已存在，跳过 clone；若需重装请先删除该目录。"
+    echo "linx-file-share-repo 已存在，跳过 clone。"
     cd linx-file-share-repo
 else
     git clone "$LFSS_REPO" linx-file-share-repo
@@ -91,52 +102,40 @@ sudo cp ./linx-genkey "$LFSS_ROOT"
 sudo cp ./linx-cleanup "$LFSS_ROOT"
 # 复制文件夹
 sudo cp -r ./templates/ "$LFSS_ROOT"
-# 生成配置文件
+fi
+
+# 生成配置文件（始终覆盖）
 cd "$SET_DIR"
 replace_placeholders_with_values linx-server.conf.src
 sudo cp linx-server.conf "$LFSS_ROOT"/linx-server.conf
 
 sudo chown www-data "$LFSS_ROOT"
-sudo chown www-data "$LFSS_ROOT"/*
+sudo chown www-data "$LFSS_ROOT"/* 2>/dev/null || true
 sudo chgrp www-data "$LFSS_ROOT"
-sudo chgrp www-data "$LFSS_ROOT"/*
+sudo chgrp www-data "$LFSS_ROOT"/* 2>/dev/null || true
 
-### 服务生成
-cd "$SET_DIR"
-# 创建应用专门的服务文件夹
-if ! [ -d "$HOME/Services/$SRV_NAME" ];then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    sudo mkdir "$HOME/Services/$SRV_NAME"
-fi
-# 生成服务
+### 服务生成（始终重跑，覆盖式）
+sudo mkdir -p "$HOME/Services/$SRV_NAME"
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service "$HOME/Services/$SRV_NAME.service"
-# 安装服务
+sudo cp srv.service "$HOME/Services/$SRV_NAME.service"
 prompt -x "Install service..."
 cd "$HOME/Services/"
 sudo "$HOME/Services/Install_Services.sh"
 cd "$SET_DIR"
-# 拷贝启动和停止的脚本
 prompt -x "Make start and stop script..."
 replace_placeholders_with_values start.sh.src
 sudo cp start.sh "$HOME/Services/$SRV_NAME/start_${SRV_NAME}.sh"
 sudo chmod +x "$HOME/Services/$SRV_NAME"/*.sh
 
-### Nginx 配置（与 fmgr 一致：配置写入 nginx 目录，不覆盖原机 site）
+### Nginx 独立站（始终重跑，覆盖式）
 cd "$SET_DIR"
 if [ -f setupNginxForLinx.sh ]; then
-    prompt -x "运行 setupNginxForLinx.sh（写入 /etc/nginx/snippets/linx.conf）"
-    export RUN_PORT
+    prompt -x "运行 setupNginxForLinx.sh（写入 /etc/nginx/sites-available/linx.conf，不启用）"
+    export RUN_PORT SITE_LISTEN SITE_NAME YOUR_DOMAIN HOME
     bash setupNginxForLinx.sh
+    prompt -i "启用独立站： sudo ngx-site"
 else
-    prompt -w "未找到 setupNginxForLinx.sh，请手动运行以写入 nginx 片段。"
+    prompt -w "未找到 setupNginxForLinx.sh。"
 fi
-
-replace_placeholders_with_values reverse_proxy.txt.src
-prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
-prompt -i "========================================================"
-cat reverse_proxy.txt
-prompt -i "========================================================"
-prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/linx.conf;"
 

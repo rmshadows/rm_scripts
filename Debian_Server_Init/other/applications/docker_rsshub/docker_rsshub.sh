@@ -11,8 +11,8 @@ source "../ServiceInit.sh"
 RUN_PORT=1200
 # 服务名
 SRV_NAME=rsshub
-# 反向代理的地址
-REVERSE_PROXY_URL=/rsshub/
+# Nginx 子路径（挂在主站域名下，不用独立端口）
+REVERSE_PROXY_PATH="/rsshub/"
 
 
 # 保存当前目录
@@ -27,48 +27,34 @@ if ! [ -x "$(command -v docker)" ]; then
     exit 1
 fi
 
-# 安装RSSHUB
-prompt -x "Stopping rsshub & Removing rsshub..."
-sudo docker stop rsshub
-sudo docker rm rsshub
-prompt -x "Installing rsshub..."
-sudo docker pull diygod/rsshub
-prompt -x "Creating rsshub container on $RUN_PORT..."
-sudo docker create --name rsshub -p "$RUN_PORT:$RUN_PORT" diygod/rsshub
-# prompt -x "Running rsshub on $RUN_PORT..."
-# sudo docker run -d --name rsshub -p $RUN_PORT:$RUN_PORT diygod/rsshub
-
-# mk srv
-# 创建专门文件夹
-if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    mkdir -p "$HOME/Services/$SRV_NAME"
+# 安装RSSHUB（容器已存在则跳过创建）
+if sudo docker ps -a --format '{{.Names}}' | grep -qx rsshub; then
+  prompt -i "[跳过] rsshub 容器已存在"
+else
+  prompt -x "Installing rsshub..."
+  sudo docker pull diygod/rsshub
+  prompt -x "Creating rsshub container on $RUN_PORT..."
+  sudo docker create --name rsshub -p "$RUN_PORT:$RUN_PORT" diygod/rsshub
 fi
-# 生成服务
+
+# 服务（始终重跑，覆盖式）
+mkdir -p "$HOME/Services/$SRV_NAME"
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service "/home/$USER/Services/$SRV_NAME.service"
-# 安装服务
+sudo cp srv.service "/home/$USER/Services/$SRV_NAME.service"
 prompt -x "Install service..."
 cd "$HOME/Services/"
 sudo "$HOME/Services/Install_Services.sh"
-
 sudo chmod +x "/home/$USER/Services/$SRV_NAME/"*.sh
 cd "$SET_DIR"
 
-### Nginx 配置（与 artalk/frp 一致：配置写入 nginx 目录，不覆盖原机 site）
+### Nginx 子路径片段（始终重跑，覆盖式）
 if [ -f setupNginxForRsshub.sh ]; then
-    prompt -x "运行 setupNginxForRsshub.sh（写入 /etc/nginx/snippets/rsshub.conf）"
-    export RUN_PORT REVERSE_PROXY_URL
+    prompt -x "运行 setupNginxForRsshub.sh（写入 /etc/nginx/snippets/rsshub.conf，子路径 $REVERSE_PROXY_PATH）"
+    export RUN_PORT REVERSE_PROXY_PATH
     bash setupNginxForRsshub.sh
+    prompt -i "启用：在主站 server { } 内加 include /etc/nginx/snippets/rsshub.conf; 然后 sudo nginx -t && sudo systemctl reload nginx"
 else
-    prompt -w "未找到 setupNginxForRsshub.sh，请手动运行以写入 nginx 片段。"
+    prompt -w "未找到 setupNginxForRsshub.sh。"
 fi
-
-replace_placeholders_with_values reverse_proxy.txt.src
-prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
-prompt -i "========================================================"
-cat reverse_proxy.txt
-prompt -i "========================================================"
-prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/rsshub.conf;"
 

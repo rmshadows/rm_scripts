@@ -9,7 +9,8 @@ source "../ServiceInit.sh"
 #### CONF
 # 服务名
 SRV_NAME=jitsi-meet-docker
-# 域名 会用在jitsi的public url
+# Jitsi 公共访问地址（含协议前缀）：写入 .env 的 PUBLIC_URL，jitsi 客户端会用它连接。
+# 例：https://meet.example.com
 YOUR_DOMAIN="https://domain.com"
 # 反向代理的地址
 REVERSE_PROXY_URL=/jm/
@@ -38,6 +39,10 @@ if ! command -v $t_pkg &>/dev/null; then
 fi
 
 ### 安装软件
+# 检测：.env 已存在则跳过下载解压（gen-passwords 只跑一次）
+if [ -f "$HOME/Applications/docker-jitsi-meet/.env" ]; then
+  prompt -i "[跳过] jitsi-meet 已安装"
+else
 cd $HOME/Applications
 prompt -x "Downloading docker-jitsi-meet"
 wget "$DOCKER_STABLE" -O jitsi-meet-docker.tar.gz
@@ -54,9 +59,9 @@ replace_placeholders_with_values env.src
 cp env $HOME/Applications/docker-jitsi-meet/.env
 cd $HOME/Applications/docker-jitsi-meet
 ./gen-passwords.sh
-prompt -x "Create required CONFIG directories ~/.jitsi-meet-cfg/{web/crontabs,web/letsencrypt,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}..."
+prompt -x "Create required CONFIG directories..."
 mkdir -p ~/.jitsi-meet-cfg/{web,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
-prompt -x "Access the web UI at https://localhost:8443 (or a different port, in case you edited the compose file)."
+prompt -x "Access the web UI at https://localhost:8443"
 prompt -w "Testing......"
 docker-compose up -d
 if [ "$?" -ne 0 ]; then
@@ -67,24 +72,20 @@ else
     prompt -x "Test done."
     sudo docker-compose down
 fi
-
-### 服务生成
-# 创建应用专门的服务文件夹
-if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    sudo mkdir "$HOME/Services/$SRV_NAME"
 fi
-# 生成服务
+
+### 服务生成（始终重跑，覆盖式）
+sudo mkdir -p "$HOME/Services/$SRV_NAME"
 cd "$SET_DIR"
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service /home/$USER/Services/$SRV_NAME.service
-# 安装服务
+sudo cp srv.service /home/$USER/Services/$SRV_NAME.service
 prompt -x "Install service..."
 cd $HOME/Services/
 sudo $HOME/Services/Install_Services.sh
+cd "$SET_DIR"
 
-### 反向代理配置
+### 反向代理配置（始终生成）
 cd "$SET_DIR"
 prompt -i "Check manully and setting up reverse proxy by yourself."
 replace_placeholders_with_values reverse_proxy.txt.src

@@ -8,12 +8,15 @@ source "../Lib.sh"
 source "../ServiceInit.sh"
 
 #### CONF
-# 服务名（复制模板后改为实际服务名，并同步改 myapp-snippet.conf、setupNginxForMyapp.sh 中的 myapp 及本脚本中对它们的引用）
+# 服务名（复制模板后改为实际服务名，并同步改 myapp.conf.src、setupNginxForMyapp.sh 中的 myapp）
 SRV_NAME=myapp
 # 指定运行端口
 RUN_PORT=1200
-# 反向代理的地址
-REVERSE_PROXY_URL=/myapp/
+# Nginx 独立站端口（不要用 80/443）
+SITE_LISTEN=1213
+# 独立站标识：用于生成 nginx 站点配置的 server_name，以及 SSL 证书文件名。
+# 留空 = 不生成独立站点，仅做子路径反代。
+SITE_NAME=
 
 # 保存当前目录（运行脚本时应在本应用目录下）
 SET_DIR=$(pwd)
@@ -27,44 +30,36 @@ if ! command -v "$t_pkg" &>/dev/null; then
     sudo apt update && sudo apt install "$t_pkg"
 fi
 
-### 安装软件
-# 在此填写你的应用安装步骤（下载、解压、编译、复制等）
+### 安装软件（幂等：检测最终产物是否存在，存在则跳过）
+# 示例：if [ -f "$HOME/Applications/myapp/myapp" ]; then
+#         prompt -i "[跳过] myapp 已安装"
+#       else
+#         ... 下载、解压、编译、复制 ...
+#       fi
+# 在此填写你的应用安装步骤
 
 
-### 服务生成
-# 创建应用专门的服务文件夹
-if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    mkdir -p "$HOME/Services/$SRV_NAME"
-fi
-# 生成服务
+### 服务生成（始终重跑，覆盖式）
+mkdir -p "$HOME/Services/$SRV_NAME"
 cd "$SET_DIR"
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service "/home/$USER/Services/$SRV_NAME.service"
-# 安装服务
+sudo cp srv.service "/home/$USER/Services/$SRV_NAME.service"
 prompt -x "Install service..."
 cd "$HOME/Services/"
 sudo "$HOME/Services/Install_Services.sh"
-# 拷贝启动和停止脚本
 prompt -x "Make start and stop script..."
 sudo cp "$SET_DIR/start.sh" "/home/$USER/Services/$SRV_NAME/start_$SRV_NAME.sh"
 sudo cp "$SET_DIR/stop.sh" "/home/$USER/Services/$SRV_NAME/stop_$SRV_NAME.sh"
 sudo chmod +x "/home/$USER/Services/$SRV_NAME/"*.sh
 cd "$SET_DIR"
 
-### Nginx 配置（片段写入 nginx 目录，不覆盖原机 site）
+### Nginx 独立站（始终重跑，覆盖式）
 if [ -f setupNginxForMyapp.sh ]; then
-    prompt -x "运行 setupNginxForMyapp.sh（写入 /etc/nginx/snippets/myapp.conf）"
-    export RUN_PORT REVERSE_PROXY_URL
+    prompt -x "运行 setupNginxForMyapp.sh（写入 /etc/nginx/sites-available/myapp.conf，不启用）"
+    export RUN_PORT SITE_LISTEN SITE_NAME HOME
     bash setupNginxForMyapp.sh
+    prompt -i "启用独立站： sudo ngx-site"
 else
-    prompt -w "未找到 setupNginxForMyapp.sh，请手动运行以写入 nginx 片段。"
+    prompt -w "未找到 setupNginxForMyapp.sh。"
 fi
-
-replace_placeholders_with_values reverse_proxy.txt.src
-prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
-prompt -i "========================================================"
-cat reverse_proxy.txt
-prompt -i "========================================================"
-prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/myapp.conf;"

@@ -1,31 +1,33 @@
-# 仅用政务内网
-# 假定wlx08107bbbe420 (net)是外网，内网是eth0
-# Shorewall version 4 - Rules File
+# 模板：gov_only
+# 只放行指定内网 IP，其余进出都丢。把下面的 IP 改成你的再启用。
+# 选用：sudo sw-rules
+# 改完：sudo shorewall check && sudo shorewall reload
+# 网卡/区域配合 interfaces、zones 里的 gov / net。
 #
-# For information on the settings in this file, type "man shorewall-rules"
-#
-# The manpage is also online at
-# http://www.shorewall.net/manpages/shorewall-rules.html
-#
-######################################################################################################################################################################################################
-#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK	CONNLIMIT	TIME		HEADERS		SWITCH		HELPER
-#							PORT	PORT(S)		DEST		LIMIT		GROUP
+# ACTION		SOURCE		DEST		PROTO	DEST	SOURCE
+#							PORT	PORT(S)
 ?SECTION ALL
 ?SECTION ESTABLISHED
 ?SECTION RELATED
 ?SECTION INVALID
 ?SECTION UNTRACKED
 ?SECTION NEW
-?COMMENT 下一行表示所有来自 net（外部网络）并指向防火墙的无效 TCP 数据包都将被丢弃。
 Invalid(DROP)	net		$FW		tcp
 
-?COMMENT 自定义规则
-# Allow wlx08107bbbe420 (net) to communicate with 192.168.1.11 允许访问某主机
-ACCEPT net:192.168.1.11 all
-# Allow 192.168.1.115 to communicate with wlx08107bbbe420 (net) 允许个别局域网IP访问主机
-ACCEPT all net:192.168.1.11
+# ============================================================
+# 放行指定主机（改 IP 后使用；下面两行已启用）
+# ============================================================
+ACCEPT	net:192.168.1.11	all
+ACCEPT	all	net:192.168.1.11
 
-# Drop all other traffic from/to wlx08107bbbe420 (net) 丢弃外网数据
-DROP net all
-DROP all net
+# ============================================================
+# 再放行一台时，复制上面两行，改 IP，取消注释
+# ============================================================
+# ACCEPT	net:192.168.1.12	all
+# ACCEPT	all	net:192.168.1.12
 
+# ============================================================
+# 丢掉其余外网进出（已启用，放最后）
+# ============================================================
+DROP	net	all
+DROP	all	net

@@ -1,33 +1,30 @@
 #!/bin/bash
-# 将 frp 管理页面的 nginx 片段写入 nginx 配置目录，不覆盖原机 site。
-# 用户只需在自己的 site 里加一行 include。
+# 写入 nginx 配置。两种模式（由 REVERSE_PROXY_PATH 决定）：
+#   1. 子路径反代（REVERSE_PROXY_PATH 非空，如 /frp/）：
+#      写 /etc/nginx/snippets/frp.conf，用户在主站 include。
+#   2. 独立站点（REVERSE_PROXY_PATH 为空）：
+#      写 /etc/nginx/sites-available/frp.conf，独立端口监听，sudo ngx-site 启用。
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SNIPPET_SRC="$SCRIPT_DIR/frp-snippet.conf"
-NGINX_SNIPPET="/etc/nginx/snippets/frp.conf"
+source "$SCRIPT_DIR/../GlobalVariables.sh"
+source "$SCRIPT_DIR/../Lib.sh"
 
-# 由 frp.sh 传入或使用默认值（FRP Admin 默认端口 7500）
 RUN_PORT="${RUN_PORT:-7500}"
-REVERSE_PROXY_URL="${REVERSE_PROXY_URL:-/frp/}"
+REVERSE_PROXY_PATH="${REVERSE_PROXY_PATH:-/frp/}"
+SITE_LISTEN="${SITE_LISTEN:-7501}"
 
-# 1. 确保 nginx snippets 目录存在
-sudo mkdir -p /etc/nginx/snippets
-
-# 2. 将片段写入 nginx 配置目录，并填入端口与路径
-sudo sed -e "s|__RUN_PORT__|$RUN_PORT|g" \
-    -e "s|__REVERSE_PROXY_URL__|$REVERSE_PROXY_URL|g" \
-    "$SNIPPET_SRC" | sudo tee "$NGINX_SNIPPET" > /dev/null
-echo "已写入 $NGINX_SNIPPET（$REVERSE_PROXY_URL -> 127.0.0.1:$RUN_PORT）"
-
-# 3. 提示用户：只需在自己的 site 里加一行 include
-echo ""
-echo "=============================================="
-echo "接下来您只需编辑一次自己的 site-enabled："
-echo "在要用 frp 管理页面的那个 server { } 内加一行："
-echo ""
-echo "    include /etc/nginx/snippets/frp.conf;"
-echo ""
-echo "然后执行： sudo nginx -t && sudo systemctl reload nginx"
-echo "=============================================="
+if [ -n "$REVERSE_PROXY_PATH" ]; then
+    # ---- 子路径反代模式 ----
+    write_nginx_snippet "$SCRIPT_DIR/frp.conf.src" "frp.conf"
+    echo "已写入 /etc/nginx/snippets/frp.conf（子路径 $REVERSE_PROXY_PATH -> 127.0.0.1:$RUN_PORT）"
+    echo "启用：在主站 server { } 内加 include /etc/nginx/snippets/frp.conf; 然后 sudo nginx -t && sudo systemctl reload nginx"
+else
+    # ---- 独立站点模式 ----
+    write_nginx_available_site "$SCRIPT_DIR/frp-site.conf.src" "frp.conf"
+    echo ""
+    echo "独立站模式：监听 $SITE_LISTEN，反代 127.0.0.1:$RUN_PORT"
+    echo "证书路径：/etc/ssl/\${SITE_NAME}.pem（用 generate_ssl_cert 生成，或手动放置）"
+    echo "启用： sudo ngx-site"
+fi

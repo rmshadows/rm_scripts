@@ -1,0 +1,30 @@
+# 安装后：/etc/nginx/snippets/frp.conf
+# FRP 管理页子路径反代片段（location 块，不含 server 块、不含 SSL）。
+# FRP 管理页默认 http://127.0.0.1:7500/ ，路径与端口由 setupNginxForFrp.sh 填入。
+# 启用：在主站（如 ssl.conf）的 server { } 内加一行：
+#   include /etc/nginx/snippets/frp.conf;
+# 然后： sudo nginx -t && sudo systemctl reload nginx
+
+location __REVERSE_PROXY_PATH__ {
+    proxy_pass http://127.0.0.1:__RUN_PORT__/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # frp dashboard 前端用绝对路径引用静态资源（/static/...），
+    # 子路径反代时需改写为带子路径前缀，否则资源 404。
+    proxy_set_header Accept-Encoding "";
+    sub_filter_types text/html text/css application/javascript application/json;
+    sub_filter_once off;
+    sub_filter 'href="/'  'href="__REVERSE_PROXY_PATH__';
+    sub_filter 'src="/'   'src="__REVERSE_PROXY_PATH__';
+    sub_filter 'url("/'   'url("__REVERSE_PROXY_PATH__';
+    # frp API 用相对路径 ../api/，从 /frp/ 解析会变成 /api/（丢失前缀），
+    # 改写为带子路径的绝对路径。
+    sub_filter '../api/'  '__REVERSE_PROXY_PATH__api/';
+
+    # 登录后后端可能 302 重定向到 / ，需改写为子路径
+    proxy_redirect ~^/(.*)$ __REVERSE_PROXY_PATH__$1;
+}

@@ -3,10 +3,12 @@
 set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")"
-# 加载全局变量
+# 旧 Lib.sh / GlobalVariables 里有当注释的 heredoc，未加引号时 set -u 会展开里面的 $choice/$line。
+# source 时先关掉 nounset，库加载完再开回来。
+set +u
 source "../GlobalVariables.sh"
-# 加载全局函数
 source "../Lib.sh"
+set -u
 
 SRV_NAME=ffmpegL
 INSTALL_DIR="${INSTALL_DIR:-$HOME/Applications/broadcast}"
@@ -99,6 +101,7 @@ echo "        $INSTALL_DIR/livectl $new_srv_name next"
 echo "        $new_srv_path/ctl.sh list"
 echo "  看日志: journalctl -u $new_srv_name -f"
 echo "         tail -f $new_srv_path/stream.log"
+echo "  卸载:   $SET_DIR/uninstall.sh"
 echo
 read -r -p "现在编辑 conf.txt / RTMP？(Y/n): " editc
 if [[ ! "${editc:-y}" =~ ^[Nn]$ ]]; then

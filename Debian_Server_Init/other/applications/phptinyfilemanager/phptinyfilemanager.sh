@@ -38,16 +38,22 @@ else
 fi
 
 ### 安装软件
-if [ ! -d fmgr ]; then
-    prompt -e "当前目录下未找到 fmgr 目录，请先放置 tinyfilemanager（或从 https://github.com/prasathmani/tinyfilemanager 获取）后再运行。"
-    exit 1
-fi
-mkdir -p "$SERVER_ROOT"
-sudo mv fmgr "$SERVER_ROOT/fmgr"
-# 之后操作都在安装目录下进行（$SERVER_ROOT/fmgr）
+# 检测：目标目录已存在则跳过移动
 INSTALLED_FMGR="$SERVER_ROOT/fmgr"
+if [ -d "$INSTALLED_FMGR" ]; then
+  prompt -i "[跳过] fmgr 已部署到 $INSTALLED_FMGR"
+else
+  if [ ! -d fmgr ]; then
+      prompt -e "当前目录下未找到 fmgr 目录，请先放置 tinyfilemanager（或从 https://github.com/prasathmani/tinyfilemanager 获取）后再运行。"
+      exit 1
+  fi
+  mkdir -p "$SERVER_ROOT"
+  sudo mv fmgr "$SERVER_ROOT/fmgr"
+fi
+
+# 之后操作都在安装目录下进行（$SERVER_ROOT/fmgr）
 cd "$INSTALLED_FMGR"
-# 设置权限（若 tinyfilemanager 含 files/readonly 目录）
+# 设置权限（始终确保）
 [ -d files ] && sudo chown -R www-data:www-data files
 [ -d readonly ] && sudo chown -R www-data:www-data readonly
 [ -f index.php ] && sudo setfacl -m u:www-data:rx index.php
@@ -55,7 +61,8 @@ cd "$INSTALLED_FMGR"
 
 prompt -w "If user www-data still cannot write, try acl(e.g: setfacl -m u:www-data:rwx files)"
 
-### Nginx 配置（与 fmgr 一致：配置写入 nginx 目录，不覆盖原机 site）
+### Nginx 配置（始终重跑，覆盖式）
+cd "$INSTALLED_FMGR"
 if [ -f NginxSetup/setupNginxForFmgr.sh ]; then
     prompt -x "运行 NginxSetup/setupNginxForFmgr.sh（安装 php-fpm 并写入 /etc/nginx/snippets/fmgr.conf）"
     bash NginxSetup/setupNginxForFmgr.sh

@@ -1,15 +1,19 @@
 #!/bin/bash
 # 安装配置 NVM
 # 来源: https://github.com/nvm-sh/nvm
-SET_INSTALL_NVM=1
+SET_INSTALL_NVM="${SET_INSTALL_NVM:-1}"
+SET_NVM_INSTALL_NODEJS_LTS="${SET_NVM_INSTALL_NODEJS_LTS:-0}"
+SET_NVM_INSTALL_NODEJS_VERSION="${SET_NVM_INSTALL_NODEJS_VERSION:-}"
 
 if [ "$SET_INSTALL_NVM" -eq 1 ]; then
     # 安装 NVM
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh | bash
     # 或者使用 wget
-    # wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-    # 确保 NVM 被正确安装，重新加载配置文件
-    source ~/.bashrc    # 如果使用 bash, 如果使用其他 shell 则修改为相应文件如 ~/.zshrc
+    # wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh | bash
+    # 直接从 NVM_DIR 加载 nvm，不依赖具体 shell 的 rc 文件（install.sh 会按 $SHELL 写到 .bashrc/.zshrc/.profile 等）
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
     # 检查 NVM 是否成功安装
     if command -v nvm &> /dev/null; then
         echo "NVM 安装成功!"

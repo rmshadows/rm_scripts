@@ -148,6 +148,58 @@ EOF
 	need_root chmod 0644 /etc/profile.d/99-env-manager.sh
 }
 
+# zsh 不读 /etc/profile.d，需把加载脚本写入 zsh 系统级配置。
+# 优先 /etc/zsh/zshenv（Debian），其次 /etc/zshenv。
+# zshenv 对所有 zsh 实例（登录/非登录、交互/非交互）生效，最保险。
+write_sys_zsh() {
+	local zshrc="" tmp
+	if [ -d /etc/zsh ]; then
+		zshrc="/etc/zsh/zshenv"
+	elif [ -f /etc/zshenv ] || [ -f /etc/zshrc ]; then
+		zshrc="/etc/zshenv"
+	else
+		return 0
+	fi
+	tmp="$(mktemp)"
+	# 去掉旧标记段
+	if [ -f "$zshrc" ]; then
+		awk -v b="$MARK_B" -v e="$MARK_E" '
+			$0==b {skip=1; next}
+			$0==e {skip=0; next}
+			!skip {print}
+		' "$zshrc" >"$tmp"
+	else
+		: >"$tmp"
+	fi
+	{
+		cat "$tmp"
+		echo "$MARK_B"
+		cat <<'EOF'
+# env-manager：加载系统级环境变量与 PATH（zsh 专用，bash 走 /etc/profile.d）
+if [ -f /etc/env-manager/system.env ]; then
+	set -a
+	. /etc/env-manager/system.env
+	set +a
+fi
+if [ -f /etc/env-manager/system.path ]; then
+	while IFS= read -r _em_p || [ -n "${_em_p:-}" ]; do
+		[ -z "${_em_p:-}" ] && continue
+		case "$_em_p" in \#*) continue ;; esac
+		case ":$PATH:" in
+		*":$_em_p:"*) ;;
+		*) PATH="$_em_p:$PATH" ;;
+		esac
+	done < /etc/env-manager/system.path
+	export PATH
+fi
+unset _em_p
+EOF
+		echo "$MARK_E"
+	} | need_root tee "$zshrc" >/dev/null
+	need_root chmod 0644 "$zshrc"
+	rm -f "$tmp"
+}
+
 # 把 system.env 里「字面量」同步进 /etc/environment（PAM / 显示管理器）
 sync_etc_environment() {
 	local tmp body
@@ -175,8 +227,9 @@ sync_etc_environment() {
 install_sys_hooks() {
 	ensure_sys_files
 	write_sys_profiled
+	write_sys_zsh
 	sync_etc_environment
-	echo "已安装 /etc/profile.d/99-env-manager.sh 并同步 /etc/environment。重新登录后 PAM 会话也能看到系统变量。"
+	echo "已安装 /etc/profile.d/99-env-manager.sh（bash）和 zsh 系统配置，并同步 /etc/environment。重新登录后生效。"
 }
 
 # nameref 删掉数组中第 idx 项（兼容 set -u）
@@ -480,7 +533,7 @@ scope_menu() {
 			add_or_edit_var "$envf" "$as_root"
 			[ "$as_root" -eq 1 ] && sync_etc_environment
 			install_user_hooks >/dev/null
-			[ "$as_root" -eq 1 ] && write_sys_profiled
+			[ "$as_root" -eq 1 ] && { write_sys_profiled; write_sys_zsh; }
 			;;
 		3)
 			delete_var "$envf" "$as_root"
@@ -488,6 +541,8 @@ scope_menu() {
 			;;
 		4)
 			path_menu "$pathf" "$as_root"
+			# 系统级 PATH 改动后确保 zsh 加载配置存在（system.path 被实时读取）
+			[ "$as_root" -eq 1 ] && write_sys_zsh
 			;;
 		5)
 			if [ "$as_root" -eq 1 ]; then

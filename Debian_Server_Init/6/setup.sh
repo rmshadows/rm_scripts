@@ -48,6 +48,9 @@ if [ "$SET_SHOREWALL_SETTING" -eq 1 ]; then
     # 安装完shorewall后开始配置
     backupFile "/etc/shorewall/"
     sudo cp -r SW_CONF/* /etc/shorewall/
-    prompt -w "为防止意外，请手动修改、启用Shorewall。"
+    find /etc/shorewall -type f -name '*.sh' -exec chmod 755 {} \;
+    ln -sfn /etc/shorewall/setup_rules.sh /usr/local/bin/sw-rules
+    sudo cp "SW_CONF/crules/README.txt" /etc/shorewall/README.txt
+    prompt -w "Shorewall 已拷配置，未自动启用。选模板：sudo sw-rules ；改完：sudo shorewall check && sudo shorewall reload ；启用：sudo systemctl enable --now shorewall"
 fi
 

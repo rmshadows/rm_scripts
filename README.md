@@ -131,11 +131,19 @@ bash Debian_13_Server_Setup.sh
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2026年9月13日——0.1.3
+  - Debian_Server_Init 0.1.9：应用反代配置统一为 .conf.src 模板并补齐全部 uninstall.sh（删数据前确认、默认保留）；hackchat 修复（镜像回退 / nvm PATH / 固定 commit / 自动生成密钥）；artalk 子路径反代与 ip2region 404 修复；nvm 升 v0.40.7 并新增 update-nvm.sh；禁用第三方源改快照白名单
+  - Debian_GNOME_Init 0.1.3：nvm 脚本与文档同 Server 对齐（v0.40.7）；禁用第三方源改快照白名单
+  - Other：新增 CliNetwork/（nmcli 有线/无线「控制 + 配置」四脚本：手动 IP、DNS、自动连接及优先级、忘记网络；改前预览确认、SSH 防断网二次确认）
+  - Other：env_manager.sh 支持 zsh 系统级环境变量与 PATH（写入 /etc/zsh/zshenv）
+  - systweak：新增 venv-prompt.sh（隐藏/恢复 venv 提示符标记）
+
 - 2026年9月11日——0.1.2
   - 新增 GitHub Action「Publish Init Release」（手动触发）：打包 Init 并覆盖固定 tag `debian-init`（一键 curl 用这个，不走 `/releases/latest/`，避免和 PDF 手动 Release 抢 latest）
   - 主 README：补充从 `main`/`dev` 分支 curl 解压；说明首次部署须终端输入 `y`，Server 不再接受默认 `admin`/`passwd`
   - Debian_GNOME_Init 0.1.2：部署前警告与检查，首次必须 `y` 确认；修复 Docker 清除开关逻辑反了
   - Debian_Server_Init 0.1.7：无现成账号时询问自动生成或自己输入（不再默认 admin/passwd）；修复 Docker 清除开关逻辑反了
+  - Debian_Server_Init 0.1.8：UFW 已启用时预先放行 SSH/80/443；确认后立刻写 SSH keepalive
   - 直播 ffmpegL：`livectl` 切歌/跳转；内存上限改为安装时可选
   - systweak：`wechat-recv-writable.sh`（微信接收文件目录可写）
 

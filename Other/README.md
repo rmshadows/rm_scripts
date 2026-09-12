@@ -2,7 +2,7 @@
 
 1. alternatives_manager.sh——交互式 alternatives（查看/添加/改优先级/按序号删除与切换）。选组名时 Tab 补全
 
-1b. env_manager.sh——像 Windows 那样改环境变量（用户/系统、增减、PATH 排序）。系统变量需 sudo，新开终端后生效
+1b. env_manager.sh——像 Windows 那样改环境变量（用户/系统、增减、PATH 排序），bash 与 zsh 均生效。系统变量需 sudo，新开终端后生效
 
 2. check_pkgs_in_apt.sh——检查仓库中有无某软件包（虚拟软件包检测不出）
 
@@ -45,4 +45,6 @@
 21. watchDirectoryChange.sh —— 监视目录文件更改
 
 22. KVM_Manager/ —— 用 Bash + virsh 管理 KVM 虚拟机（信息查看、快照、电源等，见目录内 README）
+
+23. CliNetwork/ —— 命令行管理有线/无线网络（nmcli）。eth-ctrl / wifi-ctrl 负责状态、开关、扫描；eth-cfg / wifi-cfg 负责手动 IP、DHCP、DNS、自动连接及优先级、新建/忘记网络。支持菜单与命令参数；写操作前显示「当前→目标」并确认，SSH 操作对应网卡有防断网强制确认
 

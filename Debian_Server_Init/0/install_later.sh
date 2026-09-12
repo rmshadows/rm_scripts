@@ -105,31 +105,10 @@ if [ "$SET_INSTALL_DOCKER_CE" -eq 1 ]; then
     fi
 fi
 
-#### 禁用第三方仓库更新
+#### 禁用第三方仓库更新：不在检查点一白名单里的 sources.list.d 文件都挪走
 if [ "$SET_DISABLE_THIRD_PARTY_REPO" -eq 1 ]; then
-    prompt -x "禁用第三方软件仓库更新"
-    addFolder /etc/apt/sources.list.d/backup
-    # 定义保护文件（白名单）
-    PROTECT_LIST=(
-        "debian.sources"
-        "debian.list"
-    )
-    for f in /etc/apt/sources.list.d/*; do
-        [ -e "$f" ] || continue
-        basename=$(basename "$f")
-        # 判断是否在保护列表中
-        skip=0
-        for p in "${PROTECT_LIST[@]}"; do
-            if [ "$basename" = "$p" ]; then
-                skip=1
-                break
-            fi
-        done
-        # 非保护文件则移动到 backup
-        if [ $skip -eq 0 ]; then
-            sudo mv "$f" /etc/apt/sources.list.d/backup/
-        fi
-    done
+    prompt -x "禁用第三方软件仓库更新（保留检查点一记录的源）"
+    deploy_apt_disable_third_party
 fi
 
 # 稍后安装黑名单：必须在本文件所有其它 apt 之后（否则 listchanges 会打断 Docker 等）

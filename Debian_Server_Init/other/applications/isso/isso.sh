@@ -12,8 +12,8 @@ source "../ServiceInit.sh"
 SRV_NAME=isso
 # 指定运行端口
 RUN_PORT=3500
-# 反向代理的地址
-REVERSE_PROXY_URL=/isso/
+# Nginx 子路径（挂在主站域名下，不用独立端口）
+REVERSE_PROXY_PATH="/isso/"
 # 你的域名 Include https://
 DOMAIN_N="https://127.0.0.1/"
 # 使用python虚拟环境安装(推荐)
@@ -39,76 +39,61 @@ fi
 # sudo apt-get install python-setuptools python-virtualenv
 # sudo apt-get install python-dev sqlite3 build-essential python3-venv
 # sudo apt install libaugeas0
-sudo apt-get install python3-setuptools python3-virtualenv python3-dev
+sudo apt-get install -y python3-setuptools python3-virtualenv python3-dev
 
-if ! [ -d "$HOME/Applications" ]; then
-    mkdir -p "$HOME/Applications"
-fi
-
-if ! [ -d "$HOME/Applications/isso" ]; then
-    mkdir -p "$HOME/Applications/isso"
-fi
-
-if ! [ -d "$HOME/Logs" ]; then
-    mkdir -p "$HOME/Logs"
-fi
-
-if ! [ -d "$HOME/Logs/isso" ]; then
-    mkdir -p "$HOME/Logs/isso"
-fi
+mkdir -p "$HOME/Applications/isso" "$HOME/Logs/isso"
 
 # 安装
 if [ "$PY_VENV" -eq 0 ]; then
-    pip3 install --upgrade pip
-    pip3 install isso
-    if [ -f "/opt/isso/bin/isso" ]; then
-        sudo ln -s /opt/isso/bin/isso /usr/bin/isso
-    elif [ -f "/home/$CURRENT_USER/.local/bin/isso" ]; then
-        sudo ln -s "/home/$CURRENT_USER/.local/bin/isso" /usr/bin/isso
+    if ! command -v isso &>/dev/null; then
+        pip3 install --upgrade pip
+        pip3 install isso
+        if [ -f "/opt/isso/bin/isso" ]; then
+            sudo ln -sf /opt/isso/bin/isso /usr/bin/isso
+        elif [ -f "/home/$CURRENT_USER/.local/bin/isso" ]; then
+            sudo ln -sf "/home/$CURRENT_USER/.local/bin/isso" /usr/bin/isso
+        fi
+    else
+        prompt -i "[跳过] isso 已安装"
     fi
 elif [ "$PY_VENV" -eq 1 ]; then
-    # Set up a Python virtual environment/opt/isso/
-    sudo python3 -m venv "$INSTALL_DIR"
-    sudo "$INSTALL_DIR"/bin/pip install --upgrade pip
-    sudo "$INSTALL_DIR"/bin/pip install isso
-    sudo ln -s "$INSTALL_DIR"/bin/isso /usr/bin/isso
-
+    # venv 已存在则跳过创建
+    if [ -f "$INSTALL_DIR/bin/isso" ]; then
+        prompt -i "[跳过] isso venv 已存在"
+    else
+        # venv 目录非空但不是有效 venv 时先清理
+        [ -d "$INSTALL_DIR" ] && [ ! -f "$INSTALL_DIR/bin/activate" ] && sudo rm -rf "$INSTALL_DIR"
+        sudo python3 -m venv "$INSTALL_DIR"
+        sudo "$INSTALL_DIR"/bin/pip install --upgrade pip
+        sudo "$INSTALL_DIR"/bin/pip install isso
+    fi
+    sudo ln -sf "$INSTALL_DIR"/bin/isso /usr/bin/isso
 else
     prompt -e "PY_VENV 变量设置错误，1:是 0:否"
     exit 1
 fi
 
+# 配置文件：始终覆盖
 replace_placeholders_with_values isso.conf.src
 sudo cp isso.conf "$HOME/Applications/isso/isso.conf"
 
-### 服务生成
-# 创建应用专门的服务文件夹
-if ! [ -d "$HOME/Services/$SRV_NAME" ]; then
-    prompt -x "Mkdir $HOME/Services/$SRV_NAME..."
-    sudo mkdir -p "$HOME/Services/$SRV_NAME"
-fi
-# 生成服务
+### 服务生成（始终重跑，覆盖式）
+sudo mkdir -p "$HOME/Services/$SRV_NAME"
 prompt -x "Making Service..."
 replace_placeholders_with_values srv.service.src
-sudo mv srv.service "/home/$USER/Services/$SRV_NAME.service"
-# 安装服务
+sudo cp srv.service "/home/$USER/Services/$SRV_NAME.service"
 prompt -x "Install service..."
 cd "$HOME/Services/"
 sudo "$HOME/Services/Install_Services.sh"
-
-### Nginx 配置（与 artalk/frp 一致：配置写入 nginx 目录，不覆盖原机 site）
 cd "$SET_DIR"
-if [ -f setupNginxForIsso.sh ]; then
-    prompt -x "运行 setupNginxForIsso.sh（写入 /etc/nginx/snippets/isso.conf）"
-    export RUN_PORT REVERSE_PROXY_URL
-    bash setupNginxForIsso.sh
-else
-    prompt -w "未找到 setupNginxForIsso.sh，请手动运行以写入 nginx 片段。"
-fi
 
-replace_placeholders_with_values reverse_proxy.txt.src
-prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
-prompt -i "========================================================"
-cat reverse_proxy.txt
-prompt -i "========================================================"
-prompt -i "若使用片段方式，只需在自己的 site 里加一行： include /etc/nginx/snippets/isso.conf;"
+### Nginx 子路径片段（始终重跑，覆盖式）
+if [ -f setupNginxForIsso.sh ]; then
+    prompt -x "运行 setupNginxForIsso.sh（写入 /etc/nginx/snippets/isso.conf，子路径 $REVERSE_PROXY_PATH）"
+    export RUN_PORT REVERSE_PROXY_PATH
+    bash setupNginxForIsso.sh
+    prompt -i "启用：在主站 server { } 内加 include /etc/nginx/snippets/isso.conf; 然后 sudo nginx -t && sudo systemctl reload nginx"
+    prompt -i "前端 data-isso 填 https://<域名>${REVERSE_PROXY_PATH}"
+else
+    prompt -w "未找到 setupNginxForIsso.sh。"
+fi

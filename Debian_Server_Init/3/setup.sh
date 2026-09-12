@@ -43,8 +43,7 @@ if [ "$SET_SYSTEMCTL_SERVICE" -eq 1 ];then
     addFolder /home/$CURRENT_USER/.$CURRENT_USER/
     addFolder /home/$CURRENT_USER/.$CURRENT_USER/scripts/
     prompt -x "复制到 /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh 脚本"
-    cp "customize_systemd_service/autorun.sh" "/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh"
-    sudo chmod +x /home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh
+    deploy_install_exec "customize_systemd_service/autorun.sh" "/home/$CURRENT_USER/.$CURRENT_USER/scripts/autorun.sh"
     
     prompt -x "复制 /lib/systemd/system/customize-autorun.service 服务"
     if ! [ -f /lib/systemd/system/customize-autorun.service ];then

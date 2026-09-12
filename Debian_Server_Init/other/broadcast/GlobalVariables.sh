@@ -23,5 +23,5 @@ FIRST_DO_AS_ROOT=1
 FIRST_DO_APT=1
 # 获取当前用户名（从这里开始才能使用此变量）
 CURRENT_USER=$USER
-# 主机名
-HOSTNAME=$HOST
+# 主机名：用 bash 自带的 HOSTNAME 或 hostname，不依赖 zsh 的 HOST（默认不 export）
+HOSTNAME="${HOSTNAME:-$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf '%s' localhost)}"

@@ -39,6 +39,7 @@
 | `trim-l10n.sh` | 精简 firefox/thunderbird/libreoffice 等语言包（交互选保留语言） | 好（可再装回） |
 | `default-fm-nautilus.sh` | 默认文件管理器改为 Nautilus | 好 |
 | `python-env.sh` | Python3 + 清华 pip 源 + 默认 venv（`~/.PythonVenv`）+ shell `acpy`/`decpy` | 中（还原镜像/本脚本建的 venv；包不卸） |
+| `venv-prompt.sh` | 隐藏/恢复提示符前的 `(.PythonVenv)` 标记（venv 照常激活，仅不显示名字） | 好（删标记块/还原激活文件） |
 | `setup-zsh.sh` | 安装 zsh/插件，写入 **GNOME Init 同款 zshrc**（已内嵌），root+当前用户切 zsh | 中（还原 shell 与 `.zshrc`；包不卸） |
 | `rime-chinese-mode.sh` | 当前会话切到 Rime 中文模式 | 弱（即时操作，无持久备份） |
 | `lightdm-gtk-greeter.sh` | LightDM 使用 **lightdm-gtk-greeter**（可设为默认 DM） | 中（还原 conf/默认 DM；包不卸） |

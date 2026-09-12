@@ -340,6 +340,106 @@ replace_placeholders_with_values() {
   echo "完成: 生成的文件为 $dest_file"
 }
 
+# 从 ssl.conf / acme.conf 读 server_name。YOUR_DOMAIN 不是占位时也可。
+guess_nginx_site_name() {
+  local conf name
+  if [ -n "${YOUR_DOMAIN:-}" ] && [ "$YOUR_DOMAIN" != "example.com" ]; then
+    echo "$YOUR_DOMAIN"
+    return 0
+  fi
+  for conf in /etc/nginx/sites-available/ssl.conf /etc/nginx/sites-available/acme.conf; do
+    [ -f "$conf" ] || continue
+    name=$(sudo awk '/^[[:space:]]*server_name[[:space:]]+/ {
+      gsub(/;/, "", $2)
+      if ($2 != "" && $2 != "_" && $2 != "localhost") { print $2; exit }
+    }' "$conf")
+    if [ -n "$name" ]; then
+      echo "$name"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# 写入 /etc/nginx/sites-available/$2，不启用。
+# 环境：SITE_LISTEN；可选 SITE_NAME / RUN_PORT / NEW_PORT / WS_PORT / REVERSE_PROXY_PATH / HOME
+write_nginx_available_site() {
+  local src="$1"
+  local dest_name="$2"
+  local dest="/etc/nginx/sites-available/$dest_name"
+  local home_dir="${HOME:-}"
+  local sed_args=()
+
+  if [ ! -d /etc/nginx/sites-available ]; then
+    echo "未检测到 /etc/nginx/sites-available，跳过。"
+    return 0
+  fi
+  if [ -z "${SITE_LISTEN:-}" ]; then
+    echo "SITE_LISTEN 未设置。"
+    return 1
+  fi
+  if [ -z "${SITE_NAME:-}" ]; then
+    SITE_NAME="$(guess_nginx_site_name || true)"
+  fi
+  if [ -z "$SITE_NAME" ]; then
+    echo "SITE_NAME 为空，且 ssl.conf / acme.conf 里没有可用 server_name。请在应用 CONF 里填写 SITE_NAME。"
+    return 1
+  fi
+  if [ -z "$home_dir" ]; then
+    home_dir="$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)"
+  fi
+  mkdir -p "$home_dir/Logs/nginx"
+
+  sed_args=(-e "s|__SITE_LISTEN__|${SITE_LISTEN}|g" -e "s|__SITE_NAME__|${SITE_NAME}|g" -e "s|__HOME__|${home_dir}|g")
+  [ -n "${RUN_PORT:-}" ] && sed_args+=(-e "s|__RUN_PORT__|${RUN_PORT}|g")
+  [ -n "${NEW_PORT:-}" ] && sed_args+=(-e "s|__NEW_PORT__|${NEW_PORT}|g")
+  [ -n "${WS_PORT:-}" ] && sed_args+=(-e "s|__WS_PORT__|${WS_PORT}|g")
+  [ -n "${REVERSE_PROXY_PATH:-}" ] && sed_args+=(-e "s|__REVERSE_PROXY_PATH__|${REVERSE_PROXY_PATH}|g")
+
+  sudo sed "${sed_args[@]}" "$src" | sudo tee "$dest" >/dev/null
+  echo "已写入 $dest（未启用）"
+  echo "  https://${SITE_NAME}:${SITE_LISTEN}/"
+  echo "证书：/etc/ssl/${SITE_NAME}.pem ；没有证书时先不要启用。"
+  echo "启用： sudo ngx-site"
+  echo "防火墙端口 ${SITE_LISTEN} 需自行放行。"
+}
+
+# 写入 /etc/nginx/snippets/$2：子路径反代片段（location 块，不含 server 块）。
+# 用户在主站 server { } 内 include 一行即可；不改任何站点文件。
+# 环境：REVERSE_PROXY_PATH（如 /artalk/）、RUN_PORT；可选 WS_PORT / WS_PATH（WebSocket 应用）
+write_nginx_snippet() {
+  local src="$1"
+  local dest_name="$2"
+  local dest="/etc/nginx/snippets/$dest_name"
+
+  if [ ! -d /etc/nginx ]; then
+    echo "未检测到 /etc/nginx，跳过。"
+    return 0
+  fi
+  if [ -z "${REVERSE_PROXY_PATH:-}" ]; then
+    echo "REVERSE_PROXY_PATH 未设置（子路径，如 /artalk/）。"
+    return 1
+  fi
+  if [ -z "${RUN_PORT:-}" ]; then
+    echo "RUN_PORT 未设置。"
+    return 1
+  fi
+
+  sudo mkdir -p /etc/nginx/snippets
+  local sed_args=( -e "s|__REVERSE_PROXY_PATH__|${REVERSE_PROXY_PATH}|g" \
+                   -e "s|__RUN_PORT__|${RUN_PORT}|g" )
+  if [ -n "${WS_PORT:-}" ]; then
+    sed_args+=( -e "s|__WS_PORT__|${WS_PORT}|g" )
+  fi
+  if [ -n "${WS_PATH:-}" ]; then
+    sed_args+=( -e "s|__WS_PATH__|${WS_PATH}|g" )
+  fi
+  sudo sed "${sed_args[@]}" "$src" | sudo tee "$dest" >/dev/null
+  echo "已写入 $dest（${REVERSE_PROXY_PATH} -> 127.0.0.1:${RUN_PORT}）"
+  echo "启用：在主站 server { } 内加一行  include $dest;"
+  echo "然后： sudo nginx -t && sudo systemctl reload nginx"
+}
+
 ### archive
 # 替换用户名为使用已定义的 $CURRENT_USER replace_username "需要修改的文件"
 replace_username() {
@@ -395,6 +495,74 @@ $ROOT_PASSWD
 echo " Exec $1 as root"
 $1
 !
+}
+
+### 应用卸载通用工具
+
+# 通用：停止并卸载 systemd 服务，清理 $HOME/Services 下的文件。
+# 用法: app_remove_service <SRV_NAME>
+app_remove_service() {
+  local srv="$1"
+  if [ -z "$srv" ]; then
+    prompt -e "app_remove_service: 缺少服务名"
+    return 1
+  fi
+  if systemctl is-active --quiet "$srv" 2>/dev/null; then
+    prompt -x "停止服务 $srv"
+    sudo systemctl stop "$srv"
+  fi
+  if systemctl is-enabled --quiet "$srv" 2>/dev/null; then
+    sudo systemctl disable "$srv" 2>/dev/null || true
+  fi
+  if [ -f "/lib/systemd/system/$srv.service" ]; then
+    sudo rm -f "/lib/systemd/system/$srv.service"
+    sudo systemctl daemon-reload
+  fi
+  [ -f "$HOME/Services/$srv.service" ] && sudo rm -f "$HOME/Services/$srv.service"
+  [ -d "$HOME/Services/$srv" ] && sudo rm -rf "$HOME/Services/$srv"
+  prompt -s "服务 $srv 已卸载"
+}
+
+# 通用：删除 nginx 配置（sites-available 或 snippets）
+# 用法: app_remove_nginx <conf_name>   如 app_remove_nginx artalk.conf
+app_remove_nginx() {
+  local name="$1"
+  if [ -z "$name" ]; then
+    prompt -e "app_remove_nginx: 缺少配置名"
+    return 1
+  fi
+  [ -f "/etc/nginx/sites-available/$name" ] && sudo rm -f "/etc/nginx/sites-available/$name"
+  [ -f "/etc/nginx/snippets/$name" ] && sudo rm -f "/etc/nginx/snippets/$name"
+  [ -L "/etc/nginx/sites-enabled/$name" ] && sudo rm -f "/etc/nginx/sites-enabled/$name"
+  prompt -s "nginx 配置 $name 已删除（若启用过请手动 reload nginx）"
+}
+
+# 通用：删除前确认用户数据（默认 N=保留）。
+# 必须在真正删除之前调用；不存在则直接返回。
+# 用法: confirm_remove_data <path> [说明文字]
+# 返回 0 表示已删除，返回 1 表示用户选择保留（或路径不存在）。
+confirm_remove_data() {
+  local target="$1"
+  local desc="${2:-用户数据}"
+  if [ ! -e "$target" ]; then
+    return 1
+  fi
+  echo ""
+  prompt -w "⚠ 即将删除${desc}："
+  prompt -w "    $target"
+  if [ -d "$target" ]; then
+    prompt -w "    占用空间：$(sudo du -sh "$target" 2>/dev/null | cut -f1)"
+  fi
+  comfirm "\e[1;33m? 此操作不可恢复，确认删除吗？(y/N)\e[0m"
+  local choice=$?
+  if [ "$choice" -eq 1 ]; then
+    sudo rm -rf "$target"
+    prompt -s "已删除 $target"
+    return 0
+  else
+    prompt -i "已保留 $target"
+    return 1
+  fi
 }
 
 # For debug code hightlight (需要代码高亮的时候取消注释,使用的时候注释掉)

@@ -1,0 +1,41 @@
+# 安装后：/etc/nginx/sites-available/webmin.conf
+# 独立站，不占用 80/443（那是 acme.conf / ssl.conf）。
+# 默认不启用。启用：sudo ngx-site
+# 访问：https://__SITE_NAME__:__SITE_LISTEN__/
+# 后端：本机 Webmin https://127.0.0.1:__NEW_PORT__/（自签证书，故 proxy_ssl_verify off）
+
+server {
+    listen __SITE_LISTEN__ ssl;
+    listen [::]:__SITE_LISTEN__ ssl;
+    http2 on;
+    server_name __SITE_NAME__;
+
+    ssl_certificate /etc/ssl/__SITE_NAME__.pem;
+    ssl_certificate_key /etc/ssl/__SITE_NAME__.key;
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_tickets off;
+
+    # 2053 只听 TLS。用 http:// 打过来 nginx 会报 497，改成 301 到 https。
+    error_page 497 =301 https://$host:$server_port$request_uri;
+
+    access_log __HOME__/Logs/nginx/webmin.log;
+    error_log __HOME__/Logs/nginx/webmin_error.log;
+
+    location / {
+        proxy_pass https://127.0.0.1:__NEW_PORT__/;
+        proxy_ssl_verify off;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        client_max_body_size 64m;
+    }
+}
