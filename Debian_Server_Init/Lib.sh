@@ -646,6 +646,54 @@ deploy_is_resume_skip_confirm() {
 	[ "${SET_DEPLOY_RESUME:-1}" -eq 1 ] && deploy_has_completed_jobs && [ "${SET_DEPLOY_SKIP_CONFIRM:-1}" -eq 1 ]
 }
 
+# SSH 空闲保活：云厂商/NAT 常在几分钟无流量后掐连接。部署一开始就写，reload 不踢当前会话。
+deploy_apply_ssh_keepalive() {
+	if [ "${SET_SSH_KEEPALIVE:-1}" -ne 1 ]; then
+		return 0
+	fi
+	local interval="${SET_SSH_CLIENT_ALIVE_INTERVAL:-60}"
+	local countmax="${SET_SSH_CLIENT_ALIVE_COUNT_MAX:-3}"
+	local drop="/etc/ssh/sshd_config.d/99-deploy-keepalive.conf"
+	local main="/etc/ssh/sshd_config"
+	local body
+
+	if [ ! -f "$main" ]; then
+		prompt -w "还没有 $main（OpenSSH 未装）。keepalive 将在检查点四安装后写入。"
+		return 0
+	fi
+
+	body="# Debian_Server_Init：SSH 空闲保活（每 ${interval}s 探活，连续 ${countmax} 次无响应才断开）
+TCPKeepAlive yes
+ClientAliveInterval ${interval}
+ClientAliveCountMax ${countmax}
+"
+
+	if [ -d /etc/ssh/sshd_config.d ]; then
+		printf '%s\n' "$body" >"$drop"
+		chmod 644 "$drop"
+		prompt -s "已写入 $drop"
+	else
+		if grep -qE '^[[:space:]]*ClientAliveInterval[[:space:]]' "$main"; then
+			prompt -s "sshd_config 已有 ClientAliveInterval，不重复追加"
+		else
+			backupFile "$main"
+			printf '\n%s\n' "$body" >>"$main"
+			prompt -s "已追加 keepalive 到 $main"
+		fi
+	fi
+
+	if /usr/sbin/sshd -t 2>/dev/null || sshd -t 2>/dev/null; then
+		if systemctl reload ssh.service 2>/dev/null || systemctl reload ssh 2>/dev/null || systemctl reload sshd.service 2>/dev/null; then
+			prompt -s "已 reload SSH（当前会话保持）。之后每 ${interval}s 探活，避免长时间无操作被踢。"
+		else
+			prompt -w "配置已写入，但 reload 失败。当前会话不受影响；新连接会用新配置。"
+		fi
+	else
+		prompt -e "sshd -t 检查失败，未 reload。请检查 SSH 配置。"
+		return 1
+	fi
+}
+
 # 首次必须在终端输入 y；直接回车 = 取消。仅续跑可跳过。
 deploy_confirm_start() {
 	if deploy_is_resume_skip_confirm; then
@@ -694,6 +742,9 @@ deploy_print_preflight() {
 	fi
 	if [ "${SET_ENABLE_SSH:-0}" -eq 1 ]; then
 		prompt -w "Config：SET_ENABLE_SSH=1，将启用 SSH 开机自启。"
+	fi
+	if [ "${SET_SSH_KEEPALIVE:-1}" -eq 1 ]; then
+		prompt -s "确认后立刻写入 SSH keepalive（每 ${SET_SSH_CLIENT_ALIVE_INTERVAL:-60}s 探活），避免部署中途空闲断线。"
 	fi
 	if [ "${SET_SUDOER_NOPASSWD:-0}" -eq 1 ]; then
 		prompt -w "Config：SET_SUDOER_NOPASSWD=1，将设置 sudo 免密。"

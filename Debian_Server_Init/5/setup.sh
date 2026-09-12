@@ -289,28 +289,63 @@ if [ "$SET_INSTALL_ACME_SH" -eq 1 ]; then
     if [ -x "$SET_ACME_HOME/acme.sh" ]; then
         prompt -m "已检测到 $SET_ACME_HOME/acme.sh ，跳过下载安装"
     else
-        _acme_install_args=(--home "$SET_ACME_HOME" --accountemail "$SET_ACME_EMAIL")
         if [ "$SET_ACME_CERT_HOME" != "0" ] && [ -n "$SET_ACME_CERT_HOME" ]; then
-            _acme_install_args+=(--cert-home "$SET_ACME_CERT_HOME")
             sudo -H -u "$CURRENT_USER" mkdir -p "$SET_ACME_CERT_HOME" 2>/dev/null || addFolder "$SET_ACME_CERT_HOME"
         fi
         sudo -H -u "$CURRENT_USER" mkdir -p "$SET_ACME_HOME" 2>/dev/null || addFolder "$SET_ACME_HOME"
+        # root 跑部署时 addFolder 可能把目录建成 root 的，安装用户写不进去
+        if [ "$(id -u)" -eq 0 ] && [ "$(id -un)" != "$CURRENT_USER" ]; then
+            chown -R "$CURRENT_USER:" "$SET_ACME_HOME" 2>/dev/null || true
+            [ -n "$SET_ACME_CERT_HOME" ] && [ "$SET_ACME_CERT_HOME" != "0" ] && \
+                chown -R "$CURRENT_USER:" "$SET_ACME_CERT_HOME" 2>/dev/null || true
+        fi
 
-        # acme.sh 不推荐用 sudo 包一层执行自身；对目标用户安装
+        # 不走 get.acme.sh | sh -s -- --home：官方脚本会把 -- 和 --home 拼成 ----home。
+        # 也不在检查点 cwd（/root/.../5）解压。改为 /tmp 下下载 tarball，再 ./acme.sh --install。
+        _acme_tmp=$(mktemp -d /tmp/acme-sh-XXXXXX)
+        chmod 755 "$_acme_tmp"
+        if [ "$(id -u)" -eq 0 ] && [ "$(id -un)" != "$CURRENT_USER" ]; then
+            chown "$CURRENT_USER:" "$_acme_tmp"
+        fi
+        _acme_tmp_q=$(printf '%q' "$_acme_tmp")
+        _acme_home_q=$(printf '%q' "$SET_ACME_HOME")
+        _acme_mail_q=$(printf '%q' "$SET_ACME_EMAIL")
+        _acme_install_cmd="./acme.sh --install --home ${_acme_home_q} --accountemail ${_acme_mail_q}"
+        if [ "$SET_ACME_CERT_HOME" != "0" ] && [ -n "$SET_ACME_CERT_HOME" ]; then
+            _acme_install_cmd+=" --cert-home $(printf '%q' "$SET_ACME_CERT_HOME")"
+        fi
+        _acme_fetch_cmd="curl -fsSL https://github.com/acmesh-official/acme.sh/archive/master.tar.gz -o ${_acme_tmp_q}/acme.sh.tar.gz && tar -xzf ${_acme_tmp_q}/acme.sh.tar.gz -C ${_acme_tmp_q}"
+        prompt -m "下载 acme.sh 到 $_acme_tmp ，以用户 $CURRENT_USER 安装"
         if [ "$(id -un)" = "$CURRENT_USER" ]; then
-            curl -fsSL https://get.acme.sh | sh -s -- "${_acme_install_args[@]}"
+            bash -c "$_acme_fetch_cmd"
             _acme_rc=$?
         else
-            # 将参数传给目标用户 shell（避免 sudo 直接跑 get.acme.sh）
-            _acme_qargs=$(printf '%q ' "${_acme_install_args[@]}")
-            sudo -H -u "$CURRENT_USER" bash -c "curl -fsSL https://get.acme.sh | sh -s -- ${_acme_qargs}"
+            sudo -H -u "$CURRENT_USER" bash -c "$_acme_fetch_cmd"
             _acme_rc=$?
         fi
+        _acme_src=""
+        if [ "$_acme_rc" -eq 0 ]; then
+            _acme_src=$(find "$_acme_tmp" -maxdepth 2 -type f -name acme.sh 2>/dev/null | head -n 1)
+        fi
+        if [ -n "$_acme_src" ] && [ -f "$_acme_src" ]; then
+            _acme_src_dir=$(dirname "$_acme_src")
+            _acme_src_dir_q=$(printf '%q' "$_acme_src_dir")
+            if [ "$(id -un)" = "$CURRENT_USER" ]; then
+                bash -c "cd ${_acme_src_dir_q} && ${_acme_install_cmd}"
+                _acme_rc=$?
+            else
+                sudo -H -u "$CURRENT_USER" bash -c "cd ${_acme_src_dir_q} && ${_acme_install_cmd}"
+                _acme_rc=$?
+            fi
+        else
+            _acme_rc=1
+        fi
+        rm -rf "$_acme_tmp"
         if [ "$_acme_rc" -ne 0 ] || [ ! -x "$SET_ACME_HOME/acme.sh" ]; then
-            prompt -e "acme.sh 安装失败，请检查网络（需访问 get.acme.sh / GitHub）"
+            prompt -e "acme.sh 安装失败。需能访问 GitHub（acmesh-official/acme.sh），并以用户 $CURRENT_USER 写入 $SET_ACME_HOME。"
             quitThis
         fi
-        unset _acme_install_args _acme_qargs _acme_rc
+        unset _acme_tmp _acme_tmp_q _acme_home_q _acme_mail_q _acme_install_cmd _acme_fetch_cmd _acme_src _acme_src_dir _acme_src_dir_q _acme_rc
     fi
 
     # 方便全局调用（仍建议带 --home，或 source acme.sh.env）

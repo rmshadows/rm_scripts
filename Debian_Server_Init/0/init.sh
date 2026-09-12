@@ -12,6 +12,9 @@
 deploy_print_preflight
 deploy_confirm_start $'\e[1;31m 已阅读以上警告？输入 y 开始部署（将改系统）。直接回车取消 [y/N]\e[0m'
 
+# 先于 apt/建用户：防止部署中途 SSH 空闲被云防火墙踢掉
+deploy_apply_ssh_keepalive
+
 # 有 .deploy_credentials 或强账号就用；否则询问 1=自动生成 / 2=自己输入。
 force_change_default_credentials
 

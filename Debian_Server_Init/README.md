@@ -64,6 +64,7 @@
 - 加载配置文件和函数库等等
 - 获取当前用户名
 - 与用户确认执行（首次必须输入 `y`，回车取消；直接跑也会先警告）
+- **SSH 空闲保活**（`SET_SSH_KEEPALIVE=1`）：确认后立刻写入并 reload（不踢当前会话），避免后面 apt/装软件时空闲被云防火墙掐断。默认每 60s 探活。
 - **登录账号**：确认 **y** 之后处理。已有 `.deploy_credentials` 或足够强的环境变量就用；否则询问 **1=自动生成 / 2=自己输入**（写入 `.deploy_credentials`）。`SET_CREDENTIALS_AUTO=1` / `SET_CREDENTIALS_MANUAL=1` 可跳过菜单。
 
 ### 检查点一
@@ -189,8 +190,10 @@
 >dev: Not available yet.
 
 - 2026.09.11——0.1.7
+  - 确认开始后立刻写 SSH keepalive（`ClientAliveInterval 60`），避免部署中途空闲断线
   - 无现成账号时询问：1 自动生成用户名和强密码，或 2 自己输入（不再默认 admin/passwd）
   - 修复 `SET_DOCKER_PURGE_REINSTALL`：仅当为 1 才清除 Docker 数据；默认改为 0
+  - 修复 root 部署时 acme.sh 安装失败：不在 /root 检查点目录解压；不经 get.acme.sh 以免 `--` 和 `--home` 拼成 `----home`
 
 - 2026.09.11——0.1.6
   - 默认 `admin`/`passwd` 过弱：`gen_credentials.sh` 预先自动生成；直接跑部署会先警告，必须 `y` 确认后才生成并写入 `.deploy_credentials`
