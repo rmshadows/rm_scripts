@@ -21,17 +21,71 @@ GOACCESS_PASS=""
 # 报告界面语言（GoAccess 靠 LANG 选内置翻译）：zh_CN.UTF-8=中文（默认），C=英文
 GOACCESS_LANG="zh_CN.UTF-8"
 
+# 安装源：apt=发行版仓库（Debian 13 为 1.9.3），src=官网源码编译（当前最新 1.11，修复世界地图）
+SET_GA_SOURCE="apt"
+# 官网源码版本（仅 SET_GA_SOURCE="src" 时生效）：latest=自动取最新稳定版，也可固定如 "1.11"
+SET_GA_VERSION="latest"
+# 源码安装时是否附带 GeoIP 城市库（世界地图/地理分布面板的数据来源，DB-IP Lite 约 60MB，月更）
+SET_GA_GEOIP=1
+
 # 保存当前目录（运行脚本时应在 goaccess/ 下）
 SET_DIR=$(pwd)
 
 #### 正文
-### 安装 goaccess
-if command -v goaccess >/dev/null 2>&1; then
-  prompt -i "goaccess 已安装"
+### 安装 goaccess（apt 仓库 或 官网源码编译最新版）
+if [ "$SET_GA_SOURCE" = "src" ]; then
+  # 目标版本：latest=从 GitHub API 取最新稳定版，失败回退硬编码版本
+  if [ "$SET_GA_VERSION" = "latest" ]; then
+    GA_VER=$(curl -fsSL https://api.github.com/repos/allinurl/goaccess/releases/latest 2>/dev/null | grep -oP '"tag_name":\s*"v?\K[0-9.]+' | head -1)
+    [ -z "$GA_VER" ] && { GA_VER="1.11"; prompt -w "获取最新版本号失败，回退 $GA_VER"; }
+  else
+    GA_VER="$SET_GA_VERSION"
+  fi
+  GA_CUR=$(goaccess --version 2>/dev/null | grep -oP 'GoAccess - \K[0-9]+(\.[0-9]+)*' | head -1)
+  if [ "$GA_CUR" = "$GA_VER" ]; then
+    prompt -i "goaccess $GA_VER（源码版）已安装"
+  else
+    [ -n "$GA_CUR" ] && prompt -w "检测到 goaccess $GA_CUR ≠ 目标 $GA_VER，将重新编译安装"
+    # apt 版与源码版并存会互相干扰，先卸载 apt 版
+    dpkg -s goaccess >/dev/null 2>&1 && { prompt -x "卸载 apt 版 goaccess"; sudo apt remove -y goaccess; }
+    prompt -x "安装编译依赖"
+    sudo apt update
+    sudo apt install -y build-essential curl libncursesw6-dev libmaxminddb-dev zlib1g-dev
+    prompt -x "下载并编译 goaccess $GA_VER（耗时取决于 CPU）"
+    curl -fsSLo /tmp/goaccess.tar.gz "https://tar.goaccess.io/goaccess-${GA_VER}.tar.gz"
+    rm -rf "/tmp/goaccess-${GA_VER}"
+    tar -xzf /tmp/goaccess.tar.gz -C /tmp
+    cd "/tmp/goaccess-${GA_VER}" || exit 1
+    ./configure --enable-utf8 --enable-geoip=mmdb --with-zlib
+    make -j"$(nproc)"
+    sudo make install
+    cd "$SET_DIR"
+    hash -r
+    GA_NOW=$(goaccess --version 2>/dev/null | grep -oP 'GoAccess - \K[0-9]+(\.[0-9]+)*' | head -1)
+    [ "$GA_NOW" = "$GA_VER" ] || { prompt -e "goaccess $GA_VER 编译安装失败，请查看上方报错"; exit 1; }
+    prompt -i "goaccess $GA_NOW 已装到 /usr/local/bin/goaccess"
+    # GeoIP 城市库：世界地图/地理分布面板的数据来源（没库则面板无数据）
+    if [ "$SET_GA_GEOIP" = "1" ]; then
+      GEOIP_DB=/usr/local/share/GeoIP/dbip-city-lite.mmdb
+      if [ -f "$GEOIP_DB" ]; then
+        prompt -i "GeoIP 数据库已存在：$GEOIP_DB"
+      else
+        prompt -x "下载 GeoIP 城市库（DB-IP Lite，约 60MB，月更）"
+        curl -fsSLo /tmp/dbip-city-lite.mmdb.gz "https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz"
+        sudo mkdir -p /usr/local/share/GeoIP
+        sudo sh -c 'gunzip -c /tmp/dbip-city-lite.mmdb.gz > /usr/local/share/GeoIP/dbip-city-lite.mmdb'
+        rm -f /tmp/dbip-city-lite.mmdb.gz
+      fi
+    fi
+  fi
 else
-  prompt -x "安装 goaccess"
-  sudo apt update
-  sudo apt install -y goaccess
+  if command -v goaccess >/dev/null 2>&1; then
+    prompt -i "goaccess 已安装"
+  else
+    prompt -x "安装 goaccess"
+    sudo apt update
+    sudo apt install -y goaccess
+  fi
 fi
 
 ### 准备目录
@@ -60,6 +114,10 @@ fi
 ### 生成配置（覆盖式）
 cd "$SET_DIR"
 replace_placeholders_with_values goaccess.conf.src
+# 存在 GeoIP 库时启用 goaccess.conf 里的 geoip-database 行
+if [ -f /usr/local/share/GeoIP/dbip-city-lite.mmdb ]; then
+  sed -i 's|^#geoip-database .*|geoip-database /usr/local/share/GeoIP/dbip-city-lite.mmdb|' goaccess.conf
+fi
 cp goaccess.conf "$GOACCESS_DIR/goaccess.conf"
 
 replace_placeholders_with_values sites.conf.src

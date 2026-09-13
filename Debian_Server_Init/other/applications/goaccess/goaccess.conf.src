@@ -11,6 +11,10 @@ html-refresh 60
 # 忽略爬虫（可选，true=不计入统计）
 ignore-crawlers false
 
+# GeoIP 数据库（世界地图/地理分布面板数据来源）
+# SET_GA_SOURCE="src" 且 SET_GA_GEOIP=1 时由 goaccess.sh 自动取消注释
+#geoip-database /usr/local/share/GeoIP/dbip-city-lite.mmdb
+
 # 具体 -f 输入日志和 -o 输出 HTML 由 start.sh 按站点传入，不在此指定
 #
 # 界面语言：GoAccess 没有独立语言开关，靠运行时的 LANG 环境变量选内置 i18n。
