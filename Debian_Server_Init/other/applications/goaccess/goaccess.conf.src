@@ -1,0 +1,14 @@
+# GoAccess 通用配置（所有站点共用）
+# https://goaccess.io/man
+# 日志格式：nginx 默认 combined 格式
+log-format COMBINED
+date-format %d/%b/%Y
+time-format %H:%M:%S
+
+# 浏览器自动刷新（秒）。配合 start.sh 每分钟重生成报告
+html-refresh 60
+
+# 忽略爬虫（可选，true=不计入统计）
+ignore-crawlers false
+
+# 具体 -f 输入日志和 -o 输出 HTML 由 start.sh 按站点传入，不在此指定

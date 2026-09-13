@@ -1,0 +1,10 @@
+# GoAccess 报告目录（主站子路径 /goaccess/）
+# 在主站 server { } 内 include 本文件，然后 sudo nginx -t && sudo systemctl reload nginx
+location /goaccess/ {
+    alias __REPORTS_DIR__/;
+    autoindex on;
+    index main.html;
+    # 密码保护（goaccess.sh 安装时自动生成凭证，写入 /etc/nginx/.htpasswd_goaccess）
+    auth_basic "GoAccess Reports";
+    auth_basic_user_file /etc/nginx/.htpasswd_goaccess;
+}

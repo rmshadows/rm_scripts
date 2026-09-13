@@ -1,0 +1,19 @@
+[Unit]
+Description=GoAccess 多站点日志报告（每 60 秒重新生成 HTML）
+After=network.target nginx.service
+
+[Service]
+Type=simple
+ExecStart=/home/【$USER】/Services/【$SRV_NAME】/start_【$SRV_NAME】.sh
+ExecStop=/home/【$USER】/Services/【$SRV_NAME】/stop_【$SRV_NAME】.sh
+User=【$USER】
+Group=【$USER】
+# 停止时杀掉整个 cgroup（包括所有 goaccess 子进程）
+KillMode=control-group
+PrivateTmp=true
+NoNewPrivileges=true
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

@@ -72,6 +72,7 @@ zh_CN.UTF-8 UTF-8
 "
 # Set time zone (zoneinfo file path)(设置时间支持) Preset=0
 # e.g.:Shanghai China,You need to set this: /usr/share/zoneinfo/Asia/Shanghai
+# SET_TIME_ZONE=/usr/share/zoneinfo/Asia/Shanghai
 SET_TIME_ZONE=0
 # Set tty1 auto-login (设置TTY1自动登录) Preset=1
 SET_TTY_AUTOLOGIN=1
@@ -185,6 +186,15 @@ SET_EXISTED_SSH_KEY_SRC=SSH_KEY
 SET_SSH_KEY_PRIVATE_TEXT=""
 # 公钥
 SET_SSH_KEY_PUBLIC_TEXT=""
+# 是否安装并启用 fail2ban SSH 爆破防护（保留密码登录，靠封禁 IP 防爆破）Preset=1
+SET_FAIL2BAN_SSH=1
+# fail2ban 参数：findtime 内失败 maxretry 次则封禁 bantime（支持 120m/1w 写法）
+# 120分钟内
+SET_FAIL2BAN_FINDTIME=120m
+# 5次失败
+SET_FAIL2BAN_MAXRETRY=5
+# ban一周
+SET_FAIL2BAN_BANTIME=2w
 # 是否配置 Shorewall（只拷配置+模板，不自动启用）。事后 sudo sw-rules。Preset=1
 SET_SHOREWALL_SETTING=1
 # 若检测到 UFW 已启用，按本脚本将启用的服务预先放行端口（不安装、不 enable UFW）。Preset=1

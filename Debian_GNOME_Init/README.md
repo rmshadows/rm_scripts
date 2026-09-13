@@ -1,6 +1,6 @@
 # Debian_13_GNOME.sh
 
->Current Version: 0.1.3
+>Current Version: 0.1.4
 
 ## 目录结构
 
@@ -162,6 +162,7 @@
 ### 检查点六
 
 - 配置SSH Key(新密钥，导入)
+- 配置 fail2ban SSH 爆破防护（桌面版放宽：120 分钟内失败 10 次封 1 小时）
 
 ### 检查点七(谨慎使用！可能弄坏您的应用程序！)
 
@@ -256,6 +257,9 @@
 GNOME 扩展对照表见 `4/README.md`。
 
 ## 更新日志
+
+- 2026.09.13——0.1.4
+  - 检查点六新增 fail2ban SSH 爆破防护（实现与 Server 版一致，桌面版放宽：120 分钟内失败 10 次封 1 小时）
 
 - 2026.09.13——0.1.3
   - nvm：钉版升级 v0.40.7，脚本/文档与 Server 侧统一（删除 NVM_README.md 与旧版 install-nvm-v0.40.1.sh，只留一份 README）

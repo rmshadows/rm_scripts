@@ -131,6 +131,10 @@ bash Debian_13_Server_Setup.sh
 
 >各脚本更新日志请分别查看文件夹中的README
 
+- 2026年9月13日——0.1.4
+  - Debian_Server_Init 0.1.10：检查点六新增 fail2ban SSH 爆破防护（backend=systemd，保留密码登录）；新增应用 3x-ui（官方 install.sh 一键部署/更新 + Nginx 独立站反代 + 卸载默认保留数据）
+  - Debian_GNOME_Init 0.1.4：检查点六新增 fail2ban（桌面版放宽：失败 10 次封 1 小时）
+
 - 2026年9月13日——0.1.3
   - Debian_Server_Init 0.1.9：应用反代配置统一为 .conf.src 模板并补齐全部 uninstall.sh（删数据前确认、默认保留）；hackchat 修复（镜像回退 / nvm PATH / 固定 commit / 自动生成密钥）；artalk 子路径反代与 ip2region 404 修复；nvm 升 v0.40.7 并新增 update-nvm.sh；禁用第三方源改快照白名单
   - Debian_GNOME_Init 0.1.3：nvm 脚本与文档同 Server 对齐（v0.40.7）；禁用第三方源改快照白名单

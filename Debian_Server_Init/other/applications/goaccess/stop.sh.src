@@ -1,0 +1,10 @@
+#!/bin/bash
+# 停止所有 GoAccess 报告生成进程（systemd 停止服务时调用）
+# systemd 会先 SIGTERM 整个 cgroup，这里做兜底清理 PID 文件
+PID_DIR="【$GOACCESS_DIR】/pids"
+if [[ -d "$PID_DIR" ]]; then
+  rm -f "$PID_DIR"/*.pid
+fi
+# 兜底：杀本用户下所有 goaccess 进程
+pkill -u "$(whoami)" goaccess 2>/dev/null || true
+exit 0

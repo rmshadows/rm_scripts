@@ -1,0 +1,46 @@
+#!/bin/bash
+# 启动所有站点的 GoAccess 静态报告（每 60 秒重新生成一次）
+# 每个站点一个后台 goaccess 循环进程，PID 写入 pids/<站点名>.pid
+# 本脚本作为 systemd Type=simple 的主进程常驻，停止时由 systemd 杀掉整个 cgroup
+CONF_DIR="【$GOACCESS_DIR】"
+SITES_CONF="$CONF_DIR/sites.conf"
+PID_DIR="$CONF_DIR/pids"
+CONFIG="$CONF_DIR/goaccess.conf"
+INTERVAL=60
+
+mkdir -p "$PID_DIR" "$CONF_DIR/reports"
+
+[[ -f "$SITES_CONF" ]] || { echo "sites.conf 不存在: $SITES_CONF"; exit 1; }
+[[ -f "$CONFIG" ]] || { echo "goaccess.conf 不存在: $CONFIG"; exit 1; }
+
+# 清理上次残留的 PID 文件
+rm -f "$PID_DIR"/*.pid
+
+while IFS= read -r line; do
+  # 跳过空行和注释
+  [[ -z "${line// }" || "$line" =~ ^[[:space:]]*# ]] && continue
+  read -r name logfile outhtml <<<"$line"
+  [[ -z "$name" || -z "$logfile" || -z "$outhtml" ]] && continue
+  # 日志不存在则跳过
+  if [[ ! -f "$logfile" ]]; then
+    echo "[skip] $name: 日志不存在 $logfile"
+    continue
+  fi
+  # 确保输出目录存在
+  mkdir -p "$(dirname "$outhtml")"
+  pidfile="$PID_DIR/${name}.pid"
+  # 后台循环：每 INTERVAL 秒重新生成报告
+  (
+    while true; do
+      goaccess --config-file="$CONFIG" -f "$logfile" -o "$outhtml" >/dev/null 2>&1
+      sleep "$INTERVAL"
+    done
+  ) &
+  echo $! >"$pidfile"
+  echo "[ok] $name -> $outhtml"
+done <"$SITES_CONF"
+
+# 主进程常驻：systemd Type=simple，停止时杀整个 cgroup
+# 收到 SIGTERM 时清理 PID 文件
+trap 'rm -f "$PID_DIR"/*.pid; exit 0' SIGTERM SIGINT
+wait

@@ -171,6 +171,12 @@ SET_EXISTED_SSH_KEY_SRC=SSH_KEY
 SET_SSH_KEY_PRIVATE_TEXT=""
 # 公钥
 SET_SSH_KEY_PUBLIC_TEXT=""
+# 是否安装并启用 fail2ban SSH 爆破防护（保留密码登录，靠封禁 IP 防爆破）Preset=1
+SET_FAIL2BAN_SSH=1
+# fail2ban 参数（桌面版放宽：NAT 内网误试不会封一周）：findtime 内失败 maxretry 次则封禁 bantime
+SET_FAIL2BAN_FINDTIME=120m
+SET_FAIL2BAN_MAXRETRY=10
+SET_FAIL2BAN_BANTIME=1h
 
 ## 检查点七(谨慎！可能弄坏您的应用软件) ##==
 # 是否接受dconf配置带来的风险 Preset=1

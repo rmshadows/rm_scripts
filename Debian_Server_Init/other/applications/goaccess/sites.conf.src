@@ -1,0 +1,7 @@
+# GoAccess 站点清单：每行  站点名  nginx访问日志  输出报告HTML
+# 空行和 # 开头的行跳过。改完：sudo systemctl restart goaccess
+#
+# 主站（443 / ssl.conf）访问日志
+main  /home/【$USER】/Logs/nginx/ssl.log  /home/【$USER】/Applications/goaccess/reports/main.html
+# ACME 校验站（80 / acme.conf）访问日志（不用就注释掉）
+# acme  /home/【$USER】/Logs/nginx/acme.log  /home/【$USER】/Applications/goaccess/reports/acme.html

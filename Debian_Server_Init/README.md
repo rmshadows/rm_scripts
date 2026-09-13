@@ -1,6 +1,6 @@
 # Debian13_Server.sh
 
->Current Version: 0.1.9
+>Current Version: 0.1.10
 
 ## 目录结构
 
@@ -128,6 +128,7 @@
 ### 检查点六
 
 - 生成 SSH Key
+- 配置 fail2ban SSH 爆破防护（保留密码登录；120 分钟内失败 5 次封 7 天）。参数见 Config.sh，用法见 `6/README.md`
 - 配置 Shorewall（只拷配置，不自动启用）。选模板：`sudo sw-rules`（`normal` / `web` / `off` / `gov_only`）。规则里已写好注释条，取消注释后 `sudo shorewall check && sudo shorewall reload`
 
 ### 脚本收尾
@@ -195,6 +196,10 @@
 - `### archive` ——旧函数存档
 
 ## 更新日志
+
+- 2026.09.13——0.1.10
+  - 检查点六新增 fail2ban SSH 爆破防护：未装则安装，写入 /etc/fail2ban/jail.local（覆盖前 backupFile），backend=systemd 走 journald（Debian 13 默认无 rsyslog/auth.log 也可用），`fail2ban-client -t` 校验后 enable --now + reload；保留密码登录
+  - 新增应用 3x-ui：一键部署/更新（每次拉取官方 install.sh 同步上游，可钉版本、非交互自动生成账号密码）；Nginx 独立站反代模板（默认监听 2053，面板仅监听 127.0.0.1）；卸载默认保留 /etc/x-ui 数据
 
 - 2026.09.13——0.1.9
   - 应用 Nginx 配置统一：反代片段改为 `*.conf.src` 模板 + `write_nginx_snippet()`（主站 include 一行即可）；独立站用 `write_nginx_available_site()`；各脚本注释区分 SITE_NAME / YOUR_DOMAIN / REVERSE_PROXY_PATH
