@@ -16,6 +16,9 @@ app_remove_service "$SRV_NAME"
 app_remove_nginx goaccess.conf
 [ -f /etc/nginx/.htpasswd_goaccess ] && sudo rm -f /etc/nginx/.htpasswd_goaccess
 
+# 2.5 删除 GeoIP 城市库（可随时重新下载，不属于用户数据）
+sudo rm -rf /usr/local/share/GeoIP
+
 # 3. 删除用户数据（询问，默认保留）
 confirm_remove_data "$GOACCESS_DIR" "GoAccess 配置与报告"
 

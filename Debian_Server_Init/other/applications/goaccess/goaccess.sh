@@ -25,7 +25,8 @@ GOACCESS_LANG="zh_CN.UTF-8"
 SET_GA_SOURCE="apt"
 # 官网源码版本（仅 SET_GA_SOURCE="src" 时生效）：latest=自动取最新稳定版，也可固定如 "1.11"
 SET_GA_VERSION="latest"
-# 源码安装时是否附带 GeoIP 城市库（世界地图/地理分布面板的数据来源，DB-IP Lite 约 60MB，月更）
+# 源码安装时是否附带 GeoIP 城市库（世界地图/地理分布面板的数据来源，DB-IP Lite 约 60MB）
+# 更新方式：安装后运行 $GOACCESS_DIR/update_geoip.sh 手动换当月版
 SET_GA_GEOIP=1
 
 # 保存当前目录（运行脚本时应在 goaccess/ 下）
@@ -64,19 +65,6 @@ if [ "$SET_GA_SOURCE" = "src" ]; then
     GA_NOW=$(goaccess --version 2>/dev/null | grep -oP 'GoAccess - \K[0-9]+(\.[0-9]+)*' | head -1)
     [ "$GA_NOW" = "$GA_VER" ] || { prompt -e "goaccess $GA_VER 编译安装失败，请查看上方报错"; exit 1; }
     prompt -i "goaccess $GA_NOW 已装到 /usr/local/bin/goaccess"
-    # GeoIP 城市库：世界地图/地理分布面板的数据来源（没库则面板无数据）
-    if [ "$SET_GA_GEOIP" = "1" ]; then
-      GEOIP_DB=/usr/local/share/GeoIP/dbip-city-lite.mmdb
-      if [ -f "$GEOIP_DB" ]; then
-        prompt -i "GeoIP 数据库已存在：$GEOIP_DB"
-      else
-        prompt -x "下载 GeoIP 城市库（DB-IP Lite，约 60MB，月更）"
-        curl -fsSLo /tmp/dbip-city-lite.mmdb.gz "https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz"
-        sudo mkdir -p /usr/local/share/GeoIP
-        sudo sh -c 'gunzip -c /tmp/dbip-city-lite.mmdb.gz > /usr/local/share/GeoIP/dbip-city-lite.mmdb'
-        rm -f /tmp/dbip-city-lite.mmdb.gz
-      fi
-    fi
   fi
 else
   if command -v goaccess >/dev/null 2>&1; then
@@ -86,6 +74,27 @@ else
     sudo apt update
     sudo apt install -y goaccess
   fi
+fi
+
+### GeoIP 城市库（首次下载；后续更新用 $GOACCESS_DIR/update_geoip.sh 手动跑）
+if [ "$SET_GA_GEOIP" = "1" ]; then
+  GEOIP_DB=/usr/local/share/GeoIP/dbip-city-lite.mmdb
+  if [ ! -f "$GEOIP_DB" ]; then
+    prompt -x "下载 GeoIP 城市库 $(date +%Y-%m) 版（DB-IP Lite，约 60MB）"
+    curl -fsSLo /tmp/dbip-city-lite.mmdb.gz "https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz" \
+      || prompt -w "GeoIP 库下载失败，装完后可用 $GOACCESS_DIR/update_geoip.sh 重试"
+    if [ -s /tmp/dbip-city-lite.mmdb.gz ]; then
+      sudo mkdir -p /usr/local/share/GeoIP
+      sudo sh -c 'gunzip -c /tmp/dbip-city-lite.mmdb.gz > /usr/local/share/GeoIP/dbip-city-lite.mmdb'
+      echo "$(date +%Y-%m)" | sudo tee "$GEOIP_DB.edition" >/dev/null
+      rm -f /tmp/dbip-city-lite.mmdb.gz
+    fi
+  fi
+  # 手动更新脚本（永久留在 $GOACCESS_DIR，删了本仓库也能用）
+  cd "$SET_DIR"
+  cp update_geoip.sh "$GOACCESS_DIR/update_geoip.sh"
+  chmod +x "$GOACCESS_DIR/update_geoip.sh"
+  prompt -i "GeoIP 手动更新: bash $GOACCESS_DIR/update_geoip.sh"
 fi
 
 ### 准备目录
@@ -202,4 +211,7 @@ echo "  报错日志: $GOACCESS_DIR/goaccess.log（仅报告生成失败时写�
 if [ "$SET_NGINX_SNIPPET" = "1" ]; then
   echo "  访问:     https://<域名>/goaccess/（需在主站 server { } 内 include snippets/goaccess.conf）"
   echo "  账号:     $GOACCESS_USER / $GOACCESS_PASS（也见 $GOACCESS_DIR/credentials.txt）"
+fi
+if [ "$SET_GA_GEOIP" = "1" ]; then
+  echo "  GeoIP 更新: bash $GOACCESS_DIR/update_geoip.sh（换当月城市库）"
 fi
