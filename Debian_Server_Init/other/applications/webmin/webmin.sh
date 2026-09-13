@@ -73,7 +73,7 @@ fi
 
 ### 有 nginx 时只听本机，对外走独立站
 USE_NGINX_PROXY=0
-if [ "$SET_NGINX_PROXY" = "1" ] && [ -d /etc/nginx ] && command -v nginx >/dev/null 2>&1; then
+if [ "$SET_NGINX_PROXY" = "1" ] && [ -d /etc/nginx ] && { [ -x /usr/sbin/nginx ] || command -v nginx >/dev/null 2>&1; }; then
   USE_NGINX_PROXY=1
 fi
 

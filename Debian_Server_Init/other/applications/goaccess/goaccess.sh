@@ -67,7 +67,7 @@ sudo cp stop.sh "$HOME/Services/$SRV_NAME/stop_${SRV_NAME}.sh"
 sudo chmod +x "$HOME/Services/$SRV_NAME/"*.sh
 
 ### Nginx 子路径 + 密码保护（始终重跑，覆盖式）
-if [ "$SET_NGINX_SNIPPET" = "1" ] && [ -d /etc/nginx ] && command -v nginx >/dev/null 2>&1; then
+if [ "$SET_NGINX_SNIPPET" = "1" ] && [ -d /etc/nginx ] && { [ -x /usr/sbin/nginx ] || command -v nginx >/dev/null 2>&1; }; then
   # 生成随机凭证（留空时）
   [ -z "$GOACCESS_USER" ] && GOACCESS_USER="goaccess"
   if [ -z "$GOACCESS_PASS" ]; then

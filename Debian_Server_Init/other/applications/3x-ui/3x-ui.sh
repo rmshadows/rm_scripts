@@ -123,7 +123,7 @@ sudo systemctl status x-ui --no-pager -l 2>/dev/null | head -15
 
 ### Nginx 独立站反代
 cd "$SET_DIR"
-if [ "$SET_NGINX_PROXY" = "1" ] && [ -d /etc/nginx ] && command -v nginx >/dev/null 2>&1; then
+if [ "$SET_NGINX_PROXY" = "1" ] && [ -d /etc/nginx ] && { [ -x /usr/sbin/nginx ] || command -v nginx >/dev/null 2>&1; }; then
     if [ -f setupNginxForXui.sh ]; then
         prompt -x "运行 setupNginxForXui.sh（写入 /etc/nginx/sites-available/xui.conf，不启用）"
         export RUN_PORT="$XUI_PORT" SITE_LISTEN SITE_NAME HOME
