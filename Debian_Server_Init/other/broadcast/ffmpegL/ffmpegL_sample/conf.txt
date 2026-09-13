@@ -1,11 +1,28 @@
 RTMP=""
-# 素材三选一（优先级：VIDEO_DIR > PLAYLIST > MP4_FILE）
+# ↑ 填推流地址：rtmp://服务器/应用名/流密钥（照抄平台给出的推流地址）
+# 例：RTMP="rtmp://a.rtmp.youtube.com/live2/xxxx-xxxx"
+# 留空=不推流（日志提示 8 秒后重试）；改法：ctl set rtmp <地址> 或 reset_rtmp.sh
+# 注意：RTMP= 必须保持在第一行（reset_rtmp.sh 只替换 RTMP= 所在行）
+
+# 素材三选一（优先级：VIDEO_DIR > PLAYLIST > MP4_FILE），填哪个其他两个必须留空
+# VIDEO_DIR：视频目录，扫两层内的 mp4/flv/mkv/ts/mov（不分大小写），按文件名排序
+# VIDEO_DIR 用了安装占位符，安装时替换成实际目录
 VIDEO_DIR="【$INSTALL_DIR】/videos"
-PLAYLIST=""
-MP4_FILE=""
-# seq=按文件名顺序  shuffle=加载/reload 时乱序（切下一首不会再洗牌）
+
+# PLAYLIST：文本播放列表，每行一个视频绝对路径，空行和 # 开头的行跳过（要用时取消注释）
+# 生效前提：VIDEO_DIR="" 留空；模板已随服务装在 playlist.txt
+# 例：PLAYLIST="【$new_srv_path】/playlist.txt"
+#PLAYLIST=""
+
+# MP4_FILE：只播单个视频文件，播完从头循环（要用时取消注释，需 VIDEO_DIR="" 留空）
+# 例：MP4_FILE="【$INSTALL_DIR】/videos/a.mp4"
+#MP4_FILE=""
+
+# 播放顺序：seq=按文件名顺序  shuffle=加载/reload 时乱序（切下一首不会再洗牌）；留空=seq
 ORDER=shuffle
-# 快进默认秒数（livectl 1 ff）
+
+# 快进默认秒数（livectl 1 ff；也可 ff 60 临时指定）；留空=30
 SEEK_STEP=30
-# copy=不重编码（1G 必用，源需 h264+aac）  light=ultrafast 480p
+
+# 编码：copy=不重编码（1G 必用，源需 h264+aac）  light=ultrafast 重编码 480p；留空=copy
 ENCODE=copy

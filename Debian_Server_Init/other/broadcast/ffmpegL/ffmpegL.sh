@@ -54,12 +54,13 @@ new_srv_name="${SRV_NAME}-${new_srv_number}"
 new_srv_path="$INSTALL_DIR/$new_srv_name"
 mkdir -p "$new_srv_path"
 
-cp -a ffmpegL_sample/conf.txt ffmpegL_sample/reset_rtmp.sh ffmpegL_sample/removeServices.sh "$new_srv_path"/
+cp -a ffmpegL_sample/conf.txt ffmpegL_sample/playlist.txt ffmpegL_sample/reset_rtmp.sh ffmpegL_sample/removeServices.sh "$new_srv_path"/
 : >"$new_srv_path/stream.log"
 chmod +x "$new_srv_path"/reset_rtmp.sh "$new_srv_path"/removeServices.sh
 
 cd "$new_srv_path"
 replace_placeholders_with_values conf.txt
+replace_placeholders_with_values playlist.txt
 replace_placeholders_with_values reset_rtmp.sh
 replace_placeholders_with_values removeServices.sh
 

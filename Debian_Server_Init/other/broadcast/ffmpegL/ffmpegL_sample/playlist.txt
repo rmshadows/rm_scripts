@@ -1,0 +1,6 @@
+# ffmpegL 播放列表（模板）：每行一个视频绝对路径
+# 空行和 # 开头的行会被跳过；改完运行 livectl <服务名> reload 生效
+# 使用前提：conf.txt 里 VIDEO_DIR="" 留空，PLAYLIST= 取消注释并指向本文件
+# 例（去掉行首 # 即用，安装时已替换成实际路径）：
+【$INSTALL_DIR】/videos/a.mp4
+【$INSTALL_DIR】/videos/b.mp4
