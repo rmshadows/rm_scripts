@@ -48,10 +48,14 @@ if [ "$SET_GA_SOURCE" = "src" ]; then
   sudo apt update
   # libncurses-dev=Debian 通用名（trixie 无 libncursesw6-dev）；gettext 提供 msgfmt 编译 zh_CN 翻译
   sudo apt install -y build-essential gettext libncurses-dev libmaxminddb-dev zlib1g-dev curl
-  # 目标版本：latest=从 GitHub API 取最新稳定版，失败回退硬编码版本
+  # 目标版本：latest=自动探测最新稳定版（releases 重定向 → GitHub API → 硬编码兜底）
   if [ "$SET_GA_VERSION" = "latest" ]; then
-    GA_VER=$(ga_fetch https://api.github.com/repos/allinurl/goaccess/releases/latest - 2>/dev/null | grep -oP '"tag_name":\s*"v?\K[0-9.]+' | head -1)
-    [ -z "$GA_VER" ] && { GA_VER="1.11"; prompt -w "获取最新版本号失败，回退 $GA_VER"; }
+    # 1) releases/latest 重定向（普通网页请求，无 API 限流）：302 到 /releases/tag/v1.11
+    GA_VER=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/allinurl/goaccess/releases/latest 2>/dev/null | grep -oP 'releases/tag/v\K[0-9.]+' | head -1)
+    # 2) GitHub API（未认证限流 60 次/小时/IP，作备选）
+    [ -z "$GA_VER" ] && GA_VER=$(ga_fetch https://api.github.com/repos/allinurl/goaccess/releases/latest - 2>/dev/null | grep -oP '"tag_name":\s*"v?\K[0-9.]+' | head -1)
+    # 3) 全失败：硬编码兜底（写脚本时点最新版）
+    [ -z "$GA_VER" ] && { GA_VER="1.11"; prompt -w "自动获取版本号失败，回退 $GA_VER"; }
   else
     GA_VER="$SET_GA_VERSION"
   fi
@@ -87,6 +91,9 @@ else
   fi
 fi
 
+### 准备目录
+mkdir -p "$GOACCESS_DIR/reports" "$GOACCESS_DIR/pids"
+
 ### GeoIP 城市库（首次下载；后续更新用 $GOACCESS_DIR/update_geoip.sh 手动跑）
 if [ "$SET_GA_GEOIP" = "1" ]; then
   GEOIP_DB=/usr/local/share/GeoIP/dbip-city-lite.mmdb
@@ -108,9 +115,6 @@ if [ "$SET_GA_GEOIP" = "1" ]; then
   chmod +x "$GOACCESS_DIR/update_geoip.sh"
   prompt -i "GeoIP 手动更新: bash $GOACCESS_DIR/update_geoip.sh"
 fi
-
-### 准备目录
-mkdir -p "$GOACCESS_DIR/reports" "$GOACCESS_DIR/pids"
 
 ### 生成界面语言所需 locale（幂等：只认 locale -a 实际结果，不看 locale.gen 注释）
 if [ -n "$GOACCESS_LANG" ] && [ "$GOACCESS_LANG" != "C" ] && [ "$GOACCESS_LANG" != "POSIX" ]; then
