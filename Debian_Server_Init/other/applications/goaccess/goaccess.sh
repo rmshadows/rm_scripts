@@ -88,11 +88,12 @@ sudo cp start.sh "$HOME/Services/$SRV_NAME/start_${SRV_NAME}.sh"
 sudo cp stop.sh "$HOME/Services/$SRV_NAME/stop_${SRV_NAME}.sh"
 sudo chmod +x "$HOME/Services/$SRV_NAME/"*.sh
 
-# 校验：所有占位符必须已替换，残留则服务必然起不来，直接中止（fail-fast）
+# 校验：成对占位符【...】必须已全部替换，残留则服务必然起不来，直接中止（fail-fast）
+# 用成对括号特征，避免误匹配 start/stop 自检代码里的单个【
 for f in "$HOME/Services/$SRV_NAME.service" \
          "$HOME/Services/$SRV_NAME/start_${SRV_NAME}.sh" \
          "$HOME/Services/$SRV_NAME/stop_${SRV_NAME}.sh"; do
-  if sudo grep -q '【' "$f"; then
+  if sudo grep -qP '【.*】' "$f"; then
     prompt -e "占位符未替换，已中止安装：$f"
     prompt -e "请检查上方「变量未设置」警告，确认相关变量非空后重新运行"
     exit 1
@@ -139,6 +140,7 @@ echo "  站点清单: $GOACCESS_DIR/sites.conf（改完 sudo systemctl restart g
 echo "  报告目录: $GOACCESS_DIR/reports"
 echo "  启动:     sudo systemctl enable --now goaccess"
 echo "  日志:     journalctl -u goaccess -f"
+echo "  报错日志: $GOACCESS_DIR/goaccess.log（仅报告生成失败时写入）"
 if [ "$SET_NGINX_SNIPPET" = "1" ]; then
   echo "  访问:     https://<域名>/goaccess/（需在主站 server { } 内 include snippets/goaccess.conf）"
   echo "  账号:     $GOACCESS_USER / $GOACCESS_PASS（也见 $GOACCESS_DIR/credentials.txt）"
