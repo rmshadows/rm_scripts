@@ -6,7 +6,13 @@ CONF_DIR="【$GOACCESS_DIR】"
 SITES_CONF="$CONF_DIR/sites.conf"
 PID_DIR="$CONF_DIR/pids"
 CONFIG="$CONF_DIR/goaccess.conf"
+ERR_LOG="$CONF_DIR/goaccess.log"
 INTERVAL=60
+
+# 兜底：占位符未被正确替换时直接报错退出（正常安装不会触发）
+case "$CONF_DIR" in
+  *【*) echo "start.sh 占位符未替换（CONF_DIR=$CONF_DIR），请重新运行 goaccess.sh"; exit 1;;
+esac
 
 mkdir -p "$PID_DIR" "$CONF_DIR/reports"
 
@@ -32,7 +38,15 @@ while IFS= read -r line; do
   # 后台循环：每 INTERVAL 秒重新生成报告
   (
     while true; do
-      goaccess --config-file="$CONFIG" -f "$logfile" -o "$outhtml" >/dev/null 2>&1
+      errf="$PID_DIR/.err_${name}"
+      # 成功不产生输出；失败才把错误追加到 goaccess.log，避免服务静默失败
+      if ! LANG="【$GOACCESS_LANG】" goaccess --config-file="$CONFIG" -f "$logfile" -o "$outhtml" >/dev/null 2>"$errf"; then
+        {
+          echo "[$(date '+%F %T')] goaccess($name) 生成失败："
+          cat "$errf"
+        } >> "$ERR_LOG"
+      fi
+      rm -f "$errf"
       sleep "$INTERVAL"
     done
   ) &

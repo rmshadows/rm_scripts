@@ -12,3 +12,7 @@ html-refresh 60
 ignore-crawlers false
 
 # 具体 -f 输入日志和 -o 输出 HTML 由 start.sh 按站点传入，不在此指定
+#
+# 界面语言：GoAccess 没有独立语言开关，靠运行时的 LANG 环境变量选内置 i18n。
+# start.sh 已在调用 goaccess 前注入 LANG（值由 goaccess.sh 的 GOACCESS_LANG 决定）。
+# 中文需系统已生成 zh_CN.UTF-8 locale（goaccess.sh 安装时会幂等生成）。

@@ -125,15 +125,41 @@ if [ -n "$SET_HOST_NAME" ] && [ "$SET_HOST_NAME" != "0" ]; then
 fi
 
 # 设置语言支持
-if ! [ "$SET_LOCALES" == 0 ];then
-    check_var=$SET_LOCALES
-    if cat '/etc/locale.gen' | grep "$check_var" > /dev/null ;then
-        prompt -w "Locales may SET! Pass!"
+# 逐个 locale 检测「实际生成结果」(locale -a，如 en_US.utf8)，
+# 不再 grep locale.gen——目标行默认带 # 注释，子串匹配会误判已设置。
+# 只对缺失项取消注释（缺行才追加），不覆盖整个 /etc/locale.gen，最后统一 locale-gen。
+if ! [ "$SET_LOCALES" == 0 ]; then
+    missing=()
+    while IFS= read -r locale_line; do
+        [ -z "${locale_line// }" ] && continue
+        loc_name="${locale_line%%[[:space:]]*}"   # en_US.UTF-8
+        # locale -a 显示为 en_US.utf8（编码小写且无连字符）
+        enc_lc="$(echo "${loc_name#*.}" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
+        loc_a="${loc_name%.*}.${enc_lc}"
+        if locale -a 2>/dev/null | grep -qi "^${loc_a//./\\.}$"; then
+            prompt -i "locale $loc_name 已生成，跳过"
+        else
+            missing+=("$locale_line")
+        fi
+    done <<< "$SET_LOCALES"
+
+    if [ "${#missing[@]}" -eq 0 ]; then
+        prompt -i "所需 locale 均已生成，跳过"
     else
-        prompt -x "Setup locales..."
+        prompt -x "Setup locales（${#missing[@]} 个待生成）"
         backupFile /etc/locale.gen
-        echo "$SET_LOCALES" > /etc/locale.gen
-        locale-gen
+        for locale_line in "${missing[@]}"; do
+            loc_name="${locale_line%%[[:space:]]*}"
+            esc_name="${loc_name//./\\.}"
+            if sudo grep -qE "^[#[:space:]]*${esc_name}([[:space:]]|$)" /etc/locale.gen; then
+                # 已存在但被注释：取消注释（locale.gen 行尾必带字符集，匹配名字后的空白即可）
+                sudo sed -i -E "s|^#[[:space:]]*(${esc_name}[[:space:]])|\1|" /etc/locale.gen
+            else
+                # 文件里没有：追加
+                echo "$locale_line" | sudo tee -a /etc/locale.gen >/dev/null
+            fi
+        done
+        sudo locale-gen
     fi
 fi
 
