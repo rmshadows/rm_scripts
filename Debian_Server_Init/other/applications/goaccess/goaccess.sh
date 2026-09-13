@@ -33,11 +33,24 @@ SET_GA_GEOIP=1
 SET_DIR=$(pwd)
 
 #### 正文
+# 下载辅助：curl 优先，缺失时回退 wget（$2 为 "-" 时输出到 stdout）
+ga_fetch() {
+  if command -v curl >/dev/null 2>&1; then
+    if [ "$2" = "-" ]; then curl -fsSL "$1"; else curl -fsSLo "$2" "$1"; fi
+  else
+    if [ "$2" = "-" ]; then wget -qO- "$1"; else wget -qO "$2" "$1"; fi
+  fi
+}
+
 ### 安装 goaccess（apt 仓库 或 官网源码编译最新版）
 if [ "$SET_GA_SOURCE" = "src" ]; then
+  prompt -x "安装编译依赖"
+  sudo apt update
+  # libncurses-dev=Debian 通用名（trixie 无 libncursesw6-dev）；gettext 提供 msgfmt 编译 zh_CN 翻译
+  sudo apt install -y build-essential gettext libncurses-dev libmaxminddb-dev zlib1g-dev curl
   # 目标版本：latest=从 GitHub API 取最新稳定版，失败回退硬编码版本
   if [ "$SET_GA_VERSION" = "latest" ]; then
-    GA_VER=$(curl -fsSL https://api.github.com/repos/allinurl/goaccess/releases/latest 2>/dev/null | grep -oP '"tag_name":\s*"v?\K[0-9.]+' | head -1)
+    GA_VER=$(ga_fetch https://api.github.com/repos/allinurl/goaccess/releases/latest - 2>/dev/null | grep -oP '"tag_name":\s*"v?\K[0-9.]+' | head -1)
     [ -z "$GA_VER" ] && { GA_VER="1.11"; prompt -w "获取最新版本号失败，回退 $GA_VER"; }
   else
     GA_VER="$SET_GA_VERSION"
@@ -47,13 +60,11 @@ if [ "$SET_GA_SOURCE" = "src" ]; then
     prompt -i "goaccess $GA_VER（源码版）已安装"
   else
     [ -n "$GA_CUR" ] && prompt -w "检测到 goaccess $GA_CUR ≠ 目标 $GA_VER，将重新编译安装"
-    # apt 版与源码版并存会互相干扰，先卸载 apt 版
-    dpkg -s goaccess >/dev/null 2>&1 && { prompt -x "卸载 apt 版 goaccess"; sudo apt remove -y goaccess; }
-    prompt -x "安装编译依赖"
-    sudo apt update
-    sudo apt install -y build-essential curl libncursesw6-dev libmaxminddb-dev zlib1g-dev
+    # apt 版与源码版并存会互相干扰，先卸载 apt 版（仅真安装着才卸，排除残留 config-files）
+    dpkg-query -W -f='${Status}' goaccess 2>/dev/null | grep -q "install ok installed" \
+      && { prompt -x "卸载 apt 版 goaccess"; sudo apt remove -y goaccess; }
     prompt -x "下载并编译 goaccess $GA_VER（耗时取决于 CPU）"
-    curl -fsSLo /tmp/goaccess.tar.gz "https://tar.goaccess.io/goaccess-${GA_VER}.tar.gz"
+    ga_fetch "https://tar.goaccess.io/goaccess-${GA_VER}.tar.gz" /tmp/goaccess.tar.gz
     rm -rf "/tmp/goaccess-${GA_VER}"
     tar -xzf /tmp/goaccess.tar.gz -C /tmp
     cd "/tmp/goaccess-${GA_VER}" || exit 1
@@ -80,8 +91,9 @@ fi
 if [ "$SET_GA_GEOIP" = "1" ]; then
   GEOIP_DB=/usr/local/share/GeoIP/dbip-city-lite.mmdb
   if [ ! -f "$GEOIP_DB" ]; then
+    command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 || { sudo apt update; sudo apt install -y curl; }
     prompt -x "下载 GeoIP 城市库 $(date +%Y-%m) 版（DB-IP Lite，约 60MB）"
-    curl -fsSLo /tmp/dbip-city-lite.mmdb.gz "https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz" \
+    ga_fetch "https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz" /tmp/dbip-city-lite.mmdb.gz \
       || prompt -w "GeoIP 库下载失败，装完后可用 $GOACCESS_DIR/update_geoip.sh 重试"
     if [ -s /tmp/dbip-city-lite.mmdb.gz ]; then
       sudo mkdir -p /usr/local/share/GeoIP

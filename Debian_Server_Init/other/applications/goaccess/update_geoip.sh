@@ -13,9 +13,18 @@ if [ -f "$MARK" ] && [ "$(cat "$MARK" 2>/dev/null)" = "$YM" ]; then
   exit 0
 fi
 
+# 下载辅助：curl 优先，缺失时回退 wget
+ga_fetch() {
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSLo "$2" "$1"
+  else
+    wget -qO "$2" "$1"
+  fi
+}
+
 TMP=$(mktemp /tmp/dbip-city-lite.XXXXXX.gz)
 echo "下载 GeoIP 城市库 $YM 版（DB-IP Lite，约 60MB）..."
-curl -fsSLo "$TMP" "https://download.db-ip.com/free/dbip-city-lite-${YM}.mmdb.gz" \
+ga_fetch "https://download.db-ip.com/free/dbip-city-lite-${YM}.mmdb.gz" "$TMP" \
   || { echo "下载失败，旧库不受影响"; rm -f "$TMP"; exit 1; }
 sudo mkdir -p /usr/local/share/GeoIP
 sudo sh -c "gunzip -c '$TMP' > '${DB}.new'" && sudo mv "${DB}.new" "$DB" \
