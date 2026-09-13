@@ -129,6 +129,8 @@ if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
         replace_placeholders_with_values "nginx/nginx.conf.src"
         sudo cp "nginx/nginx.conf" /etc/nginx/nginx.conf
         sudo cp "nginx/block_ip.conf" /etc/nginx/block_ip.conf
+        # 安全扫描拦截 snippet（站点模板 include 了它，缺文件 nginx -t 会失败）
+        sudo cp "nginx/security-scan.conf" /etc/nginx/snippets/security-scan.conf
         deploy_install_exec "nginx/SelectNginxSites.sh" /etc/nginx/ngx-site
         ln -sfn /etc/nginx/ngx-site /usr/local/bin/ngx-site
         sudo cp "nginx/SITES.txt" /etc/nginx/sites-available/README.txt

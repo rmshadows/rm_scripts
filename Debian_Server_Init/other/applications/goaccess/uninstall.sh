@@ -22,8 +22,23 @@ sudo rm -rf /usr/local/share/GeoIP
 # 3. 删除用户数据（询问，默认保留）
 confirm_remove_data "$GOACCESS_DIR" "GoAccess 配置与报告"
 
-# 4. apt 包默认不卸载（按项目约定，避免误伤）
-if dpkg -l goaccess >/dev/null 2>&1; then
+# 3.5 删除源码编译的主程序（询问，默认保留；apt 装的不在 /usr/local，不受影响）
+if [ -x /usr/local/bin/goaccess ]; then
+  echo ""
+  prompt -w "⚠ 检测到源码编译的 goaccess 主程序："
+  prompt -w "    /usr/local/bin/goaccess（含 man 文档与翻译文件）"
+  if comfirm "\e[1;33m? 此操作不可恢复，确认删除吗？(y/N)\e[0m"; then
+    sudo rm -f /usr/local/bin/goaccess
+    sudo rm -f /usr/local/share/man/man1/goaccess.1
+    sudo rm -f /usr/local/share/locale/*/LC_MESSAGES/goaccess.mo
+    prompt -s "已删除源码版主程序"
+  else
+    prompt -i "已保留 /usr/local/bin/goaccess（重装时会跳过编译）"
+  fi
+fi
+
+# 4. apt 包默认不卸载（按项目约定，避免误伤；仅真安装着才提示）
+if dpkg-query -W -f='${Status}' goaccess 2>/dev/null | grep -q "install ok installed"; then
   prompt -w "goaccess apt 包未卸载（如需：sudo apt remove -y goaccess）"
 fi
 

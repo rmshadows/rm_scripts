@@ -12,6 +12,9 @@ server {
     listen [::]:443 ssl http2;
     server_name 【$SET_SERVER_NAME】;
 
+    # 安全扫描拦截（.env/.git/wp 等），必须在下方其他 location 之前
+    include /etc/nginx/snippets/security-scan.conf;
+
     ssl_certificate /etc/ssl/【$SET_SERVER_NAME】.pem;
     ssl_certificate_key /etc/ssl/【$SET_SERVER_NAME】.key;
     ssl_protocols TLSv1.3;

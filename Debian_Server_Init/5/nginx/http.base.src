@@ -23,6 +23,9 @@ server {
     # 域名
     server_name 【$SET_SERVER_NAME】;
 
+    # 安全扫描拦截（.env/.git/wp 等），必须在下方其他 location 之前
+    include /etc/nginx/snippets/security-scan.conf;
+
     # Add index.php to the list if you are using PHP
     index index.html index.php index.htm index.nginx-debian.html;
     # 站点根目录
