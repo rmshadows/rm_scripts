@@ -244,6 +244,34 @@ net_unesc() {
 	sed -e 's/\\\\/\x01/g' -e 's/\\:/:/g' -e 's/\\ / /g' -e 's/\x01/\\/g'
 }
 
+# net_terse_tsv：把 nmcli -t 的 ':' 分隔行按转义规则还原，输出 TAB 分隔字段。
+# nmcli terse 转义：\: -> ':'，\\ -> '\'，\  -> 空格；只有“未转义的 ':'”才是字段分隔符。
+# 不能直接 awk -F: —— BSSID（A8\:C9\:..）里被转义的冒号也会被切开，
+# 会把 BSSID 首段错算进 SSID（实测会把 LHNYNCJ 显示成 LHNYNCJ:04\）。
+net_terse_tsv() {
+	awk '
+		{
+			n = 0; f[0] = ""
+			line = $0
+			for (i = 1; i <= length(line); i++) {
+				c = substr(line, i, 1)
+				if (c == "\\" && i < length(line)) {
+					nx = substr(line, i + 1, 1)
+					if      (nx == ":")  { f[n] = f[n] ":";  i++ }
+					else if (nx == "\\") { f[n] = f[n] "\\"; i++ }
+					else if (nx == " ")  { f[n] = f[n] " ";  i++ }
+					else                  f[n] = f[n] c
+				} else if (c == ":") {
+					n++; f[n] = ""
+				} else {
+					f[n] = f[n] c
+				}
+			}
+			for (j = 0; j <= n; j++)
+				printf "%s%s", f[j], (j < n ? "\t" : "\n")
+		}'
+}
+
 # net_con_val <name|uuid> <nmcli 字段> （多行/多值统一逗号连接）
 net_con_val() {
 	nmcli -g "$2" con show "$1" 2>/dev/null | sed 's/ | /,/g' | tr '\n' ',' | sed 's/,$//'
@@ -258,20 +286,42 @@ net_nmtype() {
 	esac
 }
 
-# 网卡行：dev<TAB>state<TAB>active-con（无连接时空）
+# 网卡行（TSV）：dev<TAB>state<TAB>active-con（无连接时第三列为空）
 net_dev_rows() {
-	local kind="$1"
+	local kind="$1" k
+	[ "$kind" = wifi ] && k=wifi || k=ethernet
 	nmcli -t -f DEVICE,TYPE,STATE,CONNECTION dev status 2>/dev/null \
-		| awk -F: -v k="$( [ "$kind" = wifi ] && echo wifi || echo ethernet )" '
-			$2==k { con=$4; for(i=5;i<=NF;i++) con=con":"$i; print $1"\t"$3"\t"con }' \
-		| net_unesc
+		| net_terse_tsv \
+		| awk -F'\t' -v k="$k" '$2==k { print $1"\t"$3"\t"$4 }'
 }
 
-# 配置文件行（原始 -t）：name:uuid:type:device
+# 配置文件行（TSV，已还原转义）：name<TAB>uuid<TAB>type<TAB>device
 net_con_rows() {
 	local kind="$1" t
 	t=$(net_nmtype "$kind") || return 1
-	nmcli -t -f NAME,UUID,TYPE,DEVICE con show 2>/dev/null | awk -F: -v t="$t" '$3==t'
+	nmcli -t -f NAME,UUID,TYPE,DEVICE con show 2>/dev/null \
+		| net_terse_tsv \
+		| awk -F'\t' -v t="$t" '$3==t'
+}
+
+# 所有 wifi 配置文件中已保存的 SSID（每行一个，输出原始字节）
+# 注意：nmcli 1.22 的 `con show` 列表不接受 -g 802-11-wireless.ssid，
+# 必须拿到 UUID 后逐配置查询。
+net_wifi_saved_ssids() {
+	local name uuid type dev
+	while IFS=$'\t' read -r name uuid type dev; do
+		nmcli -g 802-11-wireless.ssid con show "$uuid" 2>/dev/null
+	done < <(net_con_rows wifi)
+}
+
+# SSID 是否已保存（按字节精确比较，兼容含冒号/反斜杠/非 UTF-8 字节的 SSID）
+net_wifi_is_saved() {
+	local ssid="$1" s
+	[ -n "$ssid" ] || return 1
+	while IFS= read -r s; do
+		[ "$s" = "$ssid" ] && return 0
+	done < <(net_wifi_saved_ssids)
+	return 1
 }
 
 # 选择网卡。$1=kind  $2=用户给定（可空） -> 输出网卡名
@@ -295,10 +345,11 @@ net_pick_device() {
 	fi
 	net_require_tty
 	local i=1
-	net_section "选择网卡"
+	# 候选列表必须走 stderr：本函数结果经 $(...) 捕获，打印到 stdout 会被吞掉
+	net_section "选择网卡" >&2
 	for line in "${_NET_DEVS[@]}"; do
 		IFS=$'\t' read -r dev state con <<<"$line"
-		printf '  %d) %-18s 状态:%-12s %s\n' "$i" "$dev" "$state" "${con:+（$con）}"
+		printf '  %d) %-18s 状态:%-12s %s\n' "$i" "$dev" "$state" "${con:+（$con）}" >&2
 		i=$((i+1))
 	done
 	local sel
@@ -324,13 +375,9 @@ net_active_con() {
 # 选择配置文件。$1=kind $2=name|uuid（可空）$3=限定网卡（可空）
 # 输出：uuid<TAB>name
 net_pick_profile() {
-	local kind="$1" given="${2:-}" onlydev="${3:-}" line name uuid dev
+	local kind="$1" given="${2:-}" onlydev="${3:-}" line name uuid type dev
 	local -a rows=()
-	while IFS= read -r line; do
-		# -t 行：name:uuid:type:device（name 可能含转义冒号；uuid 固定 36 字符）
-		uuid=$(printf '%s' "$line" | awk -F: '{print $(NF-2)}')
-		dev=$(printf '%s' "$line" | awk -F: '{print $NF}')
-		name=$(printf '%s' "$line" | sed 's/:[0-9a-f-]\{36\}:.*$//' | net_unesc)
+	while IFS=$'\t' read -r name uuid type dev; do
 		[ -n "$onlydev" ] && [ "$dev" != "$onlydev" ] && continue
 		rows+=("$uuid"$'\t'"$name"$'\t'"$dev")
 	done < <(net_con_rows "$kind")
@@ -372,14 +419,16 @@ net_pick_profile() {
 	fi
 
 	net_require_tty
-	net_section "选择配置文件（同名时以 UUID 区分）"
+	# 候选列表必须走 stderr：本函数结果经 $(...) 捕获，打印到 stdout
+	# 会混进返回值，read 只取首行导致 uuid/name 全空（删除时报“未知连接 ""”）
+	net_section "选择配置文件（同名时以 UUID 区分）" >&2
 	local i=1 active
 	for line in "${rows[@]}"; do
 		IFS=$'\t' read -r uuid name dev <<<"$line"
 		active=""
-		[ "$(net_active_con "$dev" 2>/dev/null)" = "$name" ] && active=" ◄ 在用"
-		printf '  %d) %-28s %s%s\n' "$i" "$name" "${dev:+[$dev] }" "$active"
-		printf '     UUID: %s\n' "$uuid"
+		[ -n "$dev" ] && [ "$(net_active_con "$dev" 2>/dev/null)" = "$name" ] && active=" ◄ 在用"
+		printf '  %d) %-28s %s%s\n' "$i" "$name" "${dev:+[$dev] }" "$active" >&2
+		printf '     UUID: %s\n' "$uuid" >&2
 		i=$((i+1))
 	done
 	local sel
@@ -574,22 +623,6 @@ net_apply_delete() {
 
 ##################################### WiFi 扫描 ####################################
 
-# 解析 -t 扫描行（BSSID 含转义冒号，从右侧固定字段反解）
-# 输出：ssid<TAB>bssid<TAB>mode<TAB>chan<TAB>freq<TAB>signal<TAB>security<TAB>inuse
-net_wifi_parse_scan_row() {
-	awk -F: '
-		{
-			inuse=$NF; sec=$(NF-1); sig=$(NF-2); freq=$(NF-3)
-			chan=$(NF-4); mode=$(NF-5)
-			bssid=$(NF-6)
-			for (i=NF-10;i<=NF-6;i++) bssid=(i==NF-10?$i:bssid":"$i)
-			ssid=""
-			for (i=1;i<=NF-11;i++) ssid=(i==1?$i:ssid":"$i)
-			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				ssid,bssid,mode,chan,freq,sig,sec,inuse
-		}'
-}
-
 # 扫描并打印表格；结果存入全局数组 _NET_SCAN（每行 ssid<TAB>security<TAB>bssid）
 # 参数：dev [--no-rescan]
 _NET_SCAN=()
@@ -614,7 +647,7 @@ net_wifi_scan() {
 	local -A saved=()
 	local s
 	while IFS= read -r s; do [ -n "$s" ] && saved["$s"]=1; done \
-		< <(nmcli -g 802-11-wireless.ssid con show 2>/dev/null)
+		< <(net_wifi_saved_ssids)
 
 	local raw
 	raw=$(nmcli -t -f SSID,BSSID,MODE,CHAN,FREQ,SIGNAL,SECURITY,IN-USE \
@@ -623,26 +656,36 @@ net_wifi_scan() {
 		return 1
 	}
 
+	# 字段顺序：ssid bssid mode chan freq signal security inuse（8 列）
 	local i=0 ssid bssid mode chan freq signal security inuse band mark
 	net_hr
 	printf '%-3s %-2s %-26s %-5s %-4s %-7s %-16s %s\n' \
 		"#" "" "SSID" "信号" "信道" "频段" "加密" "标记"
 	while IFS= read -r raw; do
 		[ -z "$raw" ] && continue
-		IFS=$'\t' read -r ssid bssid mode chan freq signal security inuse \
-			<<<"$(printf '%s' "$raw" | net_wifi_parse_scan_row)"
-		ssid=$(printf '%s' "$ssid" | net_unesc)
-		bssid=$(printf '%s' "$bssid" | net_unesc)
+		# terse 行里 BSSID 的冒号是转义的（A8\:C9..），必须走转义感知解析，
+		# 否则 BSSID 首段会被切进 SSID（显示成 SSID:04\ 这种假名字）。
+		# 不能用 IFS=$'\t' read：tab 是空白型 IFS，隐藏网络的空 SSID、
+		# 开放网络的空 SECURITY 会被折叠导致整行错位；mapfile -d 保留空字段。
+		local _f
+		mapfile -t -d $'\t' _f < <(printf '%s' "$raw" | net_terse_tsv)
+		# mapfile -d $'\t' 的 -t 只剥 tab 分隔符，最后一个字段会保留行尾换行，
+		# 导致 inuse="*\n" != "*" → ◄ 在用 标记丢失
+		_f=("${_f[@]%$'\n'}")
+		ssid=${_f[0]}; bssid=${_f[1]}; mode=${_f[2]}; chan=${_f[3]}
+		freq=${_f[4]}; signal=${_f[5]}; security=${_f[6]}; inuse=${_f[7]}
 		i=$((i+1))
+		# IN-USE 未在用时是一个空格，归一化为空
+		[ "$inuse" = "*" ] || inuse=""
 		mark=""
-		[ "$inuse" = "*" ] && mark="◄ 在用"
+		[ -n "$inuse" ] && mark="◄ 在用"
 		if [ -z "$ssid" ]; then
 			ssid="（隐藏网络）"
 		elif [ -n "${saved[$ssid]:-}" ]; then
 			mark="$mark 已保存"
-		else
-			:
 		fi
+		# FREQ 形如 "2437 MHz"，只留数字，否则 5G 会因整数比较失败错判成 2.4G
+		freq=${freq//[!0-9]/}
 		if [ "${freq:-0}" -ge 6000 ] 2>/dev/null; then band="6G";
 		elif [ "${freq:-0}" -ge 5000 ] 2>/dev/null; then band="5G";
 		else band="2.4G"; fi
@@ -696,22 +739,24 @@ net_show_status() {
 
 # 列出配置文件（含优先级），按优先级降序
 net_list_profiles() {
-	local kind="$1" line name uuid dev ssid ts auto pri active
+	local kind="$1" line name uuid type dev ssid auto pri active
 	printf '%-3s %-28s %-14s %-6s %-6s %s\n' "#" "名称/SSID" "网卡" "自动" "优先级" "状态/UUID"
 	printf '%s\n' "------------------------------------------------------------------------------------------"
 	local -a rows=()
-	while IFS= read -r line; do
-		uuid=$(printf '%s' "$line" | awk -F: '{print $(NF-2)}')
-		dev=$(printf '%s' "$line" | awk -F: '{print $NF}')
-		name=$(printf '%s' "$line" | sed 's/:[0-9a-f-]\{36\}:.*$//' | net_unesc)
+	while IFS=$'\t' read -r name uuid type dev; do
 		auto=$(net_con_val "$uuid" connection.autoconnect)
 		pri=$(net_con_val "$uuid" connection.autoconnect-priority)
 		ssid=""
 		[ "$kind" = wifi ] && ssid=$(net_con_val "$uuid" 802-11-wireless.ssid)
-		rows+=("${pri:-0}|$name|$ssid|$dev|$auto|$uuid")
+		# 用 TAB 分隔，名称含 '|' / ':' 也不会被拆坏
+		rows+=("${pri:-0}"$'\t'"$name"$'\t'"$ssid"$'\t'"$dev"$'\t'"${auto:-}"$'\t'"$uuid")
 	done < <(net_con_rows "$kind")
-	local i=1
-	while IFS='|' read -r pri name ssid dev auto uuid; do
+	[ "${#rows[@]}" -eq 0 ] && return 0
+	local i=1 line f
+	while IFS= read -r line; do
+		# tab 是空白型 IFS，read 会折叠连续/尾随空字段（dev 常为空），改用 mapfile
+		mapfile -t -d $'\t' f < <(printf '%s' "$line")
+		pri=${f[0]}; name=${f[1]}; ssid=${f[2]}; dev=${f[3]}; auto=${f[4]}; uuid=${f[5]}
 		active=""
 		[ -n "$dev" ] && [ "$(net_active_con "$dev" 2>/dev/null)" = "$name" ] && active="◄ 在用"
 		local show="$name"
@@ -719,7 +764,7 @@ net_list_profiles() {
 		printf '%-3d %-28s %-14s %-6s %-6s %s %s\n' \
 			"$i" "$show" "${dev:-*}" "${auto#*}" "${pri:-0}" "$active" "$uuid"
 		i=$((i+1))
-	done < <(printf '%s\n' "${rows[@]}" | sort -t'|' -k1 -nr)
+	done < <(printf '%s\n' "${rows[@]}" | sort -t$'\t' -k1,1 -nr)
 }
 
 # 连通性测试

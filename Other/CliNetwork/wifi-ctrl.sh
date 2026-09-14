@@ -147,7 +147,7 @@ menu_scan_connect() {
 		net_warn "隐藏网络无法从扫描列表直接连接，请用 wifi-cfg.sh connect --hidden"
 		return 0
 	fi
-	if ! nmcli -g 802-11-wireless.ssid con show 2>/dev/null | grep -qxF "$ssid"; then
+	if ! net_wifi_is_saved "$ssid"; then
 		net_warn "「$ssid」尚未保存，连接新网络属于配置操作，请运行 ./wifi-cfg.sh connect"
 		return 0
 	fi

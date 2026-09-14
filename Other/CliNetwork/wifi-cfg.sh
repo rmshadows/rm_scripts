@@ -40,7 +40,7 @@ usage() {
 
 # 判断 SSID 是否已保存
 wifi_saved() {
-	nmcli -g 802-11-wireless.ssid con show 2>/dev/null | grep -qxF "$1"
+	net_wifi_is_saved "$1"
 }
 
 # 选择 WiFi 目标：$1=名称|UUID（可空）-> uuid<TAB>name<TAB>active_dev
@@ -85,10 +85,16 @@ wifi_connect() {
 	fi
 
 	# 预览（密码掩码）
+	local auth_show
+	case "$auth" in
+		wpa) auth_show="WPA/WPA2/WPA3" ;;
+		wep) auth_show="WEP" ;;
+		*)   auth_show="开放（无密码）" ;;
+	esac
 	net_hr
 	printf '将连接新 WiFi：%s\n' "$ssid"
 	printf '  网卡  : %s\n' "$dev"
-	printf '  加密  : %s\n' "$([ "$auth" = wpa ] && echo WPA/WPA2/WPA3 || [ "$auth" = wep ] && echo WEP || echo 开放)"
+	printf '  加密  : %s\n' "$auth_show"
 	printf '  隐藏  : %s\n' "$([ "$hidden" = yes ] && echo 是 || echo 否)"
 	printf '  密码  : %s\n' "$([ -n "$pw" ] && echo '********' || echo 无)"
 	if [ -n "$cidr" ]; then
@@ -231,7 +237,10 @@ connect_wizard() {
 			if [ "$sel" -lt 1 ] || [ "$sel" -gt "${#_NET_SCAN[@]}" ]; then
 				net_err "序号超出范围"; return 1
 			fi
-			IFS=$'\t' read -r ssid security _bssid <<<"${_NET_SCAN[$((sel-1))]}"
+			# mapfile -d 保留空字段（开放网络 security 为空，read+tab 会错位）
+			local _selrow
+			mapfile -t -d $'\t' _selrow <<<"${_NET_SCAN[$((sel-1))]}"
+			ssid=${_selrow[0]}; security=${_selrow[1]}; _bssid=${_selrow[2]%$'\n'}
 			if [ "$ssid" = "（隐藏网络）" ]; then
 				net_err "该热点未广播 SSID，请选 0 手动填写"; return 1
 			fi
