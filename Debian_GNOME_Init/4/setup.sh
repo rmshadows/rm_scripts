@@ -202,10 +202,16 @@ if [ "$SET_INSTALL_APACHE2" -eq 1 ]; then
 	doApt install apache2
 	prompt -m "配置Apache2 共享目录为 /home/HTML"
 	addFolder /home/HTML
-	prompt -x "设置/home/HTML读写权限为755"
-	sudo chmod 755 /home/HTML
-	sudo chown "$CURRENT_USER" /home/HTML
-	sudo chgrp "$CURRENT_USER" /home/HTML
+	prompt -x "设置 /home/HTML：${CURRENT_USER}:www-data 2775（与 Nginx 共用时双方可读写）"
+	if getent group www-data >/dev/null; then
+		sudo usermod -aG www-data "$CURRENT_USER" 2>/dev/null || true
+		sudo chown "$CURRENT_USER:www-data" /home/HTML
+		sudo chmod 2775 /home/HTML
+	else
+		sudo chmod 755 /home/HTML
+		sudo chown "$CURRENT_USER" /home/HTML
+		sudo chgrp "$CURRENT_USER" /home/HTML
+	fi
 	if [ $? -eq 0 ]; then
 		backupFile /etc/apache2/apache2.conf
 		prompt -x "修改Apache2配置文件中的共享目录为/home/HTML"
@@ -306,13 +312,18 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
 	fi
 	prompt -x "Install nginx..."
 	doApt install nginx
-	# 注意：！！如果要修改根目录请同步修改所有/home/HTML(上面Nginx配置也有)
-	prompt -m "配置Nginx 共享目录为 /home/HTML"
+	prompt -m "配置Nginx 共享目录为 /home/HTML（新机器不用 /var/www/html）"
 	addFolder /home/HTML
-	prompt -x "设置/home/HTML读写权限为755"
-	sudo chmod 755 /home/HTML
-	sudo chown "$CURRENT_USER" /home/HTML
-	sudo chgrp "$CURRENT_USER" /home/HTML
+	# 用户与 www-data 都能读写：属组 www-data + setgid 2775；用户加入 www-data 组
+	prompt -x "设置 /home/HTML 权限：${CURRENT_USER}:www-data 2775（双方可读写）"
+	if getent group www-data >/dev/null; then
+		sudo usermod -aG www-data "$CURRENT_USER" 2>/dev/null || true
+		sudo chown "$CURRENT_USER:www-data" /home/HTML
+		sudo chmod 2775 /home/HTML
+	else
+		sudo chown "$CURRENT_USER:$CURRENT_USER" /home/HTML
+		sudo chmod 755 /home/HTML
+	fi
 	# 安装无问题，开始修改配置文件
 	if [ "$?" -eq 0 ]; then
 		backupFile /etc/nginx/nginx.conf
@@ -325,16 +336,34 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
 		sudo cp "block_ip.conf" /etc/nginx/block_ip.conf
 		sudo cp "SelectNginxSites.sh" /etc/nginx/
 
-		prompt -i "Genarate a http website."
-		sudo cp "http" /etc/nginx/sites-available/http
+		_html_php_sock=$(ls /run/php/php*-fpm.sock 2>/dev/null | head -1 || true)
+		if [ -z "$_html_php_sock" ]; then
+			_html_php_sock=$(grep -hE '^listen[[:space:]]*=' /etc/php/*/fpm/pool.d/www.conf 2>/dev/null \
+				| head -1 | sed -E 's/^listen[[:space:]]*=[[:space:]]*//' || true)
+		fi
+		[ -n "$_html_php_sock" ] || _html_php_sock="/run/php/php-fpm.sock"
+		case "$_html_php_sock" in
+			unix:*) _html_fastcgi="$_html_php_sock" ;;
+			/*) _html_fastcgi="unix:${_html_php_sock}" ;;
+			*) _html_fastcgi="unix:${_html_php_sock}" ;;
+		esac
+		prompt -i "Generate html.conf site (root=/home/HTML, php=$_html_fastcgi)"
+		sudo sed "s|__PHP_SOCK__|${_html_fastcgi}|g" "html.conf" \
+			| sudo tee /etc/nginx/sites-available/html.conf >/dev/null
+		# 兼容旧文件名
+		if [ -f /etc/nginx/sites-available/http ] && [ ! -f /etc/nginx/sites-available/html.conf ]; then
+			sudo mv /etc/nginx/sites-available/http /etc/nginx/sites-available/html.conf
+		fi
+		if [ -L /etc/nginx/sites-enabled/http ]; then
+			sudo rm -f /etc/nginx/sites-enabled/http
+		fi
 		# 禁用默认的配置文件，启用新的
-		prompt -x "Disable default site and Enable nginx https site."
+		prompt -x "Disable default site and Enable html.conf"
 		if [ -f /etc/nginx/sites-enabled/default ]; then
 			sudo rm /etc/nginx/sites-enabled/default
 		fi
-		if ! [ -f /etc/nginx/sites-enabled/http ]; then
-			# 请使用绝对路径
-			sudo ln -s /etc/nginx/sites-available/http /etc/nginx/sites-enabled/http
+		if ! [ -e /etc/nginx/sites-enabled/html.conf ]; then
+			sudo ln -s /etc/nginx/sites-available/html.conf /etc/nginx/sites-enabled/html.conf
 		fi
 		# 配置是否开机启动
 		if [ "$SET_ENABLE_NGINX" -eq 0 ]; then
@@ -350,51 +379,25 @@ if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
 	fi
 fi
 
-# fmgr 文件共享：仅当同时安装了 Nginx 与 PHP，且不启动服务
+# fmgr：本 Init 内 fmgr文件传输/（打包前从仓库根复制）；GNOME 非交互 --batch
 if [ "${SET_CONFIG_FMGR:-0}" -eq 1 ]; then
 	if [ "${SET_INSTALL_NGINX:-0}" -ne 1 ] || [ "${SET_INSTALL_PHP:-0}" -ne 1 ]; then
-		prompt -w "SET_CONFIG_FMGR=1 但未同时安装 Nginx 和 PHP（SET_INSTALL_NGINX / SET_INSTALL_PHP），跳过 fmgr。"
+		prompt -w "SET_CONFIG_FMGR=1 但未同时安装 Nginx 和 PHP，跳过 fmgr。"
 	else
-		fmgr_src="${DEPLOY_SCRIPT_ROOT}/../fmgr文件传输"
-		fmgr_dst="/home/HTML/fmgr"
-		if [ ! -d "$fmgr_src" ]; then
-			prompt -w "未找到仓库 fmgr文件传输/（$fmgr_src），跳过 fmgr。"
+		fmgr_src="${DEPLOY_SCRIPT_ROOT}/fmgr文件传输"
+		fmgr_setup="$fmgr_src/NginxSetup/setupNginxForFmgr.sh"
+		if [ ! -f "$fmgr_setup" ]; then
+			prompt -w "未找到 $fmgr_setup（请先：cp -a fmgr文件传输 Debian_GNOME_Init/），跳过 fmgr。"
 		else
-			prompt -x "配置 fmgr 到 $fmgr_dst（不启动 nginx / php-fpm）"
-			addFolder /home/HTML
-			addFolder "$fmgr_dst"
-			if command -v rsync >/dev/null 2>&1; then
-				rsync -a --exclude 'NginxSetup' --exclude '.git' --exclude '.idea' \
-					"$fmgr_src/" "$fmgr_dst/"
-			else
-				cp -a "$fmgr_src/." "$fmgr_dst/"
-				rm -rf "$fmgr_dst/NginxSetup"
-			fi
-			if [ -d "$fmgr_src/MoveToParent" ]; then
-				sudo cp -a "$fmgr_src/MoveToParent/." /home/HTML/
-			fi
-			if [ ! -e /home/HTML/index.html ] && [ -f /home/HTML/jumpindex.html ]; then
-				sudo cp /home/HTML/jumpindex.html /home/HTML/index.html
-			fi
+			prompt -x "从本 Init 模板配置 fmgr（非交互 --batch → /home/HTML）"
 			doApt install php-mbstring php-zip php-xml php-gd
-			sudo mkdir -p /etc/nginx/snippets
-			if [ -f "$fmgr_src/NginxSetup/fmgr-snippet.conf" ]; then
-				sudo sed "s|__FMGR_PARENT__|/home/HTML|g" "$fmgr_src/NginxSetup/fmgr-snippet.conf" \
-					| sudo tee /etc/nginx/snippets/fmgr.conf >/dev/null
-			fi
-			if [ -f /etc/nginx/sites-available/http ]; then
-				# 启用 snippet，并去掉会误伤 /fmgr/*.php 的动态脚本 403
-				sudo sed -i 's|^[[:space:]]*# include /etc/nginx/snippets/fmgr.conf;|    include /etc/nginx/snippets/fmgr.conf;|' \
-					/etc/nginx/sites-available/http
-				sudo sed -i '/# BEGIN_DENY_DYNAMIC/,/# END_DENY_DYNAMIC/s/^/# /' \
-					/etc/nginx/sites-available/http
-			fi
-			sudo chown -R "$CURRENT_USER:$CURRENT_USER" /home/HTML
-			if getent group www-data >/dev/null; then
-				sudo chgrp -R www-data /home/HTML/fmgr/files /home/HTML/fmgr/files/tempUpload 2>/dev/null || true
-				sudo chmod -R ug+rwx /home/HTML/fmgr/files
-			fi
-			# 不启动：与 SET_ENABLE_NGINX / SET_PHP_FPM_ENABLE 一致
+			sudo env \
+				FMGR_PARENT=/home/HTML \
+				NGINX_MODE=snippet \
+				TARGET_SITE=/etc/nginx/sites-available/html.conf \
+				HOMEPAGE_MODE=jump \
+				SUDO_USER="$CURRENT_USER" \
+				bash "$fmgr_setup" --batch
 			if [ "${SET_ENABLE_NGINX:-0}" -eq 0 ]; then
 				sudo systemctl disable nginx.service 2>/dev/null || true
 				sudo systemctl stop nginx.service 2>/dev/null || true
@@ -406,9 +409,8 @@ if [ "${SET_CONFIG_FMGR:-0}" -eq 1 ]; then
 					sudo systemctl stop "$phpfpm_unit" 2>/dev/null || true
 				fi
 			fi
-			prompt -m "fmgr 已就位：只读 /fmgr/ 、上传 /fmgr/uploader.php（需登录）。服务未启动，需要时："
-			prompt -m "  sudo systemctl start php*-fpm nginx"
-			prompt -m "访问 http://<本机>/ 或 /x 或 /fmgr/ ；账号见仓库 fmgr文件传输/README.md"
+			prompt -m "fmgr 已就位：/fmgr/ 、/x 。未启动时：sudo systemctl start php*-fpm nginx"
+			prompt -w "请立刻修改默认弱口令（见 fmgr文件传输/README.md）"
 		fi
 	fi
 fi

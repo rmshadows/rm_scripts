@@ -121,9 +121,9 @@
 
 - 安装php-fpm（默认不自启）
 
-- 安装nginx（默认不自启）
+- 安装nginx（默认不自启）：站点 `html.conf`，root=`/home/HTML`（不用 `/var/www/html`）；目录属组 `www-data`、`2775`，用户加入 `www-data` 以便双方可读写
 
-- 可选 fmgr 文件共享（`SET_CONFIG_FMGR=1`，且须同时安装 Nginx+PHP）：同步仓库 `fmgr文件传输/` 到 `/home/HTML/fmgr`，写入 `snippets/fmgr.conf` 并 include。不启动服务，自行 `systemctl start php*-fpm nginx`
+- 可选 fmgr 文件共享（`SET_CONFIG_FMGR=1`，且须同时安装 Nginx+PHP）：需本目录下有 `fmgr文件传输/`（打包前从仓库根 `cp -a`），非交互 `--batch` 部署到 `/home/HTML/fmgr`。不启动服务，自行 `systemctl start php*-fpm nginx`
 
 - 安装配置Git
 

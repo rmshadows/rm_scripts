@@ -1,0 +1,31 @@
+# 安装后：/etc/nginx/sites-available/fmgr_sites
+# fmgr 独立站（listen 80）。启用前须 disable 其他占用 80 的 site。
+# location 细节在 snippet；本文件只写 server 壳 + include。
+# setup 会先写 /etc/nginx/snippets/fmgr.conf，再生成本文件。
+# 占位符：__FMGR_PARENT__ __PHP_SOCK__
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    root __FMGR_PARENT__;
+    index index.html index.php index.htm;
+
+    # /fmgr /x /filesfmgr（见 snippet；standalone 时 snippet 不含 PHP 块）
+    include /etc/nginx/snippets/fmgr.conf;
+
+    location ~ \.php$ {
+        include fastcgi.conf;
+        fastcgi_pass __PHP_SOCK__;
+        fastcgi_index index.php;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}

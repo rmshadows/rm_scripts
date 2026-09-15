@@ -1,84 +1,40 @@
 #!/bin/bash
-## 需要有人职守，需要sudo
-# https://github.com/prasathmani/tinyfilemanager    
-# 加载全局变量
+## 交互式部署 fmgr
+## 资源：本 Init 内的 fmgr文件传输/（打包前从仓库根模板复制进来）
+# https://github.com/prasathmani/tinyfilemanager
 source "../GlobalVariables.sh"
-# 加载全局函数
 source "../Lib.sh"
 source "../ServiceInit.sh"
 
 #### CONF
-# 服务名
-# tinyfilemanager的根目录(要求www-data能写入) 
-# 默认$HOME/nginx/fmgr
-SERVER_ROOT="$HOME/nginx"
+# 部署到的父目录（本体 → $SERVER_ROOT/fmgr）
+SERVER_ROOT="${SERVER_ROOT:-/home/HTML}"
 
-# 保存脚本所在目录（运行脚本时应在 phptinyfilemanager/ 下）
 SET_DIR=$(pwd)
 
-#### 正文
-### 准备工作
-# 检查包是否已安装
-t_pkg="git"
-if ! command -v $t_pkg &>/dev/null; then
-    echo -e "\033[31m$t_pkg not found! Install $t_pkg first!\033[0m"  # 输出红色提示
-    sudo apt update && sudo apt install $t_pkg  # 更新包列表并安装
-fi
-
-t_pkg="acl"
-if ! command -v setfacl &>/dev/null; then
-    echo -e "\033[31m$t_pkg not found! Installing $t_pkg...\033[0m" # 输出红色提示
-    sudo apt update && sudo apt install -y $t_pkg                   # 更新包列表并安装
-    if [ $? -ne 0 ]; then
-        echo -e "\033[31mFailed to install $t_pkg. Please check your package manager.\033[0m"
-        exit 1
+# 打包形态：Debian_Server_Init/fmgr文件传输/
+# （phptinyfilemanager → applications → other → Debian_Server_Init）
+resolve_fmgr_template() {
+    local cand
+    cand="$(cd "$SET_DIR/../../.." && pwd)/fmgr文件传输"
+    if [ -f "$cand/NginxSetup/setupNginxForFmgr.sh" ]; then
+        echo "$cand"
+        return 0
     fi
-else
-    echo -e "\033[32m$t_pkg is already installed.\033[0m" # 输出绿色提示
+    return 1
+}
+
+FMGR_TEMPLATE="$(resolve_fmgr_template || true)"
+if [ -z "$FMGR_TEMPLATE" ]; then
+    prompt -e "找不到 Debian_Server_Init/fmgr文件传输/"
+    prompt -e "打包/使用前请从仓库根复制：cp -a fmgr文件传输 Debian_Server_Init/"
+    exit 1
 fi
+prompt -i "模板：$FMGR_TEMPLATE"
 
-### 安装软件
-# 检测：目标目录已存在则跳过移动
-INSTALLED_FMGR="$SERVER_ROOT/fmgr"
-if [ -d "$INSTALLED_FMGR" ]; then
-  prompt -i "[跳过] fmgr 已部署到 $INSTALLED_FMGR"
-else
-  if [ ! -d fmgr ]; then
-      prompt -e "当前目录下未找到 fmgr 目录，请先放置 tinyfilemanager（或从 https://github.com/prasathmani/tinyfilemanager 获取）后再运行。"
-      exit 1
-  fi
-  mkdir -p "$SERVER_ROOT"
-  sudo mv fmgr "$SERVER_ROOT/fmgr"
-fi
+export FMGR_PARENT="$SERVER_ROOT"
+# 交互：让用户选 snippet / standalone
+bash "$FMGR_TEMPLATE/NginxSetup/setupNginxForFmgr.sh"
 
-# 之后操作都在安装目录下进行（$SERVER_ROOT/fmgr）
-cd "$INSTALLED_FMGR"
-# 设置权限（始终确保）
-[ -d files ] && sudo chown -R www-data:www-data files
-[ -d readonly ] && sudo chown -R www-data:www-data readonly
-[ -f index.php ] && sudo setfacl -m u:www-data:rx index.php
-[ -f uploader.php ] && sudo setfacl -m u:www-data:rx uploader.php
-
-prompt -w "If user www-data still cannot write, try acl(e.g: setfacl -m u:www-data:rwx files)"
-
-### Nginx 配置（始终重跑，覆盖式）
-cd "$INSTALLED_FMGR"
-if [ -f NginxSetup/setupNginxForFmgr.sh ]; then
-    prompt -x "运行 NginxSetup/setupNginxForFmgr.sh（安装 php-fpm 并写入 /etc/nginx/snippets/fmgr.conf）"
-    bash NginxSetup/setupNginxForFmgr.sh
-else
-    prompt -w "未找到 NginxSetup/setupNginxForFmgr.sh，请手动运行以写入 nginx 片段并安装 php-fpm。"
-fi
-
-if [ -f NginxSetup/http.src ]; then
-    replace_placeholders_with_values NginxSetup/http.src
-fi
-prompt -i "完整 server 示例（仅供参考，勿直接覆盖原机）："
-prompt -i "========================================================"
-cat NginxSetup/http
-prompt -i "========================================================"
-prompt -i "示例文件: $INSTALLED_FMGR/NginxSetup/http"
-
-# 回到运行脚本时的目录
+prompt -i "部署结束请按脚本【必查】清单核对；弱口令见 $FMGR_TEMPLATE/README.md"
 cd "$SET_DIR"
-
