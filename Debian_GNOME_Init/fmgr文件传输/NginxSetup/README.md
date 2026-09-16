@@ -34,3 +34,7 @@ cd fmgr文件传输/NginxSetup   # 或 Init 内同名目录
 ### 权限 / 体积 / 弱口令
 
 上级 README；体积用主配置 `client_max_body_size`（GNOME 默认 5000m）。
+
+改密：`../gen-passwords.sh`（默认 `/home/HTML/fmgr`；可 `--user` / `--password` / `--random`）。
+
+`fmgr-snippet.conf` 里 `autoindex` **默认注释**；需要列目录时自行打开后 `nginx -t && reload`。

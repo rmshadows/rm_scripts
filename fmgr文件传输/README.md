@@ -39,6 +39,29 @@ user:User12345!  可以上传到tempUpload文件夹
 123456:123456 只读
 ```
 
+**推荐**：部署后用密码管理脚本（默认目录 `/home/HTML/fmgr`）：
+
+```bash
+# 交互：选用户 + 随机/指定密码
+bash fmgr文件传输/gen-passwords.sh
+
+# 只改 admin，指定密码
+bash fmgr文件传输/gen-passwords.sh --user admin --password 'S3cret!'
+
+# 只改 123456，随机密码
+bash fmgr文件传输/gen-passwords.sh --user 123456 --random --yes
+
+# 全部用户随机密码
+bash fmgr文件传输/gen-passwords.sh --all --random --yes
+
+# 列出用户
+bash fmgr文件传输/gen-passwords.sh --list
+```
+
+会备份为 `*.pwd.bak.<时间戳>`。
+
+哈希算法与官方 [pwd.html](https://tinyfilemanager.github.io/docs/pwd.html) 相同（`password_hash` → `$2y$`，登录用 `password_verify`）。网页生成的哈希也可以手工贴进 `$auth_users`。
+
 ### Apache2设置
 
 ```

@@ -428,14 +428,21 @@ do_install() {
 
             if [ -n "$target_site" ]; then
                 if [ "$BATCH" -eq 1 ]; then
-                    # 非交互：只检测 PHP，绝不插入
+                    # 非交互：只检测 PHP，绝不插入；没有就失败，避免假成功
                     if site_has_php "$target_site"; then
                         ok "$target_site 已有 PHP，不修改"
                     else
-                        warn "$target_site 未见 PHP —— batch 不自动插入。请确认 site 已有 location ~ \\.php\$"
+                        err "$target_site 未见可用 PHP（location ~ \\.php\$ / fastcgi-php / BEGIN_FMGR_ENSURE_PHP）"
+                        err "--batch 不会自动插入 PHP。请先配好 site 的 PHP 再重跑。"
+                        print_php_block_help "$target_site" "$php_sock"
+                        exit 1
                     fi
                 else
-                    ensure_site_php "$target_site" "$php_sock" || true
+                    if ! ensure_site_php "$target_site" "$php_sock"; then
+                        err "PHP 未就绪，中止部署（避免文件拷了但站点不可用）。"
+                        err "配好 PHP 后重跑本脚本；或改用 standalone。"
+                        exit 1
+                    fi
                 fi
                 warn "【必查】$target_site 须有 PHP + include $NGINX_SNIPPET;"
 
@@ -483,10 +490,18 @@ do_install() {
                 fi
 
                 # GNOME html.conf：注释掉会挡脚本的 DENY 段（仅处理带标记的块）
+                # 幂等：只给「尚未注释」的行加 #，已是注释的跳过，重跑不会叠 ###
                 if grep -q '# BEGIN_DENY_DYNAMIC' "$target_site" 2>/dev/null; then
-                    if [ "$BATCH" -eq 1 ] || ask_yn "注释 BEGIN_DENY_DYNAMIC 段（避免拦 /fmgr/*.php）？" "y"; then
-                        sed -i '/# BEGIN_DENY_DYNAMIC/,/# END_DENY_DYNAMIC/s/^/# /' "$target_site"
-                        ok "已注释 DENY_DYNAMIC 段"
+                    if awk '/# BEGIN_DENY_DYNAMIC/,/# END_DENY_DYNAMIC/' "$target_site" \
+                        | grep -qE '^[[:space:]]*[^#[:space:]]'; then
+                        if [ "$BATCH" -eq 1 ] || ask_yn "注释 BEGIN_DENY_DYNAMIC 段（避免拦 /fmgr/*.php）？" "y"; then
+                            sed -i '/# BEGIN_DENY_DYNAMIC/,/# END_DENY_DYNAMIC/{
+                                /^[[:space:]]*#/!s/^/# /
+                            }' "$target_site"
+                            ok "已注释 DENY_DYNAMIC 段（幂等，可重跑）"
+                        fi
+                    else
+                        ok "DENY_DYNAMIC 段已是注释，跳过"
                     fi
                 fi
             fi
@@ -644,11 +659,13 @@ EOF
   3. site 的 root = $FMGR_PARENT
   4. sudo nginx -t && sudo systemctl reload nginx
   5. sudo -u www-data test -r $FMGR_DST/index.php && echo OK
-  6. 浏览器打开 /fmgr/index.php 出现登录页
+  6. 浏览器打开 /fmgr/index.php 出现登录页（或只读列表）
 
   启动（如未开）：sudo systemctl start php*-fpm nginx
 
-  ! 立刻改默认弱口令（admin/user/405/123456 等）见仓库 README.md
+  ! 立刻改默认弱口令：bash $FMGR_SRC_REPO/gen-passwords.sh --dir $FMGR_DST
+  !   例：--user admin --password '...'   或   --all --random --yes
+  ! snippet 里 autoindex 默认注释掉了；要列目录请自己改 $NGINX_SNIPPET 后 nginx -t && reload
 
   卸载：./setupNginxForFmgr.sh --uninstall
 ==============================================

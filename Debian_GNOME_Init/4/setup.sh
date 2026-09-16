@@ -391,13 +391,19 @@ if [ "${SET_CONFIG_FMGR:-0}" -eq 1 ]; then
 		else
 			prompt -x "从本 Init 模板配置 fmgr（非交互 --batch → /home/HTML）"
 			doApt install php-mbstring php-zip php-xml php-gd
-			sudo env \
+			if sudo env \
 				FMGR_PARENT=/home/HTML \
 				NGINX_MODE=snippet \
 				TARGET_SITE=/etc/nginx/sites-available/html.conf \
 				HOMEPAGE_MODE=jump \
 				SUDO_USER="$CURRENT_USER" \
 				bash "$fmgr_setup" --batch
+			then
+				prompt -m "fmgr 已就位：/fmgr/ 、/x 。未启动时：sudo systemctl start php*-fpm nginx"
+				prompt -w "立刻改弱口令：bash ${fmgr_src}/gen-passwords.sh --dir /home/HTML/fmgr"
+			else
+				prompt -e "fmgr --batch 部署失败（常见：html.conf 无 PHP）。请检查上方日志后重跑或手工执行 setupNginxForFmgr.sh"
+			fi
 			if [ "${SET_ENABLE_NGINX:-0}" -eq 0 ]; then
 				sudo systemctl disable nginx.service 2>/dev/null || true
 				sudo systemctl stop nginx.service 2>/dev/null || true
@@ -409,8 +415,6 @@ if [ "${SET_CONFIG_FMGR:-0}" -eq 1 ]; then
 					sudo systemctl stop "$phpfpm_unit" 2>/dev/null || true
 				fi
 			fi
-			prompt -m "fmgr 已就位：/fmgr/ 、/x 。未启动时：sudo systemctl start php*-fpm nginx"
-			prompt -w "请立刻修改默认弱口令（见 fmgr文件传输/README.md）"
 		fi
 	fi
 fi
