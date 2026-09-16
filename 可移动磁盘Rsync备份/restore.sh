@@ -4,6 +4,7 @@
 #   ./restore.sh              # 用 config.sh 路径（会确认）
 #   ./restore.sh --dry-run    # 只预览
 #   ./restore.sh --yes        # 跳过确认
+#   ./restore.sh --verbose    # 列出每个文件（大目录慎用）
 #   BACKUP_SRC=... BACKUP_DST=... ./restore.sh
 #
 # 注意：这里 RSRC=备份目录，RDST=可移动盘（与 rsync.sh 方向相反）
@@ -13,16 +14,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=config.sh
 source "$SCRIPT_DIR/config.sh"
 
-# 恢复方向：备份 → 盘
 SRC="$RDST"
 DST="$RSRC"
 
 DRY_RUN=0
 ASSUME_YES=0
+VERBOSE=0
+RSYNC_PID=""
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run|-n) DRY_RUN=1 ;;
     --yes|-y) ASSUME_YES=1 ;;
+    --verbose|-v) VERBOSE=1 ;;
     -h|--help)
       sed -n '2,12p' "$0"
       exit 0
@@ -54,11 +58,33 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
   echo "[x] 已有恢复在跑（锁: $LOCK_DIR）。若异常退出可: rmdir $LOCK_DIR" >&2
   exit 1
 fi
-trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+
+cleanup() {
+  local ec=$?
+  if [[ -n "${RSYNC_PID:-}" ]] && kill -0 "$RSYNC_PID" 2>/dev/null; then
+    kill -TERM "$RSYNC_PID" 2>/dev/null || true
+    wait "$RSYNC_PID" 2>/dev/null || true
+  fi
+  rmdir "$LOCK_DIR" 2>/dev/null || true
+  return "$ec"
+}
+on_signal() {
+  echo >&2
+  echo "[!] 收到中断，正在停止 rsync…" >&2
+  if [[ -n "${RSYNC_PID:-}" ]] && kill -0 "$RSYNC_PID" 2>/dev/null; then
+    kill -TERM "$RSYNC_PID" 2>/dev/null || true
+    wait "$RSYNC_PID" 2>/dev/null || true
+  fi
+  rmdir "$LOCK_DIR" 2>/dev/null || true
+  exit 130
+}
+trap cleanup EXIT
+trap on_signal INT TERM HUP
 
 echo "[+] 恢复: $SRC  →  $DST"
 echo "[!] 将使用 --delete：目标盘上多出来的文件也会被删，与备份对齐。"
 [[ "$DRY_RUN" -eq 1 ]] && echo "[!] dry-run，不写盘"
+[[ "$VERBOSE" -eq 1 ]] && echo "[!] verbose：会列出每个文件，大目录可能刷屏"
 
 if [[ "$DRY_RUN" -eq 0 && "$ASSUME_YES" -eq 0 ]]; then
   if [[ ! -t 0 ]]; then
@@ -74,15 +100,32 @@ fi
 
 RSYNC_EXTRA=()
 [[ "$DRY_RUN" -eq 1 ]] && RSYNC_EXTRA+=(--dry-run)
+if [[ "$VERBOSE" -eq 1 ]]; then
+  RSYNC_EXTRA+=(-v)
+elif [[ -t 1 ]]; then
+  RSYNC_EXTRA+=(--info=progress2)
+fi
 
-# 恢复：完整还原，不套备份用的 Cache 等排除（否则盘上会缺这些目录的「应有状态」）
-# 仍排除半成品与时间戳文件，避免写回盘
 rsync "${RSYNC_OPTS[@]}" "${RSYNC_EXTRA[@]}" \
   --exclude=.rsync-partial \
   --exclude=rsync.time \
   --exclude=restore.time \
   --delete \
-  "$SRC" "$DST"
+  "$SRC" "$DST" &
+RSYNC_PID=$!
+
+ec=0
+wait "$RSYNC_PID" || ec=$?
+RSYNC_PID=""
+
+if [[ "$ec" -eq 20 || "$ec" -eq 130 ]]; then
+  echo "[!] 已中断" >&2
+  exit 130
+fi
+if [[ "$ec" -ne 0 ]]; then
+  echo "[x] rsync 失败，退出码 $ec" >&2
+  exit "$ec"
+fi
 
 if [[ "$DRY_RUN" -eq 0 ]]; then
   date -Iseconds >"${SRC%/}/restore.time"

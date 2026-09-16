@@ -17,13 +17,15 @@ export BACKUP_DST="./MyDiskBackup/"
 
 ```bash
 ./rsync.sh --dry-run    # 先预览
-./rsync.sh              # 正式备份（--delete：备份目录与盘对齐）
+./rsync.sh              # 正式备份（默认单行进度，不刷文件名）
+./rsync.sh --verbose    # 列出每个文件（大目录慎用，终端会卡）
 ```
 
 - 源为空或不存在会**直接失败**（防止清空备份）
 - 排除：`Cache`、`.Trash-*`、`lost+found`、`.rsync-partial`
 - 时间戳写在备份目录：`$RDST/rsync.time`
 - 互斥锁在 `/tmp`（不在备份目录里，避免被 `--delete` 删掉）
+- **Ctrl+C**：会停掉 rsync 并清锁；已传完的文件保留，再跑可续传（`--partial`）
 
 ## 恢复（本机 → 盘）
 

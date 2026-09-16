@@ -20,15 +20,17 @@ RSYNC_EXCLUDES=(
   --exclude=.rsync-partial
 )
 
-# 共用 rsync 参数（本地盘：不用 -z）
-# -aH: 归档+硬链接  -v: 列文件  --numeric-ids: 保持数值 uid/gid
+# 默认安静：不要 -v（大目录刷屏会让终端假死、Ctrl+C 像失灵）
+# -aH: 归档+硬链接  --numeric-ids: 数值 uid/gid
 # --partial + --partial-dir: 断点续传
 # --stats: 结束统计
+# 进度：仅在终端里开 --info=progress2（见 rsync.sh / restore.sh）
 RSYNC_OPTS=(
-  -aHv
+  -aH
   --numeric-ids
   --partial
   --partial-dir=.rsync-partial
+  --human-readable
   --stats
 )
 
