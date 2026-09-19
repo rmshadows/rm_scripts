@@ -48,3 +48,5 @@
 
 23. CliNetwork/ —— 命令行管理有线/无线网络（nmcli）。eth-ctrl / wifi-ctrl 负责状态、开关、扫描；eth-cfg / wifi-cfg 负责手动 IP、DHCP、DNS、自动连接及优先级、新建/忘记网络。支持菜单与命令参数；写操作前显示「当前→目标」并确认，SSH 操作对应网卡有防断网强制确认
 
+24. rgsearch.sh —— 基于 ripgrep 的搜索：正文 / 文件名（高亮匹配段），可选 Word/Excel 正文（-w/-x/-W）。见 `./rgsearch.sh -h`
+

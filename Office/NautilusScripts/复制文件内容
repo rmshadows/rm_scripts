@@ -1,0 +1,31 @@
+#!/bin/bash
+# 把选中文件的内容复制到剪贴板（气泡提示）
+
+set -euo pipefail
+
+[[ $# -ge 1 && -f "$1" ]] || {
+    zenity --error --text="请选择一个普通文件。" 2>/dev/null || true
+    exit 1
+}
+
+FILE="$1"
+NAME="$(basename "$FILE")"
+
+copy_ok=0
+if command -v wl-copy >/dev/null 2>&1; then
+    wl-copy < "$FILE" && copy_ok=1
+elif command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard --input < "$FILE" && copy_ok=1
+elif command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard -in < "$FILE" && copy_ok=1
+else
+    zenity --error --text="需要 wl-copy / xsel / xclip" 2>/dev/null || true
+    exit 1
+fi
+
+if [[ "$copy_ok" -eq 1 ]]; then
+    notify-send "已复制文件内容" "$NAME" 2>/dev/null || true
+else
+    zenity --error --text="复制失败：$NAME" 2>/dev/null || true
+    exit 1
+fi

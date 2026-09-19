@@ -1,0 +1,61 @@
+#!/bin/bash
+# excel 转 pdf
+# 需要 libreoffice
+# ========== 用户可修改的变量 ==========
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+NAUTILUS_ROOT="$SCRIPT_DIR"
+while [ "$NAUTILUS_ROOT" != "/" ] && [ ! -d "$NAUTILUS_ROOT/lib/Office" ]; do
+  NAUTILUS_ROOT="$(dirname "$NAUTILUS_ROOT")"
+done
+
+# 输入过滤（防点错）
+if [ -f "$NAUTILUS_ROOT/lib/Office/nautilus_filter.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$NAUTILUS_ROOT/lib/Office/nautilus_filter.sh"
+  office_filter_by_ext 1 0 xls xlsx et ods csv -- "$@" || exit 1
+  set -- "${OFFICE_FILES[@]}"
+fi
+MODE="default"  # 可选：default, fit_width-所有列适应一页, fit_height-所有行适应一页, fit_page
+SHEET_INDEX="all"  # 可选：all（所有表）或指定数字（如 1, 2, 3）
+OUTPUT_DIR="output_pdf"
+
+# 获取当前目录
+current_dir=$(pwd)
+
+# ========== 创建输出目录 ==========
+output_dir="$current_dir/$OUTPUT_DIR"
+mkdir -p "$output_dir"
+
+# ========== 适应模式参数 ==========
+case "$MODE" in
+    fit_width)
+        EXPORT_OPTIONS="calc_pdf_Export:FitPageWidth=1"
+        ;;
+    fit_height)
+        EXPORT_OPTIONS="calc_pdf_Export:FitPageHeight=1"
+        ;;
+    fit_page)
+        EXPORT_OPTIONS="calc_pdf_Export:FitPageWidth=1,FITPAGEHEIGHT=1"
+        ;;
+    default)
+        EXPORT_OPTIONS="calc_pdf_Export"
+        ;;
+    *)
+        echo "无效的 MODE 选项！使用默认模式"
+        EXPORT_OPTIONS="calc_pdf_Export"
+        ;;
+esac
+
+# ========== 遍历选中的 Excel 文件（已按扩展名过滤）==========
+for file in "$@"; do
+    echo "正在转换: $file"
+    if [ "$SHEET_INDEX" == "all" ]; then
+        libreoffice --headless --convert-to pdf:"$EXPORT_OPTIONS" "$file" --outdir "$output_dir"
+    else
+        libreoffice --headless --convert-to pdf:"$EXPORT_OPTIONS" --infilter="calc:Excel" --convert-filter-options "$SHEET_INDEX" "$file" --outdir "$output_dir"
+    fi
+done
+
+notify-send "所有 Excel 文件已转换完成，PDF 保存在 $output_dir 目录中。"
+

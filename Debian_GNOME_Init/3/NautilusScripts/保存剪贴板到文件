@@ -1,0 +1,93 @@
+#!/bin/bash
+# 剪贴板粘贴（自动识别）：有图 → 图片文件；否则 → 文本 .txt
+# 依赖：zenity；图片需 wl-clipboard 或 xclip（可选 imagemagick）；文本需 xclip/xsel
+
+set -euo pipefail
+
+# 目标目录：所选文件/文件夹的父目录，否则当前目录
+if [ -n "${NAUTILUS_SCRIPT_SELECTED_FILE_PATHS:-}" ]; then
+    SELECTED=$(printf '%s\n' "$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | head -n 1)
+    TARGET_DIR=$(dirname "$SELECTED")
+else
+    TARGET_DIR=$(pwd)
+fi
+
+timestamp=$(date +"%Y%m%d_%H%M%S")
+
+is_image_file() {
+    [ -s "$1" ] && file --mime-type "$1" 2>/dev/null | grep -q ': image/'
+}
+
+paste_image_wl() {
+    local mime outfile="$1"
+    command -v wl-paste &>/dev/null || return 1
+    mime=$(wl-paste -l 2>/dev/null | grep -E '^image/' | head -n 1)
+    [ -z "$mime" ] && return 1
+    case "$mime" in
+        image/jpeg) outfile="${outfile%.png}.jpg" ;;
+        image/webp) outfile="${outfile%.png}.webp" ;;
+        image/bmp)  outfile="${outfile%.png}.bmp" ;;
+    esac
+    wl-paste --type "$mime" > "$outfile" 2>/dev/null || return 1
+    is_image_file "$outfile" || { rm -f "$outfile"; return 1; }
+    printf '%s' "$outfile"
+}
+
+paste_image_xclip() {
+    local mime outfile="$1"
+    command -v xclip &>/dev/null || return 1
+    for mime in image/png image/jpeg image/bmp image/webp; do
+        xclip -selection clipboard -t TARGETS -o 2>/dev/null | grep -q "$mime" || continue
+        case "$mime" in
+            image/jpeg) outfile="${outfile%.png}.jpg" ;;
+            image/webp) outfile="${outfile%.png}.webp" ;;
+            image/bmp)  outfile="${outfile%.png}.bmp" ;;
+        esac
+        xclip -selection clipboard -t "$mime" -o > "$outfile" 2>/dev/null || continue
+        if is_image_file "$outfile"; then
+            printf '%s' "$outfile"
+            return 0
+        fi
+        rm -f "$outfile"
+    done
+    xclip -selection clipboard -t image/png -o > "$outfile" 2>/dev/null || return 1
+    is_image_file "$outfile" || { rm -f "$outfile"; return 1; }
+    printf '%s' "$outfile"
+}
+
+paste_image_magick() {
+    local outfile="$1"
+    if command -v import &>/dev/null; then
+        import -silent -clipboard "$outfile" 2>/dev/null && is_image_file "$outfile" && printf '%s' "$outfile" && return 0
+        rm -f "$outfile"
+    fi
+    if command -v convert &>/dev/null; then
+        convert 'clipboard:' "$outfile" 2>/dev/null && is_image_file "$outfile" && printf '%s' "$outfile" && return 0
+        rm -f "$outfile"
+    fi
+    return 1
+}
+
+# 1) 优先图片
+IMG_CANDIDATE="$TARGET_DIR/${timestamp}.png"
+SAVED=
+for method in paste_image_wl paste_image_xclip paste_image_magick; do
+    SAVED=$($method "$IMG_CANDIDATE") && break
+done
+if [ -n "$SAVED" ]; then
+    notify-send "已粘贴图片" "$SAVED" 2>/dev/null || true
+    exit 0
+fi
+rm -f "$IMG_CANDIDATE"
+
+# 2) 再试文本
+TEXT=$(xclip -selection clipboard -o 2>/dev/null || xsel --clipboard --output 2>/dev/null || true)
+if [ -n "$TEXT" ]; then
+    OUT="$TARGET_DIR/${timestamp}.txt"
+    printf '%s\n' "$TEXT" > "$OUT"
+    notify-send "已粘贴文本" "$OUT" 2>/dev/null || true
+    exit 0
+fi
+
+zenity --error --text="剪贴板里没有可用的图片或文本。\n\n图片请安装：xclip 或 wl-clipboard\n文本请安装：xclip 或 xsel"
+exit 1

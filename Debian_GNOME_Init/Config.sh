@@ -43,7 +43,8 @@ SET_SYSTEMCTL_SERVICE=1
 # 是否配置Nautilus右键菜单以及Data、Project、VM_Share、Prog、Mounted文件夹 Preset=1
 SET_NAUTILUS_MENU=1
 # 启用办公右键脚本：把仓库根目录 Office/ 同步到 ~/.local/share/nautilus/lib/Office，
-# 再把 Office/NautilusScripts/Office/ 平铺到 scripts/（脚本用 ../lib/Office）Preset=1
+# 启用办公右键脚本：Office/ → lib/Office，NautilusScripts/（含子菜单目录）合并到 scripts/
+# 依赖由 lib/Office/0-Off-init.sh 安装，不进右键菜单 Preset=1
 SET_NAUTILUS_OFFICE=1
 # 复制模板文件夹内容(注意：有些系统可能在~/.Templates，这个不在本脚本考虑范围) Preset=1
 SET_GNOME_FILE_TEMPLATES=1

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 PDF拆分(每一页),可实现pdf转图片
 

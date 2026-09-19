@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 m_Log.py - 轻量日志模块（控制台 + 可选文件日志）

@@ -1,0 +1,112 @@
+#!/bin/bash
+# 把选中的文件生成 Nginx 访问链接并复制到剪贴板（支持多选批量）
+# - 自动枚举本机 IP，zenity 选择后再生成
+# - 文件须在 NGINX_ROOT 下才生成正确相对路径
+set -euo pipefail
+
+# ========== 可改 ==========
+NGINX_ROOT="${NGINX_ROOT:-/home/HTML}"
+NGINX_SCHEME="${NGINX_SCHEME:-http}"
+NGINX_PORT="${NGINX_PORT:-}"          # 空=默认端口（http 80 / https 443 不写进 URL）
+# ==========================
+
+die() { zenity --error --text="$1" 2>/dev/null || echo "[x] $1" >&2; exit 1; }
+
+[[ $# -gt 0 ]] || die "未选中任何文件/文件夹"
+
+NGINX_ROOT="$(realpath "$NGINX_ROOT" 2>/dev/null || echo "$NGINX_ROOT")"
+[[ -d "$NGINX_ROOT" ]] || die "Nginx 根目录不存在：\n$NGINX_ROOT\n\n可设环境变量 NGINX_ROOT"
+
+# 收集本机 IPv4（去重，127.0.0.1 置顶）
+collect_ips() {
+    local -a ips=()
+    local ip
+    ips+=("127.0.0.1")
+    # hostname -I
+    if command -v hostname >/dev/null 2>&1; then
+        for ip in $(hostname -I 2>/dev/null); do
+            [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+            [[ "$ip" == "127.0.0.1" ]] && continue
+            ips+=("$ip")
+        done
+    fi
+    # ip route / ip addr 兜底
+    if command -v ip >/dev/null 2>&1; then
+        while read -r ip; do
+            [[ -z "$ip" || "$ip" == "127.0.0.1" ]] && continue
+            ips+=("$ip")
+        done < <(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1)
+    fi
+    printf '%s\n' "${ips[@]}" | awk 'NF && !seen[$0]++'
+}
+
+mapfile -t IP_LIST < <(collect_ips)
+[[ ${#IP_LIST[@]} -gt 0 ]] || die "未能识别本机 IP"
+
+# zenity 单选 IP
+ZENITY_ARGS=(--list --radiolist --title="选择访问地址（本机 IP）"
+    --text="将为 ${#} 个选中项生成 Nginx 链接\n根目录：$NGINX_ROOT"
+    --column="选" --column="IP" --width=420 --height=320)
+first=1
+for ip in "${IP_LIST[@]}"; do
+    if [[ "$first" -eq 1 ]]; then
+        ZENITY_ARGS+=(TRUE "$ip")
+        first=0
+    else
+        ZENITY_ARGS+=(FALSE "$ip")
+    fi
+done
+
+CHOSEN_IP=$(zenity "${ZENITY_ARGS[@]}") || exit 0
+[[ -n "$CHOSEN_IP" ]] || exit 0
+
+# 拼 host（含可选端口）
+if [[ -n "$NGINX_PORT" ]]; then
+    HOST="${CHOSEN_IP}:${NGINX_PORT}"
+else
+    HOST="$CHOSEN_IP"
+fi
+BASE_URL="${NGINX_SCHEME}://${HOST}"
+
+# URL 编码相对路径（保留 /）
+urlencode_path() {
+    python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe="/"))' "$1" 2>/dev/null \
+        || printf '%s' "$1"
+}
+
+ALL_URLS=()
+OUTSIDE=0
+
+for FILE in "$@"; do
+    ABS_PATH=$(realpath "$FILE" 2>/dev/null) || continue
+    if [[ "$ABS_PATH" == "$NGINX_ROOT" || "$ABS_PATH" == "$NGINX_ROOT"/* ]]; then
+        RELATIVE_PATH=$(realpath --relative-to="$NGINX_ROOT" "$FILE")
+        ENC=$(urlencode_path "$RELATIVE_PATH")
+        ALL_URLS+=("${BASE_URL}/${ENC}")
+    else
+        OUTSIDE=1
+        ENC=$(urlencode_path "$(basename "$FILE")")
+        ALL_URLS+=("${BASE_URL}/${ENC}")
+    fi
+done
+
+[[ ${#ALL_URLS[@]} -gt 0 ]] || die "没有生成任何链接"
+
+# 多行复制到剪贴板
+CLIP_TEXT=$(printf '%s\n' "${ALL_URLS[@]}")
+if command -v wl-copy >/dev/null 2>&1; then
+    printf '%s\n' "$CLIP_TEXT" | wl-copy
+elif command -v xsel >/dev/null 2>&1; then
+    printf '%s\n' "$CLIP_TEXT" | xsel -b
+elif command -v xclip >/dev/null 2>&1; then
+    printf '%s\n' "$CLIP_TEXT" | xclip -selection clipboard
+else
+    die "需要 wl-copy / xsel / xclip 才能复制到剪贴板"
+fi
+
+MSG="已复制 ${#ALL_URLS[@]} 条链接（$BASE_URL）：\n\n$CLIP_TEXT"
+if [[ "$OUTSIDE" -eq 1 ]]; then
+    zenity --warning --title="Nginx 链接" --text="部分项不在根目录内，仅用了文件名：\n\n$MSG" --width=640 --height=280
+else
+    zenity --info --title="Nginx 链接" --text="$MSG" --width=640 --height=280
+fi

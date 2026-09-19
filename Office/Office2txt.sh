@@ -1,302 +1,303 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# 批量将 Word / Excel 转为纯文本，保持目录结构
+# 用法:
+#   ./Office2txt.sh [目录|文件]     # 默认目录 src
+#   ./Office2txt.sh --help
+#
+# 输出: ./office_mirror/  （相对当前工作目录）
+# 日志: ./office_mirror/_logs/
 set -euo pipefail
-## 搜索指定文件夹下（src）的word,excel文件，转化为txt文本 保持目录结构
 
-cmdToCheck="pandoc"
-if ! [ -x "$(command -v "$cmdToCheck")" ]; then
-    echo "Error: $cmdToCheck is not installed." >&2
-    sudo apt install -y "$cmdToCheck"
-fi
-cmdToCheck="antiword"
-if ! [ -x "$(command -v "$cmdToCheck")" ]; then
-    echo "Error: $cmdToCheck is not installed." >&2
-    sudo apt install -y "$cmdToCheck"
-fi
+WORD_EXTS=(doc docx wps)
+EXCEL_EXTS=(xlsx xls et csv)
+MIRROR_OUT="office_mirror"
+NO_BLANK_FILENAME=1
+OVERWRITE=1
 
-cmdToCheck="libreoffice"
-if ! [ -x "$(command -v "$cmdToCheck")" ]; then
-    echo "Error: $cmdToCheck is not installed." >&2
-    sudo apt-get update
-    sudo apt-get install -y libreoffice libreoffice-java-common
-fi
+usage() {
+  cat <<'EOF'
+批量 Office → txt（保持目录结构）
 
-# 搜索的文件夹：获取输入参数，默认为 src
-directory_path="${1:-src}"
+用法:
+  ./Office2txt.sh [目录|文件]   默认目录: src
+  ./Office2txt.sh -h|--help
 
-# 搜索的word文件扩展名
-word_extensions=("doc" "docx" "wps")
-# 搜索的Excel文件扩展名
-excel_extensions=("xlsx" "xls" "et" "csv")
-# 导出的位置
-mirror_out="office_mirror"
-# 去除文件名中的空格(仅导出的文件)
-no_blank_filename=1
-# 如果导出的文件存在是否覆盖
-ooverwrite=1
+输出目录: ./office_mirror/
+日志目录: ./office_mirror/_logs/
 
-function find_files_with_extensions() {
-    local directory_path="$1"
-    local extensions=("${@:2}")
-
-    if [ -d "$directory_path" ]; then
-        ffwe_file_list=()
-        for ext in "${extensions[@]}"; do
-            mapfile -t files_for_extension < <(find "$directory_path" -type f -iname "*.$ext" -exec readlink -f {} \;)
-            ffwe_file_list+=("${files_for_extension[@]}")
-        done
-    else
-        echo "目录不存在: $directory_path"
-    fi
+依赖（缺了请安装，不会自动 sudo）:
+  pandoc antiword catdoc libreoffice
+  或: Office/0-Off-init.sh --yes
+EOF
 }
 
-# 函数：将相对路径转为绝对路径
-function convert_relative_to_absolute() {
-    local relative_path="$1"
-    realpath "$relative_path"
+log() { printf '[+] %s\n' "$*"; }
+warn() { printf '[!] %s\n' "$*" >&2; }
+die() { printf '[x] %s\n' "$*" >&2; exit 1; }
+
+need_cmd() {
+  local c="$1"
+  command -v "$c" >/dev/null 2>&1 || return 1
 }
 
-# 函数：将绝对路径转为相对路径（安全版：避免路径里出现 ' 导致 python 语法错误）
-function convert_absolute_to_relative() {
-    local absolute_path="$1"
-    local base_directory="$2"
-    python3 - "$absolute_path" "$base_directory" <<'PY'
+check_deps() {
+  local -a miss=()
+  need_cmd pandoc || miss+=(pandoc)
+  need_cmd antiword || miss+=(antiword)
+  need_cmd libreoffice || miss+=(libreoffice)
+  # catdoc / iconv 可选
+  if [[ ${#miss[@]} -gt 0 ]]; then
+    die "缺少依赖: ${miss[*]}
+请安装: sudo apt install pandoc antiword catdoc libreoffice libreoffice-java-common
+或运行: $(dirname "$(readlink -f "$0")")/0-Off-init.sh --yes"
+  fi
+}
+
+# 相对路径（基于 SRC_ROOT）
+rel_to_src() {
+  python3 - "$1" "$SRC_ROOT" <<'PY'
 import os, sys
 print(os.path.relpath(sys.argv[1], sys.argv[2]))
 PY
 }
 
-# 函数：生成去除文件名的路径
-function get_directory_path() {
-    local p="$1"
-    dirname "$p"
+blank_fix() {
+  if [[ "$NO_BLANK_FILENAME" -eq 1 ]]; then
+    echo "${1// /_}"
+  else
+    echo "$1"
+  fi
 }
 
-# 获取文件编码（返回 charset）
-function getFileEncoding() {
-    local fp="$1"
-    local tfo
-    tfo=$(file -bi "$fp")   # e.g. text/plain; charset=utf-8
-    echo "${tfo##*=}"       # 取 charset= 后面
+# 构建输出 txt 路径；打印目录到 stdout 第二行不太方便，用全局 TARGET_PATH
+build_target_txt() {
+  local abs="$1"
+  local rel dst_dir name
+  rel="$(rel_to_src "$abs")"
+  rel="$(blank_fix "$rel")"
+  dst_dir="$MIRROR_OUT/$(dirname "$rel")"
+  name="$(basename "$rel")"
+  name="${name%.*}.txt"
+  mkdir -p "$dst_dir"
+  TARGET_PATH="$dst_dir/$name"
 }
 
-# 用 libreoffice 转换到指定 target_path（outdir 必须是目录，生成后再改名/移动）
-function libreoffice_convert_to_txt_to_target() {
-    local file_path="$1"
-    local target_path="$2"
-    local outdir
-    outdir="$(dirname "$target_path")"
-    mkdir -p "$outdir"
+append_fail() {
+  printf '%s\n' "$1" >>"$FAIL_LOG"
+}
 
-    # 先在 outdir 生成同名 txt
-    libreoffice --headless --convert-to txt:Text --outdir "$outdir" "$file_path" >/dev/null 2>>"error_log.txt" || return 1
+# LibreOffice → 指定目标（用独立临时目录，避免并发/撞名）
+lo_convert() {
+  local src="$1" dest="$2" filter="$3"  # filter: txt:Text | csv
+  local tmp produced base ext
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/office2txt.XXXXXX")"
 
-    local base
-    base="$(basename "$file_path")"
-    local produced="$outdir/${base%.*}.txt"
-
-    if [ -f "$produced" ]; then
-        mv -f "$produced" "$target_path"
-        return 0
-    fi
-
-    # 某些格式可能产生不同后缀名，兜底找一个最新 txt
-    local newest
-    newest="$(ls -1t "$outdir"/*.txt 2>/dev/null | head -n 1 || true)"
-    if [ -n "${newest:-}" ] && [ -f "$newest" ]; then
-        mv -f "$newest" "$target_path"
-        return 0
-    fi
-
+  if ! libreoffice --headless --convert-to "$filter" --outdir "$tmp" "$src" \
+      >/dev/null 2>>"$ERR_LOG"; then
+    rm -rf "$tmp"
     return 1
+  fi
+
+  base="$(basename "$src")"
+  case "$filter" in
+    csv) ext=csv ;;
+    *)   ext=txt ;;
+  esac
+  produced="$tmp/${base%.*}.$ext"
+  if [[ -f "$produced" ]]; then
+    mv -f "$produced" "$dest"
+    rm -rf "$tmp"
+    return 0
+  fi
+  produced="$(find "$tmp" -maxdepth 1 -type f -name "*.$ext" | head -n 1 || true)"
+  if [[ -n "${produced:-}" && -f "$produced" ]]; then
+    mv -f "$produced" "$dest"
+    rm -rf "$tmp"
+    return 0
+  fi
+  rm -rf "$tmp"
+  return 1
 }
 
-function libreoffice_convert_to_csv_to_target() {
-    local file_path="$1"
-    local target_path="$2"
-    local outdir
-    outdir="$(dirname "$target_path")"
-    mkdir -p "$outdir"
+convert_csv_to_utf8_txt() {
+  local src="$1" dest="$2"
+  local enc
+  enc="$(file -bi "$src" 2>/dev/null || true)"
+  enc="${enc##*charset=}"
+  enc="${enc%%;*}"
+  enc="${enc,,}"
 
-    libreoffice --headless --convert-to csv --outdir "$outdir" "$file_path" >/dev/null 2>>"error_log.txt" || return 1
+  if [[ "$enc" == "utf-8" || "$enc" == "us-ascii" ]]; then
+    cp -f "$src" "$dest"
+    return 0
+  fi
 
-    local base
-    base="$(basename "$file_path")"
-    local produced="$outdir/${base%.*}.csv"
-
-    if [ -f "$produced" ]; then
-        mv -f "$produced" "$target_path"
-        return 0
+  # 按探测结果试，再 GBK / GB18030
+  local -a try=()
+  [[ -n "$enc" && "$enc" != "unknown-8bit" && "$enc" != "binary" ]] && try+=("$enc")
+  try+=(GBK GB18030 UTF-8)
+  local f
+  for f in "${try[@]}"; do
+    if iconv -c -f "$f" -t UTF-8 "$src" -o "$dest" 2>>"$ERR_LOG"; then
+      return 0
     fi
-
-    local newest
-    newest="$(ls -1t "$outdir"/*.csv 2>/dev/null | head -n 1 || true)"
-    if [ -n "${newest:-}" ] && [ -f "$newest" ]; then
-        mv -f "$newest" "$target_path"
-        return 0
-    fi
-
-    return 1
+  done
+  return 1
 }
 
-convert_word_to_txt() {
-    local file_path="$1"
+convert_word() {
+  local file_path="$1" fext
+  build_target_txt "$file_path"
+  if [[ "$OVERWRITE" -eq 0 && -f "$TARGET_PATH" ]]; then
+    ((SKIP++)) || true
+    return 0
+  fi
+  fext="${file_path##*.}"
+  fext="${fext,,}"
+  log "Word: $file_path -> $TARGET_PATH"
 
-    # 绝对路径转相对路径(构建相对路径)
-    local srcfr
-    srcfr="$(convert_absolute_to_relative "$file_path" ".")"
-
-    # 获取相对路径的文件夹名
-    local dstdr
-    dstdr="$(get_directory_path "$srcfr")"
-
-    local target_path tmkd
-    if [ "$no_blank_filename" -eq 1 ]; then
-        target_path="$mirror_out/$(echo "$srcfr" | sed 's/ /_/g')"
-        tmkd="$mirror_out/$(echo "$dstdr" | sed 's/ /_/g')"
-    else
-        target_path="$mirror_out/$srcfr"
-        tmkd="$mirror_out/$dstdr"
-    fi
-
-    # 修改文件扩展名为 .txt
-    local directory_path filename target_filename
-    directory_path="$(dirname "$target_path")"
-    filename="$(basename "$target_path")"
-    target_filename="${filename%.*}.txt"
-    target_path="$directory_path/$target_filename"
-
-    if ! [ -d "$tmkd" ]; then
-        echo "【mkdir】: $tmkd"
-        mkdir -p "$tmkd"
-    fi
-
-    local fext="${file_path##*.}"
-    fext="${fext,,}"
-
-    if [ "$ooverwrite" -eq 0 ] && [ -f "$target_path" ]; then
+  case "$fext" in
+    doc)
+      if antiword "$file_path" >"$TARGET_PATH" 2>>"$ERR_LOG"; then
+        ((OK++)) || true
         return 0
-    fi
-
-    echo "【File】: $file_path -> $target_path"
-
-    if [ "$fext" = "doc" ]; then
-        if ! antiword "$file_path" >"$target_path" 2>>error_log.txt; then
-            echo "antiword 失败，尝试 catdoc: $file_path" >> error_log.txt
-            catdoc "$file_path" >"$target_path" 2>>error_log.txt || {
-                echo "$file_path" >>"no_convert.log"
-                return 0
-            }
-        fi
-    elif [ "$fext" = "docx" ]; then
-        pandoc -s "$file_path" -t plain -o "$target_path" 2>>"error_log.txt" || {
-            echo "$file_path" >>"no_convert.log"
-            return 0
-        }
-    elif [ "$fext" = "wps" ]; then
-        # wps 很多时候 antiword 不一定行，失败就用 libreoffice 兜底
-        if ! antiword "$file_path" >"$target_path" 2>>"error_log.txt"; then
-            if ! libreoffice_convert_to_txt_to_target "$file_path" "$target_path"; then
-                echo "$file_path" >>"no_convert.log"
-            fi
-        fi
-    else
-        if ! libreoffice_convert_to_txt_to_target "$file_path" "$target_path"; then
-            echo "$file_path" >>"no_convert.log"
-        fi
-    fi
+      fi
+      if need_cmd catdoc && catdoc "$file_path" >"$TARGET_PATH" 2>>"$ERR_LOG"; then
+        ((OK++)) || true
+        return 0
+      fi
+      append_fail "$file_path"
+      ((FAIL++)) || true
+      ;;
+    docx)
+      if pandoc -s "$file_path" -t plain -o "$TARGET_PATH" 2>>"$ERR_LOG"; then
+        ((OK++)) || true
+      else
+        append_fail "$file_path"
+        ((FAIL++)) || true
+      fi
+      ;;
+    wps)
+      if antiword "$file_path" >"$TARGET_PATH" 2>>"$ERR_LOG"; then
+        ((OK++)) || true
+      elif lo_convert "$file_path" "$TARGET_PATH" "txt:Text"; then
+        ((OK++)) || true
+      else
+        append_fail "$file_path"
+        ((FAIL++)) || true
+      fi
+      ;;
+    *)
+      if lo_convert "$file_path" "$TARGET_PATH" "txt:Text"; then
+        ((OK++)) || true
+      else
+        append_fail "$file_path"
+        ((FAIL++)) || true
+      fi
+      ;;
+  esac
 }
 
-convert_excel_to_txt() {
-    local file_path="$1"
+convert_excel() {
+  local file_path="$1" fext tmp_csv
+  build_target_txt "$file_path"
+  if [[ "$OVERWRITE" -eq 0 && -f "$TARGET_PATH" ]]; then
+    ((SKIP++)) || true
+    return 0
+  fi
+  fext="${file_path##*.}"
+  fext="${fext,,}"
+  log "Excel: $file_path -> $TARGET_PATH"
 
-    # 绝对路径转相对路径(构建相对路径)
-    local srcfr
-    srcfr="$(convert_absolute_to_relative "$file_path" ".")"
-
-    # 获取相对路径的文件夹名
-    local dstdr
-    dstdr="$(get_directory_path "$srcfr")"
-
-    local target_path tmkd
-    if [ "$no_blank_filename" -eq 1 ]; then
-        target_path="$mirror_out/$(echo "$srcfr" | sed 's/ /_/g')"
-        tmkd="$mirror_out/$(echo "$dstdr" | sed 's/ /_/g')"
+  if [[ "$fext" == "csv" ]]; then
+    if convert_csv_to_utf8_txt "$file_path" "$TARGET_PATH"; then
+      ((OK++)) || true
     else
-        target_path="$mirror_out/$srcfr"
-        tmkd="$mirror_out/$dstdr"
+      append_fail "$file_path"
+      ((FAIL++)) || true
     fi
+    return 0
+  fi
 
-    # 输出统一为 .txt（CSV 就先转 utf-8 后保存为 txt；其他表格先转 csv 再保存为 txt）
-    local directory_path filename target_filename
-    directory_path="$(dirname "$target_path")"
-    filename="$(basename "$target_path")"
-    target_filename="${filename%.*}.txt"
-    target_path="$directory_path/$target_filename"
-
-    if ! [ -d "$tmkd" ]; then
-        echo "【mkdir】: $tmkd"
-        mkdir -p "$tmkd"
-    fi
-
-    local fext="${file_path##*.}"
-    fext="${fext,,}"
-
-    if [ "$ooverwrite" -eq 0 ] && [ -f "$target_path" ]; then
-        return 0
-    fi
-
-    echo "【File】: $file_path -> $target_path"
-
-    if [ "$fext" = "csv" ]; then
-        local enc
-        enc="$(getFileEncoding "$file_path")"
-        if [ "$enc" != "utf-8" ]; then
-            iconv -c -f GBK -t UTF-8 "$file_path" -o "$target_path" 2>>"error_log.txt" || {
-                echo "$file_path" >>"no_convert.log"
-                return 0
-            }
-        else
-            cp "$file_path" "$target_path" || {
-                echo "$file_path" >>"no_convert.log"
-                return 0
-            }
-        fi
-    else
-        # 先转为 csv 到临时文件，再改名为 txt（内容仍是 csv 文本）
-        local tmp_csv="${target_path%.txt}.csv"
-        if libreoffice_convert_to_csv_to_target "$file_path" "$tmp_csv"; then
-            mv -f "$tmp_csv" "$target_path"
-        else
-            echo "$file_path" >>"no_convert.log"
-        fi
-    fi
+  tmp_csv="${TARGET_PATH%.txt}.__tmp.csv"
+  if lo_convert "$file_path" "$tmp_csv" "csv"; then
+    mv -f "$tmp_csv" "$TARGET_PATH"
+    ((OK++)) || true
+  else
+    rm -f "$tmp_csv"
+    append_fail "$file_path"
+    ((FAIL++)) || true
+  fi
 }
 
-# 如果是文件就直接处理：复制到临时目录，避免原地处理出问题
-if [ -f "$directory_path" ]; then
-    mkdir -p officeTempWS
-    cp "$directory_path" ./officeTempWS/
-    directory_path="./officeTempWS/"
+collect_files() {
+  local root="$1"
+  shift
+  local -a exts=("$@")
+  local -a find_args=()
+  local i=0 ext
+  for ext in "${exts[@]}"; do
+    [[ $i -gt 0 ]] && find_args+=( -o )
+    find_args+=( -iname "*.${ext}" )
+    ((i++)) || true
+  done
+  mapfile -t COLLECTED < <(find "$root" -type f \( "${find_args[@]}" \) -print0 \
+    | xargs -0 -r realpath 2>/dev/null | sort -u)
+}
+
+# ---------- main ----------
+INPUT="${1:-src}"
+case "${INPUT}" in
+  -h|--help) usage; exit 0 ;;
+esac
+
+check_deps
+
+WORK_TMP=""
+cleanup_main() {
+  [[ -n "${WORK_TMP:-}" && -d "${WORK_TMP:-}" ]] && rm -rf "$WORK_TMP"
+}
+trap cleanup_main EXIT
+
+if [[ -f "$INPUT" ]]; then
+  WORK_TMP="$(mktemp -d ./officeTempWS.XXXXXX)"
+  cp -f "$INPUT" "$WORK_TMP/"
+  SRC_ROOT="$(realpath "$WORK_TMP")"
+elif [[ -d "$INPUT" ]]; then
+  SRC_ROOT="$(realpath "$INPUT")"
+else
+  die "路径不存在: $INPUT"
 fi
 
-##########################################################################################
-# 处理word
-find_files_with_extensions "$directory_path" "${word_extensions[@]}"
+mkdir -p "$MIRROR_OUT/_logs"
+ERR_LOG="$MIRROR_OUT/_logs/error_log.txt"
+FAIL_LOG="$MIRROR_OUT/_logs/no_convert.log"
+: >"$ERR_LOG"
+: >"$FAIL_LOG"
 
-for file_path in "${ffwe_file_list[@]}"; do
-    convert_word_to_txt "$file_path"
+OK=0
+FAIL=0
+SKIP=0
+
+log "源: $SRC_ROOT"
+log "出: $(realpath "$MIRROR_OUT")"
+
+collect_files "$SRC_ROOT" "${WORD_EXTS[@]}"
+log "Word 候选: ${#COLLECTED[@]}"
+for f in "${COLLECTED[@]:-}"; do
+  [[ -n "$f" ]] || continue
+  convert_word "$f" || true
 done
 
-# Excel转txt
-echo "==========================================================================="
-
-find_files_with_extensions "$directory_path" "${excel_extensions[@]}"
-
-for file_path in "${ffwe_file_list[@]}"; do
-    convert_excel_to_txt "$file_path"
+collect_files "$SRC_ROOT" "${EXCEL_EXTS[@]}"
+log "Excel 候选: ${#COLLECTED[@]}"
+for f in "${COLLECTED[@]:-}"; do
+  [[ -n "$f" ]] || continue
+  convert_excel "$f" || true
 done
 
-if [ -d "officeTempWS" ]; then
-    rm -r officeTempWS
-fi
-
+echo
+log "完成: 成功=$OK  跳过=$SKIP  失败=$FAIL"
+[[ "$FAIL" -gt 0 ]] && warn "失败列表: $FAIL_LOG"
+[[ -s "$ERR_LOG" ]] && warn "详情日志: $ERR_LOG"
+exit 0

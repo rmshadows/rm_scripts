@@ -87,8 +87,8 @@
 ### 检查点三
 
 - 自定义自己的服务（运行一个shell脚本）
-- 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹
-- 可选办公脚本（`SET_NAUTILUS_OFFICE=1`）：同步仓库 `Office/` 到 `~/.local/share/nautilus/lib/Office`，并把 `Office/NautilusScripts/Office/` 平铺到 `scripts/` 后执行 `0-NS-init.sh`
+- 配置Nautilus右键菜单以及Data、Project、Vbox-Tra、Prog、Mounted文件夹（`NautilusScripts/` 子目录会成为右键子菜单）
+- 可选办公脚本（`SET_NAUTILUS_OFFICE=1`）：同步仓库 `Office/` 到 `~/.local/share/nautilus/lib/Office`，合并 `Office/NautilusScripts/`（含 `PDF/` 等）到 `scripts/`，并执行 `lib/Office/0-Off-init.sh --yes`
 - 复制模板文件夹内容，并在家目录打包 `模板备份.tar.gz`（WPS 等可能清空模板，便于恢复）
 - 配置启用NetworkManager、安装net-tools
 - 设置网卡eth0为热拔插模式以缩短开机时间。如果没有eth0网卡，发出警告、跳过

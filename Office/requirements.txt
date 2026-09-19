@@ -1,8 +1,11 @@
-inputimeout==1.0.4
-natsort==8.4.0
-openpyxl==3.1.2
-pdf2image==1.16.3
-Pillow==11.3.0
-PyPDF2==3.0.1
-python_docx==1.1.2
+# Office Python 依赖（不锁版本）
+# 安装: ./0-Off-init.sh
+# 优先 pip → ~/.PythonVenv（与 Nautilus 右键 source ~/.zshrc 一致）
+inputimeout
+natsort
+openpyxl
+pdf2image
+Pillow
 pypdf
+PyPDF2
+python-docx

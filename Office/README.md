@@ -8,6 +8,8 @@ Github：https://github.com/rmshadows/
 
 ## 目录
 
+* **0-Off-init.sh**：Office 依赖一键安装（**默认含 Nautilus 右键依赖**）。系统工具走 apt；**Python 库 pip→`~/.PythonVenv`**。`./0-Off-init.sh --yes`；不要右键包时加 `--without-nautilus`。
+
 * **aes\_encrypt.sh**：用于对文件进行 AES 加密的脚本。
 * **encdec.sh**：此脚本用于对指定文件进行 AES-256-CBC 加密和解密
 * **ArchiveAndSplit压缩分片/**：用于将大文件压缩并按指定大小进行分片的工具文件夹。
@@ -34,9 +36,9 @@ Github：https://github.com/rmshadows/
 
 * **move\_subdirfiles\_here.sh**：将子目录中的文件移动到当前目录的脚本。
 
-* **NautilusScripts/**：适用于 GNOME 文件管理器（Nautilus）的右键脚本集合。Debian GNOME 部署开启 `SET_NAUTILUS_OFFICE=1` 时：本目录同步到 `~/.local/share/nautilus/lib/Office`，其中 `NautilusScripts/Office/` 平铺到 `~/.local/share/nautilus/scripts/`（脚本通过 `../lib/Office` 找工具）。
+* **NautilusScripts/**：GNOME 右键脚本。分类子目录名前缀 `▸`（如 `▸PDF`）便于和顶层动作脚本区分；顶层常用：`复制文件内容` / `复制路径` / `分别打成压缩包` / `删除空文件夹` / `保存剪贴板到文件`。
 
-* **Office2txt.sh**：将 Word、Excel 等 Office 文件批量转换为纯文本的脚本。
+* **Office2txt.sh**：Word/Excel 批量转纯文本（保目录结构）。`./Office2txt.sh [目录|文件]` → `office_mirror/`；日志在 `office_mirror/_logs/`；缺依赖会提示安装（不自动 sudo）。
 
 * **PDF\_Tools/**：PDF 合并、拆分、提取等工具集合目录。
 

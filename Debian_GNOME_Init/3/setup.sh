@@ -63,11 +63,19 @@ if [ "$SET_NAUTILUS_MENU" -eq 1 ]; then
     addFolder "/home/$CURRENT_USER/.$CURRENT_USER/"
     nautilus_base="/home/$CURRENT_USER/.local/share/nautilus"
     addFolder "$nautilus_base/scripts"
-    prompt -x "创建 Nautilus 右键菜单"
-    sudo cp NautilusScripts/* "$nautilus_base/scripts/"
-    sudo chmod +x "$nautilus_base/scripts/"*
-    sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$nautilus_base"
+    prompt -x "创建 Nautilus 右键菜单（保留子目录=子菜单）"
+    # 保留分类子目录；排除 res/、安装器、隐藏文件
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete --exclude 'res/' --exclude '0-*-init.sh' --exclude '.*' --exclude '*.md' \
+            NautilusScripts/ "$nautilus_base/scripts/"
+    else
+        find "$nautilus_base/scripts" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+        cp -a NautilusScripts/. "$nautilus_base/scripts/"
+        rm -rf "$nautilus_base/scripts/res"
+        find "$nautilus_base/scripts" -name '0-*-init.sh' -delete
+    fi
 
+    office_init=""
     if [ "${SET_NAUTILUS_OFFICE:-0}" -eq 1 ]; then
         office_src="${DEPLOY_SCRIPT_ROOT}/../Office"
         if [ ! -d "$office_src" ]; then
@@ -77,29 +85,44 @@ if [ "$SET_NAUTILUS_MENU" -eq 1 ]; then
             prompt -x "同步 Office 到 $nautilus_base/lib/Office"
             if command -v rsync >/dev/null 2>&1; then
                 rsync -a --exclude '.idea' --exclude '__pycache__' --exclude '*.pyc' --exclude '.git' \
+                    --exclude 'NautilusScripts/res' \
                     "$office_src/" "$nautilus_base/lib/Office/"
             else
                 cp -a "$office_src/." "$nautilus_base/lib/Office/"
             fi
-            if [ -d "$office_src/NautilusScripts/Office" ]; then
-                prompt -x "释放 Office 办公右键脚本到 scripts/"
-                cp -a "$office_src/NautilusScripts/Office/"* "$nautilus_base/scripts/"
+            if [ -d "$office_src/NautilusScripts" ]; then
+                prompt -x "合并 Office 右键脚本（含 PDF/ 等子菜单）到 scripts/"
+                if command -v rsync >/dev/null 2>&1; then
+                    rsync -a --exclude 'res/' --exclude '0-*-init.sh' --exclude '.*' --exclude '*.md' \
+                        "$office_src/NautilusScripts/" "$nautilus_base/scripts/"
+                else
+                    cp -a "$office_src/NautilusScripts/." "$nautilus_base/scripts/"
+                    rm -rf "$nautilus_base/scripts/res"
+                fi
             fi
-            if [ -f "$office_src/NautilusScripts/【粘图】剪贴板图片" ]; then
-                cp -a "$office_src/NautilusScripts/【粘图】剪贴板图片" "$nautilus_base/scripts/"
-            fi
-            chmod +x "$nautilus_base/scripts/"*
-            sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$nautilus_base"
-            # 双面打印、PDF 工具依赖 ../lib/Office
-            export NS_INIT_EXTRA_PACKAGES="xclip clamav clamav-daemon python3-pypdf python3-pil python3-openpyxl python3-docx python3-natsort libreoffice-writer libreoffice-calc libnotify-bin"
+            office_init="$nautilus_base/lib/Office/0-Off-init.sh"
         fi
     fi
 
-    bash "$nautilus_base/scripts/0-NS-init.sh"
-    if [ "$?" -eq 0 ]; then
-        rm -f "$nautilus_base/scripts/0-NS-init.sh"
+    find "$nautilus_base/scripts" -type f ! -name '.*' -exec chmod +x {} \;
+    sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$nautilus_base"
+    # 清掉历史残留的安装器菜单项
+    rm -f "$nautilus_base/scripts/0-NS-init.sh" "$nautilus_base/scripts/0-Off-init.sh"
+
+    # 依赖安装：不进右键菜单。有 Office 则跑 0-Off-init；否则只装基础 GUI 包
+    prompt -x "安装 Nautilus 脚本依赖（不写入 scripts/）"
+    if [ -n "$office_init" ] && [ -f "$office_init" ]; then
+        prompt -x "委托 $office_init"
+        if [ "$(id -un)" = "$CURRENT_USER" ]; then
+            bash "$office_init" --yes
+        else
+            sudo -H -u "$CURRENT_USER" bash "$office_init" --yes
+        fi
     else
-        echo "执行失败，保留 $nautilus_base/scripts/0-NS-init.sh"
+        prompt -x "未启用 Office，安装基础包"
+        sudo apt-get update -y || true
+        sudo apt-get install -y zenity libnotify-bin gnome-terminal poppler-utils ghostscript cups \
+            xclip imagemagick gnupg || prompt -w "部分基础包安装失败，可稍后手动补"
     fi
 fi
 

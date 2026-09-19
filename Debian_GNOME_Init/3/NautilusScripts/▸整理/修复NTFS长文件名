@@ -1,0 +1,97 @@
+#!/bin/bash
+# 修复所选文件夹内超长文件名/目录名（NTFS/exFAT 等 NAME_MAX 限制）
+# 可选手动：保留开头 或 保留末尾；文件均会尽量保留扩展名。
+set -euo pipefail
+
+source ~/.zshrc 2>/dev/null || true
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+NAUTILUS_ROOT="$SCRIPT_DIR"
+while [ "$NAUTILUS_ROOT" != "/" ] && [ ! -d "$NAUTILUS_ROOT/lib/Office" ]; do
+  NAUTILUS_ROOT="$(dirname "$NAUTILUS_ROOT")"
+done
+LIB_DIR="$NAUTILUS_ROOT/lib/Office"
+FSCRIPTS="$LIB_DIR/fix_long_filenames.sh"
+
+[[ -f "$FSCRIPTS" ]] || {
+  zenity --error --text="找不到工具脚本：\n$FSCRIPTS\n\n请确认已部署 Office 到 ~/.local/share/nautilus/lib/Office"
+  exit 1
+}
+
+[[ -d "${1:-}" ]] || {
+  zenity --error --text="请右键点击「文件夹」再运行此脚本。"
+  exit 1
+}
+
+DIR="$1"
+TOOL_NAME="$(basename "$FSCRIPTS")"
+cp -f "$FSCRIPTS" "$DIR/$TOOL_NAME"
+chmod +x "$DIR/$TOOL_NAME"
+cd "$DIR"
+
+cleanup() { rm -f "$DIR/$TOOL_NAME"; }
+trap cleanup EXIT
+
+# 1) 预览 / 执行
+ACTION=$(zenity --list --radiolist \
+  --title="修复超长文件名" \
+  --text="先预览再执行更安全。" \
+  --width=420 --height=220 \
+  --column="选" --column="操作" \
+  TRUE "仅预览（不改名）" \
+  FALSE "执行重命名") || exit 0
+
+case "$ACTION" in
+  "仅预览（不改名）") MODE_FLAG="-p" ;;
+  "执行重命名")
+    zenity --question --title="确认" --text="将实际重命名超长项，是否继续？" || exit 0
+    MODE_FLAG="-e"
+    ;;
+  *) exit 0 ;;
+esac
+
+# 2) 处理范围
+SCOPE=$(zenity --list --radiolist \
+  --title="处理范围" \
+  --text="选择要处理的对象" \
+  --width=480 --height=260 \
+  --column="选" --column="范围" \
+  TRUE "全部（文件+目录）" \
+  FALSE "仅文件" \
+  FALSE "仅目录") || exit 0
+
+case "$SCOPE" in
+  "全部（文件+目录）") SCOPE_FLAG="-a" ;;
+  "仅文件") SCOPE_FLAG="-f" ;;
+  "仅目录") SCOPE_FLAG="-d" ;;
+  *) exit 0 ;;
+esac
+
+# 3) 保留开头 / 末尾（文件都会保留扩展名）
+KEEP=$(zenity --list --radiolist \
+  --title="截取方式" \
+  --text="超长时保留哪一段？\n（文件名都会尽量保留扩展名，例如 .pdf / .docx）" \
+  --width=560 --height=280 \
+  --column="选" --column="方式" \
+  TRUE "保留开头（推荐；扩展名仍在末尾）" \
+  FALSE "保留末尾（靠近文号/扩展名一侧的正文）") || exit 0
+
+case "$KEEP" in
+  "保留开头（推荐；扩展名仍在末尾）") KEEP_FLAG="" ;;   # 默认 head
+  "保留末尾（靠近文号/扩展名一侧的正文）") KEEP_FLAG="-r" ;;
+  *) exit 0 ;;
+esac
+
+TITLE="预览结果"
+[[ "$MODE_FLAG" == "-e" ]] && TITLE="执行结果"
+
+# 注意：空的 KEEP_FLAG 不要当成独立空参数传乱
+if [[ -n "$KEEP_FLAG" ]]; then
+  ./"$TOOL_NAME" "$SCOPE_FLAG" "$KEEP_FLAG" "$MODE_FLAG" \
+    | zenity --text-info --width=1200 --height=480 --title="$TITLE" || true
+else
+  ./"$TOOL_NAME" "$SCOPE_FLAG" "$MODE_FLAG" \
+    | zenity --text-info --width=1200 --height=480 --title="$TITLE" || true
+fi
+
+notify-send "修复超长文件名" "$TITLE 已完成（目录：$DIR）" 2>/dev/null || true

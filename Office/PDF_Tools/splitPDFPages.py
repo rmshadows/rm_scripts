@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 PDF 拆分脚本（批量按页拆分）
 

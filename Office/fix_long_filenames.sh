@@ -14,13 +14,13 @@
 #   -a    处理所有（文件和目录）
 #   -p    仅预览（默认行为，不实际执行重命名）
 #   -e    执行重命名操作（危险操作，需谨慎）
-#   -r    从文件名末尾截取有效部分（保持正常顺序）
+#   -r    从文件名「末尾」截取有效部分（默认从「开头」截取）
+#         无论开头/末尾，文件都会尽量保留扩展名（.pdf 等）
 #
-# 示例：
-#   ./fix_long_filenames.sh -a        # 预览所有超长文件名和目录名的修改建议
-#   ./fix_long_filenames.sh -f -e     # 执行重命名超长文件名
-#   ./fix_long_filenames.sh -d -p     # 预览超长目录名
-#   ./fix_long_filenames.sh -f -r -e  # 执行重命名文件名，截取末尾有效部分
+# 示例:
+#   ./fix_long_filenames.sh -a        # 预览；默认保留开头+扩展名
+#   ./fix_long_filenames.sh -f -e     # 执行；保留开头+扩展名
+#   ./fix_long_filenames.sh -f -r -e  # 执行；保留末尾+扩展名
 #
 # 输出说明：
 #   - 所有变更记录和预览内容将写入 rename_log.txt 日志文件。

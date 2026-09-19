@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 PDF文件旋转（支持方向 / 输出目录 / 是否删除原文件）
 """
