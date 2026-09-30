@@ -32,7 +32,8 @@ keyFile=""
 # VeraCrypt 1.26 起已移除 TrueCrypt 兼容，打开后若当前版本不支持会直接退出。
 truecryptMode=0
 # uid/gid 挂载选项：auto（默认）| 1（强制开）| 0（强制关）
-# auto 会先解开加密层探测卷内文件系统：NTFS/FAT/exFAT 自动加 uid/gid，ext4 等不加。
+# auto：NTFS/FAT/exFAT 加 uid/gid；ext4 等原生 Linux 文件系统不加（它们认卷内属主）。
+# 对 ext4 等：若挂上后当前用户写不了卷根，脚本会把「根目录」chown 给你（不递归）。
 useOwnerOptions=auto
 # 1: NTFS 走内核驱动（ntfs3），避免 ntfs-3g 在休眠时卡住。
 kernelNtfs=0

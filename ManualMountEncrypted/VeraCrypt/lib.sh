@@ -203,6 +203,41 @@ fs_needs_owner_options() {
     esac
 }
 
+# ext4/xfs 等：卷内有真实 uid。若根目录当前用户写不了，只把「挂载点根」改成该用户。
+# 不递归；改动会写进卷内，下次挂载仍然有效。个人 VeraCrypt 卷通常需要这一步。
+fix_native_fs_root_owner() {
+    local mp="$1"
+    local owner uid gid
+
+    [ "${readOnly:-0}" -eq 1 ] && return 0
+
+    owner="${_MEDIA_USER:-${SUDO_USER:-${USER:-$(id -un)}}}"
+    if ! uid="$(id -u "$owner" 2>/dev/null)"; then
+        prompt -w "无法解析用户 $owner，跳过属主修正"
+        return 0
+    fi
+    gid="$(id -g "$owner")"
+
+    if sudo -u "$owner" test -w "$mp" 2>/dev/null; then
+        return 0
+    fi
+
+    prompt -w "卷根目录当前用户（$owner）写不了，正在 chown 根目录 → $owner:$owner"
+    prompt -i "只改挂载点这一层，不递归；属主会保存在卷内。"
+    if ! sudo chown "$uid:$gid" "$mp"; then
+        prompt -e "chown 失败: $mp"
+        return 1
+    fi
+    sudo chmod u+rwx "$mp" 2>/dev/null || true
+
+    if sudo -u "$owner" test -w "$mp" 2>/dev/null; then
+        prompt -s "现在可以写入: $mp"
+        return 0
+    fi
+    prompt -e "修正后仍无法以 $owner 写入 $mp"
+    return 1
+}
+
 # 返回 0 表示本次挂载要加 uid/gid。
 decide_owner_options() {
     local fstype="$1"
@@ -233,7 +268,16 @@ mount_mapped_filesystem() {
         opts+=(ro)
     fi
     if [ "$use_owner" -eq 1 ]; then
-        opts+=("uid=$(id -u)" "gid=$(id -g)")
+        # NTFS/FAT 等：用当前用户（有 sudo 时用 SUDO_USER）映射
+        local ou og
+        if [ -n "${SUDO_USER:-}" ] && [ "$(id -u)" -eq 0 ]; then
+            ou="$(id -u "$SUDO_USER")"
+            og="$(id -g "$SUDO_USER")"
+        else
+            ou="$(id -u)"
+            og="$(id -g)"
+        fi
+        opts+=("uid=$ou" "gid=$og")
     fi
 
     if [ "$kernelNtfs" -eq 1 ] && fs_needs_owner_options "$fstype"; then
@@ -407,6 +451,13 @@ mount_veracrypt() {
         detach_veracrypt_volume "$VOLUME_PATH"
         detach_veracrypt_volume "$mapped_dev"
         return 1
+    fi
+
+    # 原生 Linux 文件系统没有 uid= 映射；卷若是 root 格式化的，这里把根目录交还给当前用户
+    if [ "$use_owner" -eq 0 ]; then
+        if ! fix_native_fs_root_owner "$readMount"; then
+            prompt -w "挂载已成功，但写入权限可能仍有问题，请手动: sudo chown $USER:$USER \"$readMount\""
+        fi
     fi
 
     save_last_read_mount "$LIB_DIR"
