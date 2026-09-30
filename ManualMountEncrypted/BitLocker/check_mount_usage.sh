@@ -1,7 +1,15 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+source "$SCRIPT_DIR/config.sh"
+if [ "$?" -ne 0 ]; then
+    echo "\033[0;31m Source config.sh: An error occurred and exited. \033[0m"
+    exit 1
+fi
+
 # ======== 配置区域 ========
-DEFAULT_MOUNT_POINT="/media/bitlockermount"
+DEFAULT_MOUNT_POINT="$readMount"
 DISLOCKER_MODE="${1:-system}"  # 可选参数 system/manual/auto
 CUSTOM_DISLOCKER_PATH="./amd64/dislocker"
 NEED_DISLOCKER=0

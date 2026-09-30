@@ -1,30 +1,17 @@
 #!/bin/bash
-# 银河麒麟系统关闭执行控制功能状态：
-# sudo setstatus -f exectl off
-# setstatus -p softmode
-# 开机自动挂载需要修改fstab（修改前记得备份！）
-# <partition> /media/bitlocker fuse.dislocker user-password=<password>,nofail 0 0
-# /media/bitlocker/dislocker-file /media/bitlockermount auto nofail 0 0
+# 参数在 config.sh。
 
-# Manual
-## 获取Bitlocker加密分区
-puid="4463e4a8-296b-4db9-aa4d-7c83c762665e"
-# /dev/sdb4: TYPE="BitLocker" PARTUUID="4463e4a8-296b-4db9-aa4d-7c83c762665e"
-## 新建文件夹（挂载文件夹）
-dislockMount="/home/bitlocker"
-# 可访问的挂载点
-readMount="/media/bitlockermount"
-# 解密方式 0:密码 1:恢复密钥
-keyMode=0
-# Bitlocker磁盘密码(可选) 没有请注释
-# keyPass=""
-# 可选指定 dislocker 路径（适用于 UOS arm64，系统自带 dislocker 可能有问题）
-# DISLOCKER_CUSTOM="./UOS-arm64/dislocker"
-# DISLOCKER_CUSTOM="./amd64/dislocker"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+source "$SCRIPT_DIR/config.sh"
+if [ "$?" -ne 0 ]; then
+    echo "\033[0;31m Source config.sh: An error occurred and exited. \033[0m"
+    exit 1
+fi
 
 # 内部参数
 DISLOCKER_BIN=""
-source Profile.sh
+source "$SCRIPT_DIR/Profile.sh"
 if [ "$?" -ne 0 ]; then
     echo "\033[0;31m Source Profile.sh: An error occurred and exited. \033[0m"
     exit 1
@@ -32,13 +19,8 @@ fi
 
 # 函数：检查单个挂载点是否挂载
 check_mount_point() {
-    local mount_point="$1"
-
-    if grep -qs "$mount_point" /proc/mounts; then
-        return 0 # 已挂载
-    else
-        return 1 # 未挂载
-    fi
+    # 必须用 --mountpoint；--target 会对普通目录误报父挂载
+    findmnt -n --mountpoint "$1" >/dev/null 2>&1
 }
 
 # 函数：检查 BitLocker 磁盘是否挂载
@@ -70,18 +52,16 @@ check_bitlocker_mount_adv() {
 }
 
 umountBitlocker() {
-    comfirmy "\e[1;33m BitLocker disk mounted.Umount ? [Y/n]\e[0m"
+    comfirmy "\e[1;33m BitLocker disk mounted at $readMount . Umount ? [Y/n]\e[0m"
     choice=$?
     usuccess=0
     if [ $choice == 1 ]; then
-        sudo umount "$readMount"
-        if [ "$?" -ne 0 ] && [ "$usuccess" -eq 0 ]; then
-            usuccess=1
+        if check_mount_point "$readMount"; then
+            sudo umount "$readMount" || { usuccess=1; show_mount_holders "$readMount"; }
         fi
         sleep 1
-        sudo umount "$dislockMount"
-        if [ "$?" -ne 0 ] && [ "$usuccess" -eq 0 ]; then
-            usuccess=1
+        if check_mount_point "$dislockMount"; then
+            sudo umount "$dislockMount" || { usuccess=1; show_mount_holders "$dislockMount"; }
         fi
     elif [ $choice == 2 ]; then
         prompt -i "Quit."
@@ -91,6 +71,8 @@ umountBitlocker() {
     fi
     if [ "$usuccess" -eq 0 ]; then
         prompt -s "Disk unmounted successfully."
+        remove_empty_media_dir "$readMount"
+        rm -f "$SCRIPT_DIR/.last-readmount" 2>/dev/null || true
     else
         prompt -e "WARN: An error may occur during the umount process, check manual."
     fi
@@ -179,32 +161,7 @@ mountBitlockerDisk() {
             fi
         fi
 
-        if [ ! -d "$readMount" ]; then
-            prompt -x "mkdir $readMount"
-            sudo mkdir -p "$readMount"
-        else
-            # 检查挂载点是否为空
-            if [ "$(ls -A $readMount)" ]; then
-                prompt -e "Mountpoint "$readMount" is not empty."
-                # 进一步处理，例如列出挂载点的内容
-                ls -la "$readMount"
-                comfirmn "\e[1;33m Whether to clear $readMount ? (CAN NOT BE UNDONE!) [y/N]\e[0m"
-                choice=$?
-                if [ $choice == 1 ]; then
-                    prompt -x "Clear Mountpoint $readMount ..."
-                    sudo rm -rf "$readMount"
-                    prompt -x "mkdir $readMount"
-                    sudo mkdir -p "$readMount"
-                elif [ $choice == 2 ]; then
-                    prompt -w "Quit."
-                    exit 1
-                else
-                    prompt -e "Unknown option !"
-                    exit 5
-                fi
-            fi
-        fi
-        ## 开始挂载
+        ## 开始解密（可读挂载点等拿到卷标后再建）
         # sudo dislocker /dev/sdb4 -u -- /home/bitlocker
         # sudo umount /home/bitlocker
         # prompt -x "Try to mount (sudo dislocker "$pdev" -u -- "$dislockMount") ..."
@@ -247,16 +204,23 @@ mountBitlockerDisk() {
             exit 1
         fi
 
-        # 下一个命令是把解密好的分区挂在到bitlockermount loop:用来把一个文件当成硬盘分区挂接上系统
-        # ,uid=$(id -u ryan),gid=$(id -g ryan) 能解决回收站无法使用的问题 sudo mount -o loop,uid=$(id -u ryan),gid=$(id -g ryan) "$dislockMount"/dislocker-file "$readMount"
+        vol_label="$(sudo blkid -o value -s LABEL "$dislockMount/dislocker-file" 2>/dev/null || true)"
+        prompt -k "检测到的卷标" "${vol_label:-（无）}"
+        prompt -k "命名模式" "${mountNameMode:-label-or-fixed}"
+        resolve_media_read_mount "$vol_label" || exit 1
+        prepare_empty_mount_dir "$readMount" || exit 1
+
+        # 下一个命令是把解密好的分区挂在到可读目录；loop 把文件当分区
+        # ,uid=$(id -u ryan),gid=$(id -g ryan) 能解决回收站无法使用的问题
         sudo mount -o loop,uid=$(id -u $USERNAME),gid=$(id -g $USERNAME) "$dislockMount"/dislocker-file "$readMount"
         # sudo mount -o loop "$dislockMount"/dislocker-file "$readMount"
-        prompt -s "Mounted successfully."
+        save_last_read_mount "$SCRIPT_DIR"
+        prompt -s "Mounted successfully: $readMount"
         # echo "Launched."
         # echo "Use below to unmount."
         prompt -i "Use below to unmount."
         echo ""
-        prompt -s "sudo umount "$dislockMount""
+        prompt -s "sudo umount $readMount && sudo umount $dislockMount"
         # echo "sudo umount "$dislockMount""
         echo ""
     elif [ $choice == 2 ]; then
@@ -266,6 +230,9 @@ mountBitlockerDisk() {
         exit 5
     fi
 }
+
+# 先按记录/固定名找回可读挂载点
+detect_existing_bitlocker_mount || true
 
 # 检查 BitLocker 磁盘是否挂载
 if check_bitlocker_mount; then

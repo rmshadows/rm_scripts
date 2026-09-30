@@ -12,7 +12,9 @@
 
 5. clean_trace.sh —— 清理足迹
 
-6. collect_binary_with_deps.sh——收集可执行文件及其依赖库，打包成便于迁移和离线运行的目录
+6. apt/collect_binary_with_deps.sh——收集可执行文件及其依赖库，打包成便于迁移和离线运行的目录
+
+6b. apt/apt_temp_mirror.sh——临时切换 apt 镜像（自动识别 Debian/Ubuntu，不写死版本代号；tuna/ustc/官方等），自动备份可 restore
 
 7. create_self-signed-cert.sh —— 生成 SSL 证书 示例：`./create_self-signed-cert.sh --ssl-domain=www.meet.nyj --ssl-trusted-ip=192.168.1.93 --ssl-size=2048 --ssl-date=3650`
 

@@ -45,6 +45,7 @@
 | `lightdm-gtk-greeter.sh` | LightDM 使用 **lightdm-gtk-greeter**（可设为默认 DM） | 中（还原 conf/默认 DM；包不卸） |
 | `lightdm-gtk-background.sh` | 设置 LightDM GTK greeter 背景图 | 好（还原 conf） |
 | `wechat-recv-writable.sh` | GNOME：Alt+Shift+M 把微信接收文件目录设为可写（自动发现账号） | 好（还原原快捷键） |
+| `udisks-automount.sh` | 交互控制分区/整盘自动挂载：读写、只读、不自动、忽略（udev + udisks2；可选 GNOME 全局开关） | 好（删规则/清策略） |
 | `_template.sh` | 新脚本模板 | — |
 
 ## 示例
