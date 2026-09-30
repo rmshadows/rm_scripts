@@ -107,6 +107,9 @@ HDR
 
 # 打包后：相对 VERACRYPT_CUSTOM 按二进制目录解析
 resolve_veracrypt_bin() {
+  if [ -n "${VERACRYPT_BIN:-}" ] && [ -x "$VERACRYPT_BIN" ]; then
+    return 0
+  fi
   local custom="$VERACRYPT_CUSTOM"
   if [ -n "$custom" ] && [[ "$custom" != /* ]]; then
     custom="$PACK_BIN_DIR/$custom"
@@ -159,7 +162,7 @@ packed_usage() {
 VeraCrypt 挂载工具（pack_shc 打包版）
 
 用法:
-  $(basename "$0")              交互：已挂载则询问卸载，否则询问挂载
+  $(basename "$0")              交互：已挂载问卸载；已解密未挂载问挂载或取消解密；否则问挂载
   $(basename "$0") --mount|-m   直接挂载（同 rmount.sh）
   $(basename "$0") --umount|-u  直接卸载（同 urmount.sh）
   $(basename "$0") -h|--help    帮助
@@ -185,32 +188,8 @@ main() {
       exit $?
       ;;
     "")
-      if detect_existing_veracrypt_mount; then
-        comfirmy "\e[1;33m VeraCrypt 卷已挂载在 $readMount ，是否卸载？ [Y/n]\e[0m"
-        choice=$?
-        if [ "$choice" -eq 1 ]; then
-          umount_veracrypt
-          exit $?
-        elif [ "$choice" -eq 2 ]; then
-          prompt -i "已取消。"
-          exit 0
-        else
-          prompt -e "ERROR:未知返回值!"
-          exit 5
-        fi
-      fi
-      comfirmy "\e[1;33m VeraCrypt 卷未挂载，是否挂载？ [Y/n]\e[0m"
-      choice=$?
-      if [ "$choice" -eq 1 ]; then
-        mount_veracrypt
-        exit $?
-      elif [ "$choice" -eq 2 ]; then
-        prompt -i "已取消。"
-        exit 0
-      else
-        prompt -e "ERROR:未知返回值!"
-        exit 5
-      fi
+      interactive_veracrypt
+      exit $?
       ;;
     *)
       prompt -e "未知参数: $1"

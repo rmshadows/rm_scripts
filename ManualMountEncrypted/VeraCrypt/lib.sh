@@ -14,6 +14,9 @@ fi
 VERACRYPT_BIN=""
 VOLUME_PATH=""
 VC_CRYPTO_ARGS=()
+# 已打开的 VeraCrypt 槽：映射设备，以及文件系统真正挂上的目录（未挂则为空）
+VC_SLOT_DEV=""
+VC_SLOT_MP=""
 
 check_mount_point() {
     # 必须用 --mountpoint；--target 会对普通目录误报父挂载
@@ -21,6 +24,10 @@ check_mount_point() {
 }
 
 resolve_veracrypt_bin() {
+    if [ -n "${VERACRYPT_BIN:-}" ] && [ -x "$VERACRYPT_BIN" ]; then
+        return 0
+    fi
+
     local custom="$VERACRYPT_CUSTOM"
 
     # 相对路径按脚本目录解析，跟 BitLocker 的 DISLOCKER_CUSTOM 一样。
@@ -354,6 +361,46 @@ print_mount_result() {
     echo
 }
 
+# 卷已解密（槽位打开）则返回 0，并设置 VC_SLOT_DEV。
+# 文件系统也挂着时另外设置 VC_SLOT_MP；只解密、未挂文件系统时 VC_SLOT_MP 为空。
+# 脚本用 mount(8) 挂 /dev/mapper/veracryptN 时，veracrypt -l 的挂载目录经常仍是 "-"，
+# 所以要以 findmnt 看映射设备是否真的挂上。
+detect_open_veracrypt_slot() {
+    local line dev mp src mounted_at
+    VC_SLOT_DEV=""
+    VC_SLOT_MP=""
+    resolve_veracrypt_bin || return 1
+    resolve_volume quiet || return 1
+
+    line="$(sudo "$VERACRYPT_BIN" --text --verbose --list "$VOLUME_PATH" 2>/dev/null || true)"
+    if [ -z "$line" ]; then
+        return 1
+    fi
+    dev="$(printf '%s\n' "$line" | awk -F': ' '/^Virtual Device:/ { gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit }')"
+    if [ -z "$dev" ] || [ "$dev" = "$VOLUME_PATH" ] || [ ! -e "$dev" ]; then
+        dev="$(printf '%s\n' "$line" | grep -oE '/dev/mapper/veracrypt[0-9]+' | head -n 1)"
+    fi
+    if [ -z "$dev" ] || [ ! -e "$dev" ] || [ "$dev" = "$VOLUME_PATH" ]; then
+        return 1
+    fi
+
+    VC_SLOT_DEV="$dev"
+    mp="$(printf '%s\n' "$line" | awk -F': ' '/^Mount Directory:/ { gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; exit }')"
+    if [ -n "$mp" ] && [ "$mp" != "-" ] && [[ "$mp" == /* ]] && check_mount_point "$mp"; then
+        src="$(findmnt -n -o SOURCE --mountpoint "$mp" 2>/dev/null || true)"
+        if [ "$src" = "$dev" ] || [ "$(readlink -f "$src" 2>/dev/null || echo "$src")" = "$(readlink -f "$dev")" ]; then
+            VC_SLOT_MP="$mp"
+        fi
+    fi
+    if [ -z "$VC_SLOT_MP" ]; then
+        mounted_at="$(findmnt -n -o TARGET -S "$dev" 2>/dev/null | head -n 1 || true)"
+        if [ -n "$mounted_at" ] && check_mount_point "$mounted_at"; then
+            VC_SLOT_MP="$mounted_at"
+        fi
+    fi
+    return 0
+}
+
 # 查找本卷是否已挂载，找到则设置 readMount。
 detect_existing_veracrypt_mount() {
     local line mp fixed
@@ -378,37 +425,30 @@ detect_existing_veracrypt_mount() {
         prompt -k "已挂载(VeraCrypt)" "$readMount"
         return 0
     fi
+    # 文件系统是用 mount(8) 挂到映射设备上的，veracrypt 列表里可能没有目录。
+    if detect_open_veracrypt_slot && [ -n "$VC_SLOT_MP" ]; then
+        readMount="$VC_SLOT_MP"
+        prompt -k "已挂载(映射设备)" "$readMount"
+        return 0
+    fi
     return 1
 }
 
-mount_veracrypt() {
-    local mapped_dev fstype use_owner=0 owner_uid owner_gid vol_label=""
-    resolve_veracrypt_bin || return 1
-    resolve_volume || return 1
-    build_vc_crypto_args || return 1
-    print_mount_plan
+# 把已经解密的映射设备挂上文件系统。
+# $2=1：失败时保留解密槽（调用前卷就已经是「已解密、未挂载」）。
+mount_filesystem_from_mapped() {
+    local mapped_dev="$1"
+    local keep_slot="${2:-0}"
+    local fstype use_owner=0 owner_uid owner_gid vol_label=""
 
-    if [ -n "${keyPass:-}" ]; then
-        prompt -m "使用 config.sh 里的密码解密 $VOLUME_PATH"
-    else
-        prompt -m "请输入 $VOLUME_PATH 的 VeraCrypt 密码（只输一次）。"
-    fi
-
-    # 先只解开加密层，探测文件系统/卷标，再决定访问目录。
-    prompt -x "解密（先不挂文件系统）: $VOLUME_PATH"
-    if ! sudo "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"; then
-        prompt -e "解密失败。"
-        return 1
-    fi
-
-    mapped_dev="$(get_veracrypt_mapped_device "$VOLUME_PATH")"
-    if [ -z "$mapped_dev" ] || [ ! -e "$mapped_dev" ] || [ "$mapped_dev" = "$VOLUME_PATH" ]; then
-        prompt -e "找不到解密后的块设备 /dev/mapper/veracryptN。"
+    _release_after_mount_fail() {
+        if [ "$keep_slot" -eq 1 ]; then
+            prompt -i "解密状态仍保留。可以再挂一次，或选择取消解密。"
+            return 0
+        fi
         detach_veracrypt_volume "$VOLUME_PATH"
-        return 1
-    fi
-    prompt -k "解密设备" "$mapped_dev"
-    prompt -i "这是中间设备，不会当成你的访问目录。"
+        detach_veracrypt_volume "$mapped_dev"
+    }
 
     fstype="$(sudo blkid -o value -s TYPE "$mapped_dev" 2>/dev/null || true)"
     vol_label="$(sudo blkid -o value -s LABEL "$mapped_dev" 2>/dev/null || true)"
@@ -422,15 +462,13 @@ mount_veracrypt() {
     prompt -k "检测到的卷标" "${vol_label:-（无）}"
 
     if ! resolve_media_read_mount "$vol_label"; then
-        detach_veracrypt_volume "$VOLUME_PATH"
-        detach_veracrypt_volume "$mapped_dev"
+        _release_after_mount_fail
         return 1
     fi
-    ensure_mount_dir "$readMount" || {
-        detach_veracrypt_volume "$VOLUME_PATH"
-        detach_veracrypt_volume "$mapped_dev"
+    if ! ensure_mount_dir "$readMount"; then
+        _release_after_mount_fail
         return 1
-    }
+    fi
 
     owner_uid="$(id -u)"
     owner_gid="$(id -g)"
@@ -448,8 +486,7 @@ mount_veracrypt() {
 
     if ! mount_mapped_filesystem "$mapped_dev" "$fstype" "$use_owner"; then
         prompt -e "文件系统挂载失败。访问目录 $readMount 没有挂上。"
-        detach_veracrypt_volume "$VOLUME_PATH"
-        detach_veracrypt_volume "$mapped_dev"
+        _release_after_mount_fail
         return 1
     fi
 
@@ -463,6 +500,59 @@ mount_veracrypt() {
     save_last_read_mount "$LIB_DIR"
     print_mount_result
     return 0
+}
+
+mount_veracrypt() {
+    local mapped_dev
+    resolve_veracrypt_bin || return 1
+    resolve_volume || return 1
+
+    # 已经解开、只是文件系统没挂上：不要再走一遍解密（会报卷已打开）。
+    if detect_open_veracrypt_slot; then
+        if [ -z "$VC_SLOT_MP" ]; then
+            prompt -i "卷已经解密，不再次询问密码，直接挂上文件系统。"
+            prompt -k "加密分区" "$VOLUME_PATH"
+            prompt -k "解密设备" "$VC_SLOT_DEV"
+            mount_filesystem_from_mapped "$VC_SLOT_DEV" 1
+            return $?
+        fi
+        readMount="$VC_SLOT_MP"
+        prompt -w "已经挂载: $readMount"
+        return 1
+    fi
+
+    build_vc_crypto_args || return 1
+    print_mount_plan
+
+    if [ -n "${keyPass:-}" ]; then
+        prompt -m "使用 config.sh 里的密码解密 $VOLUME_PATH"
+    else
+        prompt -m "请输入 $VOLUME_PATH 的 VeraCrypt 密码（只输一次）。"
+    fi
+
+    # 先只解开加密层，探测文件系统/卷标，再决定访问目录。
+    prompt -x "解密（先不挂文件系统）: $VOLUME_PATH"
+    if ! sudo "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"; then
+        if detect_open_veracrypt_slot && [ -z "$VC_SLOT_MP" ]; then
+            prompt -w "卷已经处于解密状态，改为直接挂文件系统。"
+            mount_filesystem_from_mapped "$VC_SLOT_DEV" 1
+            return $?
+        fi
+        prompt -e "解密失败。"
+        return 1
+    fi
+
+    mapped_dev="$(get_veracrypt_mapped_device "$VOLUME_PATH")"
+    if [ -z "$mapped_dev" ] || [ ! -e "$mapped_dev" ] || [ "$mapped_dev" = "$VOLUME_PATH" ]; then
+        prompt -e "找不到解密后的块设备 /dev/mapper/veracryptN。"
+        detach_veracrypt_volume "$VOLUME_PATH"
+        return 1
+    fi
+    prompt -k "解密设备" "$mapped_dev"
+    prompt -i "这是中间设备，不会当成你的访问目录。"
+
+    mount_filesystem_from_mapped "$mapped_dev" 0
+    return $?
 }
 
 umount_veracrypt() {
@@ -484,7 +574,11 @@ umount_veracrypt() {
             fi
         fi
     else
-        prompt -w "挂载点未挂载: $readMount"
+        if detect_open_veracrypt_slot && [ -z "$VC_SLOT_MP" ]; then
+            prompt -i "文件系统未挂载，卷仍处于解密状态（${VC_SLOT_DEV}），将取消解密。"
+        else
+            prompt -w "挂载点未挂载: $readMount"
+        fi
     fi
 
     # 解开 filesystem=none 留下的映射。
@@ -507,4 +601,106 @@ umount_veracrypt() {
     fi
     prompt -e "卸载失败。占用 $readMount 的进程已经列在上面，关掉后再卸。"
     return 1
+}
+
+# 只去掉解密槽，不要求文件系统正处于挂载中。
+release_open_veracrypt_slot() {
+    local dev
+    resolve_veracrypt_bin || return 1
+    if ! detect_open_veracrypt_slot; then
+        prompt -w "没有处于解密状态的 VeraCrypt 卷。"
+        return 1
+    fi
+    if [ -n "$VC_SLOT_MP" ]; then
+        readMount="$VC_SLOT_MP"
+        umount_veracrypt
+        return $?
+    fi
+    dev="$VC_SLOT_DEV"
+    prompt -k "取消解密" "$dev"
+    prompt -x "veracrypt --unmount $VOLUME_PATH"
+    if detach_veracrypt_volume "$VOLUME_PATH" || detach_veracrypt_volume "$dev"; then
+        prompt -s "已取消解密，映射已移除。"
+        rm -f "$LIB_DIR/.last-readmount" 2>/dev/null || true
+        return 0
+    fi
+    prompt -e "取消解密失败。可手动: sudo veracrypt -d \"$VOLUME_PATH\""
+    return 1
+}
+
+# 1=挂载  2=取消解密  3=什么都不做
+ask_decrypted_unmounted_action() {
+    local input dev="${1:-${VC_SLOT_DEV:-}}"
+    while true; do
+        echo
+        echo -e "\e[1;33m VeraCrypt 卷已解密（${dev}），文件系统未挂载。\e[0m"
+        echo -e "\e[1;33m   m) 挂载\e[0m"
+        echo -e "\e[1;33m   u) 卸载（取消解密状态）\e[0m"
+        echo -e "\e[1;36m 直接回车则什么都不做。\e[0m"
+        _read_user -p "请选择 [m/u/回车]: " input
+        case "$input" in
+            m|M) return 1 ;;
+            u|U) return 2 ;;
+            "") return 3 ;;
+            *) prompt -w "请输入 m 或 u，或直接回车取消。" ;;
+        esac
+    done
+}
+
+_ask_umount_if_mounted() {
+    local choice
+    comfirmy "\e[1;33m VeraCrypt 卷已挂载在 $readMount ，是否卸载？ [Y/n]\e[0m"
+    choice=$?
+    if [ "$choice" -eq 1 ]; then
+        umount_veracrypt
+        return $?
+    elif [ "$choice" -eq 2 ]; then
+        prompt -i "已取消。"
+        return 0
+    fi
+    prompt -e "ERROR:未知返回值!"
+    return 5
+}
+
+# 交互入口：已挂载问卸载；已解密未挂载问挂载还是取消解密；否则问是否挂载。
+interactive_veracrypt() {
+    local choice
+    if detect_existing_veracrypt_mount; then
+        _ask_umount_if_mounted
+        return $?
+    fi
+    if detect_open_veracrypt_slot && [ -n "$VC_SLOT_MP" ]; then
+        readMount="$VC_SLOT_MP"
+        prompt -k "已挂载(映射设备)" "$readMount"
+        _ask_umount_if_mounted
+        return $?
+    fi
+    if detect_open_veracrypt_slot; then
+        ask_decrypted_unmounted_action "$VC_SLOT_DEV"
+        choice=$?
+        if [ "$choice" -eq 1 ]; then
+            mount_veracrypt
+            return $?
+        elif [ "$choice" -eq 2 ]; then
+            release_open_veracrypt_slot
+            return $?
+        elif [ "$choice" -eq 3 ]; then
+            prompt -i "已取消。"
+            return 0
+        fi
+        prompt -e "ERROR:未知返回值!"
+        return 5
+    fi
+
+    comfirmy "\e[1;33m VeraCrypt 卷未挂载，是否挂载？ [Y/n]\e[0m"
+    choice=$?
+    if [ "$choice" -eq 1 ]; then
+        mount_veracrypt
+        return $?
+    elif [ "$choice" -eq 2 ]; then
+        prompt -i "已取消。"
+        return 0
+    fi
+    prompt -e "ERROR:未知返回值!"
+    return 5
 }
