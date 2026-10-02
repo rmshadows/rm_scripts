@@ -499,6 +499,111 @@ alias watchmod='inotifywait -m -r -e modify --format "%T  %e  %w%f" --timefmt "%
 # 只关心：新建 / 删除 / 移动（重命名也算 move）
 alias watchfs='inotifywait -m -r -e create,delete,move --format "%T  %e  %w%f" --timefmt "%F %T" .'
 
+# 临时目录镜像同步（轻量版，对标 可移动磁盘Rsync备份；无长名处理/无锁）
+# 用法: rsyncdir 源/ 目标/       # 镜像（含 --delete，目标多出的会删）
+#       rsyncdir -n 源/ 目标/    # dry-run 预览
+#       rsyncdir -v 源/ 目标/    # 列出每个文件（大目录慎用）
+# 支持相对路径（会解析成绝对路径）；源/目标都必须是文件夹
+# 源路径末尾 / = 同步目录「内容」；无末尾 / = 在目标下再建一层同名目录
+rsyncdir() {
+    local dry=0 verbose=0
+    local -a pos=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -n|--dry-run) dry=1; shift ;;
+            -v|--verbose) verbose=1; shift ;;
+            -h|--help)
+                print -r -- "用法: rsyncdir [-n] [-v] <源/> <目标/>"
+                print -r -- "  -n  dry-run   -v  列出文件"
+                print -r -- "支持相对路径；源与目标都必须是文件夹"
+                print -r -- "镜像同步（--delete）；排除 Cache / .Trash-* / lost+found / .rsync-partial"
+                return 0
+                ;;
+            --) shift; pos+=("$@"); break ;;
+            -*)
+                print -r -- "[x] 未知选项: $1（见 rsyncdir -h）" >&2
+                return 2
+                ;;
+            *) pos+=("$1"); shift ;;
+        esac
+    done
+    if [[ ${#pos[@]} -ne 2 ]]; then
+        print -r -- "[x] 需要源和目标两个路径。用法: rsyncdir [-n] [-v] <源/> <目标/>" >&2
+        return 2
+    fi
+
+    local src="${pos[0]}" dst="${pos[1]}"
+    local src_slash=0 dst_slash=0
+    [[ "$src" == */ ]] && src_slash=1
+    [[ "$dst" == */ ]] && dst_slash=1
+
+    # 前置过滤：必须是文件夹（相对路径按当前目录解析）
+    if [[ -e "$src" && ! -d "$src" ]]; then
+        print -r -- "[x] 源不是文件夹: $src" >&2
+        return 1
+    fi
+    if [[ ! -d "$src" ]]; then
+        print -r -- "[x] 源目录不存在: $src" >&2
+        return 1
+    fi
+    if [[ -e "$dst" && ! -d "$dst" ]]; then
+        print -r -- "[x] 目标不是文件夹: $dst" >&2
+        return 1
+    fi
+    if [[ ! -d "$dst" ]]; then
+        mkdir -p -- "$dst" || return 1
+    fi
+    if [[ ! -d "$dst" ]]; then
+        print -r -- "[x] 无法创建目标文件夹: $dst" >&2
+        return 1
+    fi
+
+    command -v rsync >/dev/null 2>&1 || {
+        print -r -- "[x] 需要 rsync：sudo apt install rsync" >&2
+        return 1
+    }
+
+    # 相对路径 → 绝对路径（保留末尾 /，供 rsync 语义）
+    local src_abs dst_abs
+    src_abs="$(cd -- "${src%/}" && pwd -P)" || {
+        print -r -- "[x] 无法解析源路径: $src" >&2
+        return 1
+    }
+    dst_abs="$(cd -- "${dst%/}" && pwd -P)" || {
+        print -r -- "[x] 无法解析目标路径: $dst" >&2
+        return 1
+    }
+    [[ $src_slash -eq 1 ]] && src_abs="${src_abs}/"
+    [[ $dst_slash -eq 1 ]] && dst_abs="${dst_abs}/"
+    src="$src_abs"
+    dst="$dst_abs"
+
+    local -a opts=(
+        -aH
+        --numeric-ids
+        --partial
+        --partial-dir=.rsync-partial
+        --human-readable
+        --stats
+        --delete
+        --exclude=Cache
+        --exclude='.Trash-*'
+        --exclude=lost+found
+        --exclude=.rsync-partial
+    )
+    [[ $dry -eq 1 ]] && opts+=(--dry-run)
+    if [[ $verbose -eq 1 ]]; then
+        opts+=(-v)
+    elif [[ -t 1 ]]; then
+        opts+=(--info=progress2)
+    fi
+
+    print -r -- "[+] rsyncdir: $src  →  $dst"
+    [[ $dry -eq 1 ]] && print -r -- "[!] dry-run，不写盘"
+    rsync "${opts[@]}" -- "$src" "$dst"
+}
+alias rsd='rsyncdir'
+
 # enable auto-suggestions based on the history
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     . /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh

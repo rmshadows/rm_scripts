@@ -141,6 +141,7 @@ sudo ./1-kvm_net.sh start default
 | `create` | 向导选存储池；或 `create -p KVM_W 名 64` |
 | `info` | virtual size vs 宿主机实际占用 |
 | `attach` | 关机状态下挂到已有 VM |
+| `migrate` | 关机后把 qcow2 稀疏复制到另一存储池并改 XML。内部快照在文件内，一起带走。不删源文件 |
 | `pool list` | 存储池与容量 |
 
 ### 3 — 电源 `3-kvm_vm.sh`
@@ -261,6 +262,6 @@ A: 创建时需 `--desc "说明"`；旧快照无描述则显示「（无）」�
 
 ## 尚未包含（有意不做或以后再加）
 
-- VM **删除 / 克隆 / 迁移**
+- VM **删除 / 克隆**（磁盘迁移见 `2-kvm_disk.sh migrate`）
 - `virt-install` 全自动装系统（当前为 define + 空盘/ISO）
 - Guest 内自动 mount（超出 virsh 范围，见 `guide` 手动步骤）
