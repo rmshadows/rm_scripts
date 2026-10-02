@@ -71,6 +71,16 @@ ensure_backup_dir() {
   [[ -f "$POLICY_FILE" ]] || : >"$POLICY_FILE"
 }
 
+# 只保留合法策略行。交互菜单曾被命令替换吞进文件，这里清掉。
+policy_sanitize() {
+  [[ -f "$POLICY_FILE" ]] || return 0
+  local tmp
+  tmp="$(mktemp)"
+  awk -F'\t' '$2=="auto-rw" || $2=="auto-ro" || $2=="noauto" || $2=="ignore" { print }' \
+    "$POLICY_FILE" >"$tmp"
+  mv -f "$tmp" "$POLICY_FILE"
+}
+
 # ---------- 设备枚举 ----------
 # 输出行: kind|name|size|fstype|label|uuid|partuuid|serial|model|mount|hint
 # kind=disk|part
@@ -141,7 +151,12 @@ policy_get() {
 
 policy_set() {
   local key="$1" mode="$2" note="${3:-}"
+  case "$mode" in
+    auto-rw|auto-ro|noauto|ignore) ;;
+    *) die "无效策略: ${mode:-空}" ;;
+  esac
   ensure_backup_dir
+  policy_sanitize
   local tmp
   tmp="$(mktemp)"
   awk -F'\t' -v k="$key" '$1!=k { print }' "$POLICY_FILE" >"$tmp" 2>/dev/null || true
@@ -279,6 +294,7 @@ disk_auto_summary() {
 write_udev_rules() {
   local key mode note
   ensure_backup_dir
+  policy_sanitize
   {
     echo "# Managed by systweak/$NAME — do not edit by hand"
     echo "# Regenerated: $(date -Iseconds)"
@@ -520,14 +536,17 @@ cmd_status() {
 
 pick_mode() {
   local cur="${1:-}"
-  echo
-  echo "选择策略:"
-  echo "  1) 自动挂载 · 读写   (auto-rw，清除本脚本限制)"
-  echo "  2) 自动挂载 · 只读   (auto-ro)"
-  echo "  3) 不自动挂载         (noauto，侧栏一般仍可见，可手动挂)"
-  echo "  4) 忽略               (ignore，不显示/不自动挂)"
-  echo "  0) 取消"
-  [[ -n "$cur" ]] && echo "  当前: $(mode_label "$cur")"
+  # 菜单必须走 stderr：调用方用 mode="$(pick_mode)" 只接收策略名
+  {
+    echo
+    echo "选择策略:"
+    echo "  1) 自动挂载 · 读写   (auto-rw，清除本脚本限制)"
+    echo "  2) 自动挂载 · 只读   (auto-ro)"
+    echo "  3) 不自动挂载         (noauto，侧栏一般仍可见，可手动挂)"
+    echo "  4) 忽略               (ignore，不显示/不自动挂)"
+    echo "  0) 取消"
+    [[ -n "$cur" ]] && echo "  当前: $(mode_label "$cur")"
+  } >&2
   local sel
   read -r -p "编号: " sel
   case "$sel" in
@@ -611,6 +630,10 @@ interactive() {
         key="serial:$serial"
         mode="$(pick_mode "$(policy_get "$key" || true)")"
         [[ -n "$mode" ]] || continue
+        case "$mode" in
+          auto-rw|auto-ro|noauto|ignore) ;;
+          *) warn "无效策略，已取消"; continue ;;
+        esac
         if [[ "$mode" == auto-rw ]]; then
           policy_del "$key"
           log "已清除整盘策略: $name ($serial)"
@@ -643,6 +666,10 @@ interactive() {
         fi
         mode="$(pick_mode "$(policy_get "$key" || true)")"
         [[ -n "$mode" ]] || continue
+        case "$mode" in
+          auto-rw|auto-ro|noauto|ignore) ;;
+          *) warn "无效策略，已取消"; continue ;;
+        esac
         if [[ "$mode" == auto-ro && -z "$uuid" ]]; then
           warn "无文件系统 UUID，无法写只读 mount_options；请改用 noauto/ignore，或先建好文件系统。"
           continue

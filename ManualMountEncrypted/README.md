@@ -11,6 +11,8 @@
 | `BitLocker/` | `mountB.sh` / `rmount.sh` / `urmount.sh` | BitLocker 分区 |
 | `VeraCrypt/` | `mountV.sh` / `rmount.sh` / `urmount.sh` | VeraCrypt 分区或容器文件 |
 
+Debian 官方源通常**没有** `veracrypt`，有 `tcplay`。脚本优先用已安装的 `veracrypt`；找不到且源里也没有时，会询问是否改用 `tcplay`（PIM 须为 0；隐藏卷 / 系统加密可能打不开）。
+
 挂载点默认在 `/media/$USER/…`，方便 Nautilus 侧栏出现。`mountNameMode` 可按卷标命名。
 
 ## 打包成单文件（shc）

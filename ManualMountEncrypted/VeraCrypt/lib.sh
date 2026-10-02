@@ -14,31 +14,118 @@ fi
 VERACRYPT_BIN=""
 VOLUME_PATH=""
 VC_CRYPTO_ARGS=()
+# veracrypt | tcplay。Debian 官方源通常没有 veracrypt，可改用 tcplay。
+VC_BACKEND=""
+TCPLAY_BIN=""
+TCPLAY_MAP=""
+TCPLAY_LOOP=""
 # 已打开的 VeraCrypt 槽：映射设备，以及文件系统真正挂上的目录（未挂则为空）
 VC_SLOT_DEV=""
 VC_SLOT_MP=""
+
+# 源里真有这个包（本机 dpkg 残留不算）
+apt_repo_has() {
+    apt-cache madison "$1" 2>/dev/null | grep -q .
+}
+
+find_tcplay_bin() {
+    if command -v tcplay >/dev/null 2>&1; then
+        command -v tcplay
+        return 0
+    fi
+    if [ -x /usr/sbin/tcplay ]; then
+        printf '%s\n' /usr/sbin/tcplay
+        return 0
+    fi
+    return 1
+}
+
+tcplay_map_name() {
+    local raw="${mountName:-rveracrypt}"
+    raw="$(printf '%s' "$raw" | tr -c 'A-Za-z0-9_-' '_')"
+    [ -n "$raw" ] || raw="rveracrypt"
+    TCPLAY_MAP="$raw"
+}
 
 check_mount_point() {
     # 必须用 --mountpoint；--target 会对普通目录误报父挂载
     findmnt -n --mountpoint "$1" >/dev/null 2>&1
 }
 
+use_veracrypt_bin() {
+    VERACRYPT_BIN="$1"
+    VC_BACKEND="veracrypt"
+    prompt -i "使用 veracrypt: $VERACRYPT_BIN"
+}
+
+use_tcplay_bin() {
+    TCPLAY_BIN="$1"
+    VC_BACKEND="tcplay"
+    tcplay_map_name
+    prompt -i "使用 tcplay: $TCPLAY_BIN（映射 /dev/mapper/$TCPLAY_MAP）"
+}
+
+# 官方源没有 veracrypt 时询问。返回 0 表示已改用 tcplay。
+offer_tcplay_backend() {
+    local choice bin=""
+    bin="$(find_tcplay_bin || true)"
+    if [ -z "$bin" ] && ! apt_repo_has tcplay; then
+        prompt -e "找不到 veracrypt，apt 源里也没有 tcplay。"
+        prompt -i "请从 https://www.veracrypt.fr/en/Downloads.html 安装 .deb，或在 config.sh 设置 VERACRYPT_CUSTOM。"
+        return 1
+    fi
+
+    prompt -w "找不到 veracrypt，且当前 apt 源没有这个包（Debian 官方通常不收）。"
+    prompt -i "可改用 tcplay：能开多数 PIM=0 的 VeraCrypt / TrueCrypt 卷，解密后仍用本脚本挂文件系统。"
+    prompt -w "限制：不支持自定义 PIM；隐藏卷、系统分区加密、个别算法可能打不开。容器文件会先 losetup。"
+    if [ ! -r /dev/tty ] && [ ! -t 0 ]; then
+        prompt -e "没有终端，不能询问。请安装 veracrypt，或在终端里重跑。"
+        return 1
+    fi
+    comfirmy "\e[1;33m 改用 tcplay 解密？ [Y/n]\e[0m"
+    choice=$?
+    if [ "$choice" -ne 1 ]; then
+        prompt -i "已取消。安装 veracrypt 后可再跑。"
+        return 1
+    fi
+    if [ -z "$bin" ]; then
+        prompt -x "apt install tcplay"
+        if ! sudo apt install tcplay -y; then
+            prompt -e "tcplay 安装失败。"
+            return 1
+        fi
+        bin="$(find_tcplay_bin || true)"
+    fi
+    if [ -z "$bin" ] || [ ! -x "$bin" ]; then
+        prompt -e "装完仍找不到 tcplay。"
+        return 1
+    fi
+    use_tcplay_bin "$bin"
+    return 0
+}
+
 resolve_veracrypt_bin() {
-    if [ -n "${VERACRYPT_BIN:-}" ] && [ -x "$VERACRYPT_BIN" ]; then
+    if [ "${VC_BACKEND:-}" = "tcplay" ] && [ -n "${TCPLAY_BIN:-}" ] && [ -x "$TCPLAY_BIN" ]; then
+        return 0
+    fi
+    if [ "${VC_BACKEND:-}" = "veracrypt" ] && [ -n "${VERACRYPT_BIN:-}" ] && [ -x "$VERACRYPT_BIN" ]; then
         return 0
     fi
 
     local custom="$VERACRYPT_CUSTOM"
 
-    # 相对路径按脚本目录解析，跟 BitLocker 的 DISLOCKER_CUSTOM 一样。
+    # 相对路径：打包二进制按其所在目录；否则按脚本目录。
     if [ -n "$custom" ] && [[ "$custom" != /* ]]; then
-        custom="$LIB_DIR/$custom"
+        if [ -n "${PACK_BIN_DIR:-}" ]; then
+            custom="$PACK_BIN_DIR/$custom"
+        else
+            custom="$LIB_DIR/$custom"
+        fi
     fi
 
     if [ -n "${VERACRYPT_CUSTOM:-}" ]; then
         if [ -x "$custom" ]; then
-            VERACRYPT_BIN="$custom"
-            prompt -i "使用指定的 veracrypt: $VERACRYPT_BIN"
+            use_veracrypt_bin "$custom"
             return 0
         fi
         prompt -e "VERACRYPT_CUSTOM 不可执行: ${VERACRYPT_CUSTOM}"
@@ -47,24 +134,35 @@ resolve_veracrypt_bin() {
     fi
 
     if command -v veracrypt >/dev/null 2>&1; then
-        VERACRYPT_BIN="$(command -v veracrypt)"
-        prompt -i "使用系统 veracrypt: $VERACRYPT_BIN"
+        use_veracrypt_bin "$(command -v veracrypt)"
         return 0
     fi
 
-    prompt -w "未找到 veracrypt，尝试 apt install..."
-    if sudo apt install veracrypt -y; then
-        if command -v veracrypt >/dev/null 2>&1; then
-            VERACRYPT_BIN="$(command -v veracrypt)"
-            prompt -i "安装成功，使用系统 veracrypt: $VERACRYPT_BIN"
+    # 上次用 tcplay 留下的映射还在：直接沿用，不再问一遍。
+    tcplay_map_name
+    if [ -e "/dev/mapper/$TCPLAY_MAP" ]; then
+        local existing
+        existing="$(find_tcplay_bin || true)"
+        if [ -n "$existing" ]; then
+            use_tcplay_bin "$existing"
             return 0
         fi
     fi
 
-    prompt -e "仍未找到 veracrypt。"
-    prompt -i "当前 apt 源若没有这个包，请从 https://www.veracrypt.fr/en/Downloads.html 安装 .deb，"
-    prompt -i "或用 Other/apt/collect_binary_with_deps.sh 打离线包，在 config.sh 里设置 VERACRYPT_CUSTOM。"
-    return 1
+    if apt_repo_has veracrypt; then
+        prompt -w "未找到 veracrypt，尝试 apt install..."
+        if sudo apt install veracrypt -y; then
+            if command -v veracrypt >/dev/null 2>&1; then
+                use_veracrypt_bin "$(command -v veracrypt)"
+                return 0
+            fi
+        fi
+    else
+        prompt -w "apt 源里没有 veracrypt，不尝试安装。"
+    fi
+
+    offer_tcplay_backend
+    return $?
 }
 
 resolve_volume() {
@@ -158,6 +256,9 @@ ensure_mount_dir() {
 
 # 组装解密参数（不含 filesystem / fs-options / 挂载点）。
 build_vc_crypto_args() {
+    if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+        return 0
+    fi
     VC_CRYPTO_ARGS=(--text --protect-hidden=no --pim="$pim")
     if [ -n "$keyFile" ]; then
         VC_CRYPTO_ARGS+=(--keyfiles="$keyFile")
@@ -182,6 +283,14 @@ build_vc_crypto_args() {
 
 get_veracrypt_mapped_device() {
     local vol="$1" line dev
+    if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+        tcplay_map_name
+        if [ -e "/dev/mapper/$TCPLAY_MAP" ]; then
+            printf '%s\n' "/dev/mapper/$TCPLAY_MAP"
+            return 0
+        fi
+        return 1
+    fi
     # 短列表形如 "1: /dev/sdb4 /dev/mapper/veracrypt1 -"
     # 第一个 /dev 是加密分区本身，不能拿去 mount。
     line="$(sudo "$VERACRYPT_BIN" --text --verbose --list "$vol" 2>/dev/null || true)"
@@ -199,6 +308,60 @@ get_veracrypt_mapped_device() {
         return 0
     fi
     return 1
+}
+
+# 容器文件没有块设备，tcplay 要先挂到 loop。
+tcplay_ensure_block() {
+    local loop=""
+    if [ "${volMode:-0}" -ne 1 ]; then
+        printf '%s\n' "$VOLUME_PATH"
+        return 0
+    fi
+    loop="$(sudo losetup -j "$VOLUME_PATH" 2>/dev/null | head -n 1 | cut -d: -f1 || true)"
+    if [ -z "$loop" ]; then
+        prompt -x "losetup $VOLUME_PATH"
+        loop="$(sudo losetup -f --show "$VOLUME_PATH")" || return 1
+        TCPLAY_LOOP="$loop"
+    fi
+    printf '%s\n' "$loop"
+}
+
+tcplay_release_loop() {
+    local loop=""
+    [ "${volMode:-0}" -eq 1 ] || return 1
+    [ -n "$VOLUME_PATH" ] || return 1
+    loop="$(sudo losetup -j "$VOLUME_PATH" 2>/dev/null | head -n 1 | cut -d: -f1 || true)"
+    [ -n "$loop" ] || return 1
+    sudo losetup -d "$loop"
+    TCPLAY_LOOP=""
+    return 0
+}
+
+open_crypto_slot() {
+    local dev args=()
+    if [ "${VC_BACKEND:-}" != "tcplay" ]; then
+        sudo "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"
+        return $?
+    fi
+    if [ "${pim:-0}" -ne 0 ]; then
+        prompt -e "tcplay 不能指定 PIM=$pim（只支持默认迭代）。请安装 veracrypt，或把 config.sh 里 pim 设为 0。"
+        return 1
+    fi
+    tcplay_map_name
+    dev="$(tcplay_ensure_block)" || return 1
+    args=(--map="$TCPLAY_MAP" --device="$dev")
+    if [ -n "${keyFile:-}" ]; then
+        args+=(--keyfile="$keyFile" --prompt-passphrase)
+    fi
+    if [ -n "${keyPass:-}" ]; then
+        prompt -w "tcplay 不读 config.sh 里的 keyPass，请在它自己的提示里再输入一次密码。"
+    fi
+    prompt -x "tcplay --map=$TCPLAY_MAP --device=$dev"
+    if ! sudo "$TCPLAY_BIN" "${args[@]}"; then
+        tcplay_release_loop || true
+        return 1
+    fi
+    return 0
 }
 
 fs_needs_owner_options() {
@@ -319,6 +482,18 @@ mount_mapped_filesystem() {
 
 detach_veracrypt_volume() {
     local target="$1"
+    if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+        local did=1
+        tcplay_map_name
+        if [ -e "/dev/mapper/$TCPLAY_MAP" ]; then
+            sudo "$TCPLAY_BIN" --unmap="$TCPLAY_MAP" || sudo dmsetup remove "$TCPLAY_MAP" || return 1
+            did=0
+        fi
+        if tcplay_release_loop; then
+            did=0
+        fi
+        return $did
+    fi
     if [ -n "$target" ]; then
         sudo "$VERACRYPT_BIN" --text --non-interactive --unmount "$target" >/dev/null 2>&1 && return 0
     fi
@@ -339,7 +514,12 @@ print_mount_plan() {
     prompt -k "uid/gid 策略" "$useOwnerOptions（auto=按文件系统决定；NTFS/FAT/exFAT 才会加）"
     prompt -k "NTFS 内核驱动" "$([ "$kernelNtfs" -eq 1 ] && echo 开 || echo 关)"
     prompt -k "只读" "$([ "$readOnly" -eq 1 ] && echo 是 || echo 否)"
-    prompt -i "解密后会出现中间设备 /dev/mapper/veracryptN，文件管理器进的是访问目录。"
+    prompt -k "解密方式" "${VC_BACKEND:-veracrypt}"
+    if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+        prompt -i "解密后会出现中间设备 /dev/mapper/$TCPLAY_MAP，文件管理器进的是访问目录。"
+    else
+        prompt -i "解密后会出现中间设备 /dev/mapper/veracryptN，文件管理器进的是访问目录。"
+    fi
     echo
 }
 
@@ -371,6 +551,20 @@ detect_open_veracrypt_slot() {
     VC_SLOT_MP=""
     resolve_veracrypt_bin || return 1
     resolve_volume quiet || return 1
+
+    if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+        tcplay_map_name
+        dev="/dev/mapper/$TCPLAY_MAP"
+        if [ ! -e "$dev" ]; then
+            return 1
+        fi
+        VC_SLOT_DEV="$dev"
+        mounted_at="$(findmnt -n -o TARGET -S "$dev" 2>/dev/null | head -n 1 || true)"
+        if [ -n "$mounted_at" ] && check_mount_point "$mounted_at"; then
+            VC_SLOT_MP="$mounted_at"
+        fi
+        return 0
+    fi
 
     line="$(sudo "$VERACRYPT_BIN" --text --verbose --list "$VOLUME_PATH" 2>/dev/null || true)"
     if [ -z "$line" ]; then
@@ -418,12 +612,14 @@ detect_existing_veracrypt_mount() {
     if ! resolve_volume quiet; then
         return 1
     fi
-    line="$(sudo "$VERACRYPT_BIN" --text -l "$VOLUME_PATH" 2>/dev/null | head -n 1 || true)"
-    mp="$(printf '%s\n' "$line" | awk '{print $NF}')"
-    if [ -n "$mp" ] && [ "$mp" != "-" ] && [[ "$mp" == /* ]] && check_mount_point "$mp"; then
-        readMount="$mp"
-        prompt -k "已挂载(VeraCrypt)" "$readMount"
-        return 0
+    if [ "${VC_BACKEND:-}" != "tcplay" ]; then
+        line="$(sudo "$VERACRYPT_BIN" --text -l "$VOLUME_PATH" 2>/dev/null | head -n 1 || true)"
+        mp="$(printf '%s\n' "$line" | awk '{print $NF}')"
+        if [ -n "$mp" ] && [ "$mp" != "-" ] && [[ "$mp" == /* ]] && check_mount_point "$mp"; then
+            readMount="$mp"
+            prompt -k "已挂载(VeraCrypt)" "$readMount"
+            return 0
+        fi
     fi
     # 文件系统是用 mount(8) 挂到映射设备上的，veracrypt 列表里可能没有目录。
     if detect_open_veracrypt_slot && [ -n "$VC_SLOT_MP" ]; then
@@ -532,7 +728,7 @@ mount_veracrypt() {
 
     # 先只解开加密层，探测文件系统/卷标，再决定访问目录。
     prompt -x "解密（先不挂文件系统）: $VOLUME_PATH"
-    if ! sudo "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"; then
+    if ! open_crypto_slot; then
         if detect_open_veracrypt_slot && [ -z "$VC_SLOT_MP" ]; then
             prompt -w "卷已经处于解密状态，改为直接挂文件系统。"
             mount_filesystem_from_mapped "$VC_SLOT_DEV" 1
@@ -568,8 +764,12 @@ umount_veracrypt() {
             rc=0
         else
             show_mount_holders "$readMount"
-            prompt -w "仍尝试非交互卸载 VeraCrypt 映射（不再询问紧急清理）。"
-            if sudo "$VERACRYPT_BIN" --text --non-interactive --unmount "$readMount"; then
+            prompt -w "仍尝试卸掉解密映射（不再询问紧急清理）。"
+            if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+                if detach_veracrypt_volume "$readMount"; then
+                    rc=0
+                fi
+            elif sudo "$VERACRYPT_BIN" --text --non-interactive --unmount "$readMount"; then
                 rc=0
             fi
         fi
@@ -618,7 +818,11 @@ release_open_veracrypt_slot() {
     fi
     dev="$VC_SLOT_DEV"
     prompt -k "取消解密" "$dev"
-    prompt -x "veracrypt --unmount $VOLUME_PATH"
+    if [ "${VC_BACKEND:-}" = "tcplay" ]; then
+        prompt -x "tcplay --unmap $TCPLAY_MAP"
+    else
+        prompt -x "veracrypt --unmount $VOLUME_PATH"
+    fi
     if detach_veracrypt_volume "$VOLUME_PATH" || detach_veracrypt_volume "$dev"; then
         prompt -s "已取消解密，映射已移除。"
         rm -f "$LIB_DIR/.last-readmount" 2>/dev/null || true

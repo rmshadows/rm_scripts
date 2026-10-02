@@ -105,41 +105,6 @@ HDR
   lib_body
   cat <<'MAIN'
 
-# 打包后：相对 VERACRYPT_CUSTOM 按二进制目录解析
-resolve_veracrypt_bin() {
-  if [ -n "${VERACRYPT_BIN:-}" ] && [ -x "$VERACRYPT_BIN" ]; then
-    return 0
-  fi
-  local custom="$VERACRYPT_CUSTOM"
-  if [ -n "$custom" ] && [[ "$custom" != /* ]]; then
-    custom="$PACK_BIN_DIR/$custom"
-  fi
-  if [ -n "${VERACRYPT_CUSTOM:-}" ]; then
-    if [ -x "$custom" ]; then
-      VERACRYPT_BIN="$custom"
-      prompt -i "使用指定的 veracrypt: $VERACRYPT_BIN"
-      return 0
-    fi
-    prompt -e "VERACRYPT_CUSTOM 不可执行: ${VERACRYPT_CUSTOM}"
-    return 1
-  fi
-  if command -v veracrypt >/dev/null 2>&1; then
-    VERACRYPT_BIN="$(command -v veracrypt)"
-    prompt -i "使用系统 veracrypt: $VERACRYPT_BIN"
-    return 0
-  fi
-  prompt -w "未找到 veracrypt，尝试 apt install..."
-  if sudo apt install veracrypt -y; then
-    if command -v veracrypt >/dev/null 2>&1; then
-      VERACRYPT_BIN="$(command -v veracrypt)"
-      prompt -i "安装成功，使用系统 veracrypt: $VERACRYPT_BIN"
-      return 0
-    fi
-  fi
-  prompt -e "仍未找到 veracrypt。"
-  return 1
-}
-
 # 覆盖：状态写到 STATE_DIR
 save_last_read_mount() {
   mkdir -p "$STATE_DIR" 2>/dev/null || true

@@ -40,7 +40,8 @@ kernelNtfs=0
 # 1: 只读挂载
 readOnly=0
 
-# 留空则：优先系统 veracrypt，找不到再尝试 apt install。
+# 留空则：优先系统 veracrypt；apt 源里有包才安装。
+# Debian 官方源通常没有 veracrypt。找不到时脚本会问要不要改用 tcplay。
 # 系统自带版本有问题，或要用离线打包的二进制时再指定，例如：
 # VERACRYPT_CUSTOM="./Debian12-amd64/veracrypt"
 # VERACRYPT_CUSTOM="./UOS-arm64/veracrypt"
