@@ -41,6 +41,10 @@ pack_one() {
   ls -lh "$out"
 }
 
+echo "同步 zshrc 模板到两个安装包 ..."
+bash "$REPO_ROOT/shared/sync-zshrc.sh"
+
+
 pack_one "Debian_GNOME_Init"
 pack_one "Debian_Server_Init"
 

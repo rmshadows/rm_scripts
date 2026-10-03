@@ -47,18 +47,18 @@ sha256sum -c SHA256SUMS
 
 下面命令把对应目录**直接解到当前文件夹**。把 `dev` 换成 `main` 即主分支；目录前缀跟着改成 `rm_scripts-main/`。
 
-**只要 GNOME Init**
+**只要 GNOME Init**（顺带解出 `shared/`，安装时会按主干和片段重写 `zshrc.src`）
 
 ```bash
 curl -fsSL https://github.com/rmshadows/rm_scripts/archive/refs/heads/dev.tar.gz \
-  | tar -xz --strip-components=1 rm_scripts-dev/Debian_GNOME_Init
+  | tar -xz --strip-components=1 rm_scripts-dev/Debian_GNOME_Init rm_scripts-dev/shared
 ```
 
-**只要 Server Init**
+**只要 Server Init**（同样带上 `shared/`）
 
 ```bash
 curl -fsSL https://github.com/rmshadows/rm_scripts/archive/refs/heads/dev.tar.gz \
-  | tar -xz --strip-components=1 rm_scripts-dev/Debian_Server_Init
+  | tar -xz --strip-components=1 rm_scripts-dev/Debian_Server_Init rm_scripts-dev/shared
 ```
 
 **整个仓库解到当前目录**（会把仓库根文件混进当前文件夹，建议先建空目录再执行）：

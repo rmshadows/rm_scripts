@@ -1,0 +1,19 @@
+# ag搜文件内容
+alias agc='ag -i --numbers --color --color-path "1;33" --color-line-number "1;32" --color-match "1;31"'
+# 搜文件名（高亮关键字）
+agf() {
+    ag -g "$1" | GREP_COLORS='ms=1;31' grep --color=always -i "$1"
+}
+# Office 文档搜索（包装 nautilus lib 里的 searchDocx.sh）
+OFFICE_LIB="$HOME/.local/share/nautilus/lib/Office"
+_SEARCH_DOCX="$OFFICE_LIB/searchDocx.sh"
+
+if [[ -x $_SEARCH_DOCX ]]; then
+  # 搜 Word（.doc/.docx）
+  agw() { "$_SEARCH_DOCX" "$@" }
+  # Word + Excel
+  agx() { "$_SEARCH_DOCX" -x "$@" }
+  # 只搜 Excel
+  agX() { "$_SEARCH_DOCX" -X "$@" }
+fi
+

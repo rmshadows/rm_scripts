@@ -9,6 +9,17 @@
 检查点二
 prompt -i "——————————  检查点二  ——————————"
 source "cfg.sh"
+# 克隆完整仓库时，上两级有 shared/，先按主干和片段重写 zshrc.src。
+# 发布包不含 shared/，跳过，用打包前已经生成的 zshrc.src。
+_zshrc_sync="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/shared/sync-zshrc.sh"
+if [ -f "$_zshrc_sync" ]; then
+	prompt -i "从 shared/ 同步 zshrc 模板"
+	if ! bash "$_zshrc_sync"; then
+		prompt -e "zshrc 模板同步失败"
+		quitThis
+	fi
+fi
+unset _zshrc_sync
 # 修改zshrc中用户名
 # replace_username "$ZSHRC_CONFIG"
 replace_placeholders_with_values "$ZSHRC_CONFIG"

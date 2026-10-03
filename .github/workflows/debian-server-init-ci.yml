@@ -7,10 +7,12 @@ on:
   pull_request:
     paths:
       - "Debian_Server_Init/**"
+      - "shared/**"
       - ".github/workflows/debian-server-init-ci.yml"
   push:
     paths:
       - "Debian_Server_Init/**"
+      - "shared/**"
       - ".github/workflows/debian-server-init-ci.yml"
 
 permissions:

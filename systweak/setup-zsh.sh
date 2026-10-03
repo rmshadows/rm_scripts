@@ -2,7 +2,7 @@
 # 安装 zsh + 插件，将 root 与当前用户改为 zsh，并写入 Debian_GNOME_Init 同款 zshrc（已内嵌）
 # --undo：还原 shell 与 .zshrc；不卸载 apt 包
 # 用法: sudo ./setup-zsh.sh [--apply|--undo|--status]
-# 模板来源: Debian_GNOME_Init/2/zshrc.src
+# zshrc 内嵌正文由 shared/sync-zshrc.sh 生成，与 GNOME 的 zshrc.src 相同；改配置请改 shared/ 后同步。
 set -euo pipefail
 
 NAME="setup-zsh"
@@ -20,7 +20,7 @@ else
   CURRENT_USER="root"
 fi
 
-# 内嵌自 Debian_GNOME_Init/2/zshrc.src（占位符 【$CURRENT_USER】）
+# 内嵌正文由 shared/sync-zshrc.sh 生成，不要手改 heredoc 里的 zshrc
 emit_zshrc_template() {
   cat <<'ZSHRC_TEMPLATE_EOF'
 # 【$CURRENT_USER】
@@ -729,7 +729,6 @@ activatePythonVenv
 # Created by `pipx` on 2023-06-30 12:10:31
 # :/usr/games:/usr/local/games
 export PATH="$PATH:/home/【$CURRENT_USER】/.local/bin"
-
 ZSHRC_TEMPLATE_EOF
 }
 
@@ -780,7 +779,7 @@ apply_user() {
 cmd_status() {
   echo "备份: $BACKUP_DIR"
   echo "目标用户: $CURRENT_USER (+ root)"
-  echo "zshrc: 内嵌自 Debian_GNOME_Init/2/zshrc.src"
+  echo "zshrc: 内嵌正文由 shared/sync-zshrc.sh 生成（与 GNOME zshrc.src 相同）"
   command -v zsh >/dev/null && echo "zsh: $(command -v zsh)" || echo "zsh: 未安装"
   for u in root "$CURRENT_USER"; do
     echo "$u shell: $(getent passwd "$u" | cut -d: -f7)"
