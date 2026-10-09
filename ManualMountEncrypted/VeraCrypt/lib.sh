@@ -649,31 +649,86 @@ pick_volume_person() {
     return 0
 }
 
-# 先试内核 idmap。失败就由调用方改走 bindfs。gid 为 0 时不映射组，避免把 root 组整段换掉。
-# X-mount.idmap 的顺序是「看到的:磁盘上的:个数」。u:1002:1000:1 表示磁盘上的 1000 显示成 1002。
-try_idmap_mount() {
-    local dev="$1" mp="$2" vuid="$3" vgid="$4" uid="$5" gid="$6"
-    local spec err rc got
-    spec="u:${uid}:${vuid}:1"
-    if [ -n "$vgid" ] && [ "$vgid" != "0" ] && [ "$vgid" != "$gid" ]; then
-        spec="$spec g:${gid}:${vgid}:1"
-    fi
-    prompt -x "mount -o X-mount.idmap=$spec $dev $mp"
-    err="$(sudo mount -o "X-mount.idmap=$spec" "$dev" "$mp" 2>&1)"
-    rc=$?
-    if [ "$rc" -ne 0 ]; then
-        [ -n "$err" ] && printf '%s\n' "$err" >&2
+# config.sh 里写了 volumeUid 时，不用自动猜的那个 uid。volumeGid 可空。
+apply_configured_volume_owner() {
+    local mp="$1" want="${volumeUid:-}" wantg="${volumeGid:-}" hit=""
+    [ -n "$want" ] || return 0
+    if ! [[ "$want" =~ ^[0-9]+$ ]]; then
+        prompt -w "volumeUid=$want 不是数字，改为自动检测。"
         return 1
     fi
-    if owner_visible_as "$mp" "$uid" "$vuid" "${VOL_ROOT_DISK_UID:-$vuid}" "${VOL_OWNER_SAMPLE:-}"; then
-        VC_OWNER_NOTE="idmap ${vuid}→${uid}"
-        clear_owner_view_state
-        return 0
+    if [ -n "$wantg" ] && ! [[ "$wantg" =~ ^[0-9]+$ ]]; then
+        prompt -w "volumeGid=$wantg 不是数字，组仍跟着这个 uid 的文件。"
+        wantg=""
     fi
-    got="$(sudo stat -c '%u' "$mp" 2>/dev/null || true)"
-    prompt -w "mount 返回成功，但看到的 uid 仍是 ${got:-未知}。这台 mount 没有真正应用 X-mount.idmap。"
-    prompt -x "umount $mp"
-    sudo umount "$mp" || true
+    hit="$(sudo find "$mp" -mindepth 1 -maxdepth 1 ! -name lost+found -uid "$want" -printf '%G\t%f\n' 2>/dev/null | head -n 1 || true)"
+    VOL_PERSON_UID="$want"
+    VOL_WITNESS_SAMPLE=""
+    if [ -n "$hit" ]; then
+        VOL_OWNER_SAMPLE="${hit#*$'\t'}"
+        if [ -n "$wantg" ]; then
+            VOL_PERSON_GID="$wantg"
+        else
+            VOL_PERSON_GID="${hit%%$'\t'*}"
+        fi
+    elif [ -n "$wantg" ]; then
+        VOL_PERSON_GID="$wantg"
+        VOL_OWNER_SAMPLE=""
+    fi
+    prompt -k "指定磁盘 uid" "$want"
+    return 0
+}
+
+# 手册写 id-mount:id-host，也就是「看到的:磁盘上的」。银河麒麟那次按手册改的是这个顺序。
+# Debian 13 的 util-linux 2.41 实测相反：按手册挂上后看到的是 65534。
+# 两种都试，stat 对上当前用户才留下；都不对就交给 bindfs。
+# 只写 u: 时 mount_setattr 会 EINVAL，所以组映射总要带上。
+# u:0:0:1 / g:0:0:1 让 root 仍显示为 root。
+idmap_spec_for() {
+    local order="$1" vuid="$2" vgid="$3" uid="$4" gid="$5"
+    local spec u_pair g_pair
+    if [ "$order" = "seen" ]; then
+        u_pair="u:${uid}:${vuid}:1"
+        g_pair="g:${gid}:${vgid}:1"
+    else
+        u_pair="u:${vuid}:${uid}:1"
+        g_pair="g:${vgid}:${gid}:1"
+    fi
+    if [ "$vuid" != "0" ]; then
+        spec="u:0:0:1 ${u_pair}"
+    else
+        spec="$u_pair"
+    fi
+    if [ -n "$vgid" ] && [ "$vgid" != "0" ]; then
+        spec="$spec g:0:0:1 ${g_pair}"
+    else
+        spec="$spec g:0:0:1"
+    fi
+    printf '%s\n' "$spec"
+}
+
+try_idmap_mount() {
+    local dev="$1" mp="$2" vuid="$3" vgid="$4" uid="$5" gid="$6"
+    local order spec err rc got
+    for order in seen disk; do
+        spec="$(idmap_spec_for "$order" "$vuid" "$vgid" "$uid" "$gid")"
+        prompt -x "mount -o X-mount.idmap=$spec $dev $mp"
+        err="$(sudo mount -o "X-mount.idmap=$spec" "$dev" "$mp" 2>&1)"
+        rc=$?
+        if [ "$rc" -ne 0 ]; then
+            [ -n "$err" ] && printf '%s\n' "$err" >&2
+            continue
+        fi
+        if owner_visible_as "$mp" "$uid" "$vuid" "${VOL_ROOT_DISK_UID:-$vuid}" "${VOL_OWNER_SAMPLE:-}"; then
+            VC_OWNER_NOTE="idmap ${vuid}→${uid}"
+            clear_owner_view_state
+            return 0
+        fi
+        got="$(sudo stat -c '%u' "$mp" 2>/dev/null || true)"
+        prompt -w "这种顺序看到的 uid 仍是 ${got:-未知}，换另一种。"
+        prompt -x "umount $mp"
+        sudo umount "$mp" || true
+    done
     return 1
 }
 
@@ -750,6 +805,7 @@ reconcile_native_fs_owner() {
         prompt -w "读不到卷根属主，跳过属主检查"
         return 0
     fi
+    apply_configured_volume_owner "$mp" || true
     vuid="$VOL_PERSON_UID"
     vgid="$VOL_PERSON_GID"
     if [ -z "$vuid" ]; then

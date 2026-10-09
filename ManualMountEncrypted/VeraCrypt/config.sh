@@ -41,6 +41,11 @@ useOwnerOptions=auto
 # chown-root  不询问，只把卷根 chown 给当前用户（会写入卷，子目录可能仍不可写）
 # skip        不询问，按卷内权限挂着
 ownerMismatch=ask
+# 要映射的是磁盘上的 uid/gid，不是映射之后希望看到的号。
+# 留空：自动取卷里一层子项出现最多的非 0 uid（1000、1002 或其他都行）。
+# 自动认错时再写数字，例如卷是在 uid=1002 的机器上做的：volumeUid=1002
+volumeUid=
+volumeGid=
 # 1: NTFS 走内核驱动（ntfs3），避免 ntfs-3g 在休眠时卡住。
 kernelNtfs=0
 # 1: 只读挂载
