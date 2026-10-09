@@ -42,6 +42,27 @@ prompt () {
   esac
 }
 
+# 整段操作的最后一块结论。ok=绿色，fail=红色。
+print_result_banner() {
+    local kind="$1" title="$2" detail="${3:-}"
+    local color bar
+    local G=$'\033[1;32m' R=$'\033[1;31m' N=$'\033[0m'
+    if [ "$kind" = "ok" ]; then
+        color="$G"
+    else
+        color="$R"
+    fi
+    bar="========================================"
+    echo
+    echo -e "${color}${bar}${N}"
+    echo -e "${color} ${title}${N}"
+    if [ -n "$detail" ]; then
+        echo -e "${color} ${detail}${N}"
+    fi
+    echo -e "${color}${bar}${N}"
+    echo
+}
+
 testPrintln(){
     prompt -s "成功信息（绿色）"
     prompt -x "执行日志（绿色）"

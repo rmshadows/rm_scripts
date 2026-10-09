@@ -15,30 +15,63 @@ b_CCIN=" \033[1;36m"                                # bold info color
 b_CGSC=" \033[1;32m"                                # bold success color
 b_CRER=" \033[1;31m"                                # bold error color
 b_CWAR=" \033[1;33m"  
-# echo like ...  with  flag type  and display message  colors
-# -s 绿
-# -e 红
-# -w 黄
-# -i 蓝
+# 终端显示宽度。ASCII 算 1，中文算 2，用来把标签垫成同一列。
+_text_width() {
+  local s="$1" i ch n=0 cp
+  for ((i=0; i<${#s}; i++)); do
+    ch="${s:i:1}"
+    printf -v cp '%d' "'$ch"
+    if [ "$cp" -lt 128 ]; then
+      n=$((n + 1))
+    else
+      n=$((n + 2))
+    fi
+  done
+  printf '%s' "$n"
+}
+
+_pad_label() {
+  local s="$1" width="${2:-20}" w pad
+  w="$(_text_width "$s")"
+  pad=$((width - w))
+  if [ "$pad" -lt 1 ]; then
+    printf '%s ' "$s"
+  else
+    printf '%s%*s' "$s" "$pad" ''
+  fi
+}
+
+# 开机日志式的一行。ok 开头绿色，fail 开头红色，其余同一列但不涂消息本身。
+status_line() {
+  local kind="$1" text="$2"
+  local G=$'\033[1;32m' R=$'\033[1;31m' Y=$'\033[1;33m' N=$'\033[0m'
+  case "$kind" in
+    ok)   printf '%s  %s\n' "${G}[  OK  ]${N}" "$text" ;;
+    fail) printf '%s  %s\n' "${R}[FAILED]${N}" "$text" ;;
+    warn) printf '%s  %s\n' "${Y}[ WARN ]${N}" "$text" ;;
+    *)    printf '%s  %s\n' "[  ..  ]" "$text" ;;
+  esac
+}
+
+# -s 成功（绿）  -e 失败（红）  -w 警告  -i/-m/-x 步骤  -k 对齐的两项
 prompt () {
   case ${1} in
     "-s"|"--success")
-      echo -e "${b_CGSC}${@/-s/}${CDEF}";;          # print success message
-    "-x"|"--exec")
-      echo -e "Exec Log：${b_CGSC}${@/-x/}${CDEF}";;          # print exec message
+      shift
+      status_line ok "$*" ;;
     "-e"|"--error")
-      echo -e "${b_CRER}${@/-e/}${CDEF}";;          # print error message
+      shift
+      status_line fail "$*" ;;
     "-w"|"--warning")
-      echo -e "${b_CWAR}${@/-w/}${CDEF}";;          # print warning message
-    "-i"|"--info")
-      echo -e "${b_CCIN}${@/-i/}${CDEF}";;          # print info message
-    "-m"|"--msg")
-      echo -e "Msg：${b_CCIN}${@/-m/}${CDEF}";;          # print iinfo message
-    "-k"|"--kv")  # 三个参数
-      echo -e "${b_CCIN} ${2} ${b_CWAR} ${3} ${CDEF}";;          # print k:v message
+      shift
+      status_line warn "$*" ;;
+    "-x"|"--exec"|"-i"|"--info"|"-m"|"--msg")
+      shift
+      status_line info "$*" ;;
+    "-k"|"--kv")
+      status_line info "$(_pad_label "$2")$3" ;;
     *)
-    echo -e "$@"
-    ;;
+      status_line info "$*" ;;
   esac
 }
 

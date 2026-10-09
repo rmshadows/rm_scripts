@@ -64,17 +64,22 @@ umountBitlocker() {
             sudo umount "$dislockMount" || { usuccess=1; show_mount_holders "$dislockMount"; }
         fi
     elif [ $choice == 2 ]; then
-        prompt -i "Quit."
+        echo "已取消。"
+        return 0
     else
         prompt -e "ERROR:未知返回值!"
         exit 5
     fi
     if [ "$usuccess" -eq 0 ]; then
-        prompt -s "Disk unmounted successfully."
         remove_empty_media_dir "$readMount"
         rm -f "$SCRIPT_DIR/.last-readmount" 2>/dev/null || true
+        echo
+        echo "目录: $readMount"
+        echo "解密点: $dislockMount"
+        echo "状态: 已卸载"
+        print_result_banner ok "卸载成功" "$readMount"
     else
-        prompt -e "WARN: An error may occur during the umount process, check manual."
+        print_result_banner fail "卸载失败" "占用进程见上方，关掉后再卸"
     fi
 }
 
@@ -109,6 +114,7 @@ mountBitlockerDisk() {
                 echo "[INFO] 安装成功，使用系统 dislocker: $DISLOCKER_BIN"
             else
                 echo "[FATAL] 安装失败，仍未找到 dislocker。"
+                print_result_banner fail "挂载失败" "找不到 dislocker"
                 exit 1
             fi
         fi
@@ -130,9 +136,7 @@ mountBitlockerDisk() {
         tempArgs=${tempArgs[0]}
         # /dev/sdb4
         pdev=${tempArgs::-1}
-        # echo "Get Bitlocker Part: "$pdev"."
-        prompt -i "Get Bitlocker Part: "$pdev"."
-        prompt -s " => $pdev <="
+        echo "磁盘: $pdev"
 
         if [ ! -d "$dislockMount" ]; then
             prompt -x "mkdir $dislockMount"
@@ -152,8 +156,8 @@ mountBitlockerDisk() {
                     prompt -x "mkdir $dislockMount"
                     sudo mkdir -p "$dislockMount"
                 elif [ $choice == 2 ]; then
-                    prompt -w "Quit."
-                    exit 1
+                    echo "已取消。"
+                    exit 0
                 else
                     prompt -e "Unknown option !"
                     exit 5
@@ -196,33 +200,38 @@ mountBitlockerDisk() {
                 sudo "$DISLOCKER_BIN" "$pdev" -p -- "$dislockMount"
             fi
         else
-            prompt -e "Error: Wrong decryption method selection (0~1, but $keyMode) ."
+            print_result_banner fail "挂载失败" "keyMode 只能是 0 或 1，当前是 $keyMode"
+            exit 1
         fi
 
         if [ "$?" -ne 0 ]; then
-            prompt -e "Error occurred while mounting."
+            print_result_banner fail "挂载失败" "解密失败"
             exit 1
         fi
 
         vol_label="$(sudo blkid -o value -s LABEL "$dislockMount/dislocker-file" 2>/dev/null || true)"
-        prompt -k "检测到的卷标" "${vol_label:-（无）}"
-        prompt -k "命名模式" "${mountNameMode:-label-or-fixed}"
-        resolve_media_read_mount "$vol_label" || exit 1
-        prepare_empty_mount_dir "$readMount" || exit 1
+        resolve_media_read_mount "$vol_label" || {
+            print_result_banner fail "挂载失败" "定不了访问目录"
+            exit 1
+        }
+        prepare_empty_mount_dir "$readMount" || {
+            print_result_banner fail "挂载失败" "挂载点目录不可用"
+            exit 1
+        }
 
         # 下一个命令是把解密好的分区挂在到可读目录；loop 把文件当分区
         # ,uid=$(id -u ryan),gid=$(id -g ryan) 能解决回收站无法使用的问题
-        sudo mount -o loop,uid=$(id -u $USERNAME),gid=$(id -g $USERNAME) "$dislockMount"/dislocker-file "$readMount"
-        # sudo mount -o loop "$dislockMount"/dislocker-file "$readMount"
+        if ! sudo mount -o loop,uid=$(id -u $USERNAME),gid=$(id -g $USERNAME) "$dislockMount"/dislocker-file "$readMount"; then
+            print_result_banner fail "挂载失败" "文件系统没有挂上: $readMount"
+            exit 1
+        fi
         save_last_read_mount "$SCRIPT_DIR"
-        prompt -s "Mounted successfully: $readMount"
-        # echo "Launched."
-        # echo "Use below to unmount."
-        prompt -i "Use below to unmount."
-        echo ""
-        prompt -s "sudo umount $readMount && sudo umount $dislockMount"
-        # echo "sudo umount "$dislockMount""
-        echo ""
+        echo
+        echo "磁盘: ${pdev:-未知}"
+        echo "卷标: ${vol_label:-无}"
+        echo "目录: $readMount"
+        echo "状态: 已挂载"
+        print_result_banner ok "挂载成功" "$readMount"
     elif [ $choice == 2 ]; then
         prompt -i "Quit."
     else

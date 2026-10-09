@@ -33,8 +33,14 @@ keyFile=""
 truecryptMode=0
 # uid/gid 挂载选项：auto（默认）| 1（强制开）| 0（强制关）
 # auto：NTFS/FAT/exFAT 加 uid/gid；ext4 等原生 Linux 文件系统不加（它们认卷内属主）。
-# 对 ext4 等：若挂上后当前用户写不了卷根，脚本会把「根目录」chown 给你（不递归）。
 useOwnerOptions=auto
+# ext4/xfs 等：卷根 uid 和当前用户不同时怎么处理。
+# ask         挂载时询问（默认）
+# map         不询问。内核 5.12+ 且 stat 确认属主变了才用 idmap，否则 bindfs。不改卷内属主。
+# bindfs      不询问，直接 bindfs（给 Debian 10 / 内核 4.19 用）
+# chown-root  不询问，只把卷根 chown 给当前用户（会写入卷，子目录可能仍不可写）
+# skip        不询问，按卷内权限挂着
+ownerMismatch=ask
 # 1: NTFS 走内核驱动（ntfs3），避免 ntfs-3g 在休眠时卡住。
 kernelNtfs=0
 # 1: 只读挂载

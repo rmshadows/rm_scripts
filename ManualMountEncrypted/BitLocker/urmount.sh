@@ -17,30 +17,41 @@ fi
 detect_existing_bitlocker_mount || true
 
 failed=0
+acted=0
 if is_mountpoint "$readMount"; then
+    acted=1
     if sudo umount "$readMount"; then
-        prompt -s "已卸载 $readMount"
         remove_empty_media_dir "$readMount"
     else
         failed=1
         show_mount_holders "$readMount"
     fi
-else
-    prompt -w "可读挂载点未挂载: $readMount"
 fi
 sleep 1
 if is_mountpoint "$dislockMount"; then
-    if sudo umount "$dislockMount"; then
-        prompt -s "已卸载 $dislockMount"
-    else
+    acted=1
+    if ! sudo umount "$dislockMount"; then
         failed=1
         show_mount_holders "$dislockMount"
     fi
-else
-    prompt -w "dislocker 挂载点未挂载: $dislockMount"
 fi
 
-if [ "$failed" -eq 0 ]; then
-    rm -f "$SCRIPT_DIR/.last-readmount" 2>/dev/null || true
+if [ "$failed" -ne 0 ]; then
+    print_result_banner fail "卸载失败" "占用进程见上方，关掉后再卸"
+    exit 1
 fi
-exit "$failed"
+if [ "$acted" -eq 0 ]; then
+    echo
+    echo "目录: $readMount"
+    echo "解密点: $dislockMount"
+    echo "状态: 未挂载"
+    print_result_banner fail "卸载失败" "现在没有挂载"
+    exit 1
+fi
+rm -f "$SCRIPT_DIR/.last-readmount" 2>/dev/null || true
+echo
+echo "目录: $readMount"
+echo "解密点: $dislockMount"
+echo "状态: 已卸载"
+print_result_banner ok "卸载成功" "$readMount"
+exit 0

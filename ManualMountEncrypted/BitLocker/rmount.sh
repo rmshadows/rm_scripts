@@ -45,8 +45,7 @@ tempArgs=($pinfo)
 tempArgs=${tempArgs[0]}
 # /dev/sdb4
 pdev=${tempArgs::-1}
-prompt -i "Get Bitlocker Part: "$pdev"."
-prompt -s " => $pdev <="
+echo "磁盘: $pdev"
 
 if [ ! -d "$dislockMount" ]; then
   prompt -x "mkdir $dislockMount"
@@ -93,24 +92,33 @@ elif [ "$keyMode" -eq 1 ]; then
     sudo "$DISLOCKER_BIN" "$pdev" -p -- "$dislockMount"
   fi
 else
-  prompt -e "Error: Wrong decryption method selection (0~1, but $keyMode) ."
+  print_result_banner fail "挂载失败" "keyMode 只能是 0 或 1，当前是 $keyMode"
+  exit 1
 fi
 
 if [ "$?" -ne 0 ]; then
-  prompt -e "Error occurred while mounting."
+  print_result_banner fail "挂载失败" "解密失败"
   exit 1
 fi
 
 vol_label="$(sudo blkid -o value -s LABEL "$dislockMount/dislocker-file" 2>/dev/null || true)"
-prompt -k "检测到的卷标" "${vol_label:-（无）}"
-prompt -k "命名模式" "${mountNameMode:-label-or-fixed}"
-resolve_media_read_mount "$vol_label" || exit 1
-prepare_empty_mount_dir "$readMount" || exit 1
+resolve_media_read_mount "$vol_label" || {
+  print_result_banner fail "挂载失败" "定不了访问目录"
+  exit 1
+}
+prepare_empty_mount_dir "$readMount" || {
+  print_result_banner fail "挂载失败" "挂载点目录不可用"
+  exit 1
+}
 
-sudo mount -o loop,uid=$(id -u $USERNAME),gid=$(id -g $USERNAME) "$dislockMount"/dislocker-file "$readMount"
+if ! sudo mount -o loop,uid=$(id -u $USERNAME),gid=$(id -g $USERNAME) "$dislockMount"/dislocker-file "$readMount"; then
+  print_result_banner fail "挂载失败" "文件系统没有挂上: $readMount"
+  exit 1
+fi
 save_last_read_mount "$SCRIPT_DIR"
-prompt -s "Mounted successfully: $readMount"
-prompt -i "Use below to unmount."
-echo ""
-prompt -s "sudo umount $readMount && sudo umount $dislockMount"
-echo ""
+echo
+echo "磁盘: ${pdev:-未知}"
+echo "卷标: ${vol_label:-无}"
+echo "目录: $readMount"
+echo "状态: 已挂载"
+print_result_banner ok "挂载成功" "$readMount"

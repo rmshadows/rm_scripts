@@ -130,36 +130,52 @@ VeraCrypt 挂载工具（pack_shc 打包版）
   $(basename "$0")              交互：已挂载问卸载；已解密未挂载问挂载或取消解密；否则问挂载
   $(basename "$0") --mount|-m   直接挂载（同 rmount.sh）
   $(basename "$0") --umount|-u  直接卸载（同 urmount.sh）
+  $(basename "$0") --dry-run|-n 只检查并演示红绿结论，不改挂载
   $(basename "$0") -h|--help    帮助
+可与 --mount / --umount 组合，例如: $(basename "$0") --dry-run --mount
 EOF
 }
 
 main() {
-  case "${1:-}" in
-    -h|--help)
-      packed_usage
-      exit 0
-      ;;
-    --mount|-m)
+  local dry=0 action="" arg
+  for arg in "$@"; do
+    case "$arg" in
+      -h|--help)
+        packed_usage
+        exit 0
+        ;;
+      --dry-run|-n) dry=1 ;;
+      --mount|-m) action="mount" ;;
+      --umount|-u) action="umount" ;;
+      *)
+        prompt -e "未知参数: $arg"
+        packed_usage
+        exit 2
+        ;;
+    esac
+  done
+
+  if [ "$dry" -eq 1 ]; then
+    dry_run_preview "${action:-interactive}"
+    exit $?
+  fi
+
+  case "$action" in
+    mount)
       if detect_existing_veracrypt_mount; then
-        prompt -w "已经挂载: $readMount"
+        print_result_banner ok "已经挂载" "$readMount"
         exit 1
       fi
       mount_veracrypt
       exit $?
       ;;
-    --umount|-u)
+    umount)
       umount_veracrypt
       exit $?
       ;;
     "")
       interactive_veracrypt
       exit $?
-      ;;
-    *)
-      prompt -e "未知参数: $1"
-      packed_usage
-      exit 2
       ;;
   esac
 }
