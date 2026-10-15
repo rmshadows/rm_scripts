@@ -2,40 +2,22 @@
 
 整个 `acme` 文件夹拷走就能用。检查点五也是从这里安装。
 
-| 文件 | 装到哪 |
-| --- | --- |
-| `acme-ctl.sh` | `/usr/local/bin/acme-ctl` |
-| `acme-deploy-cert.sh` | `/usr/local/sbin/acme-deploy-cert` |
-| `acme-deploy.conf.src` | `/etc/acme-deploy.conf` |
-| `acme-deploy-cert.sudoers.src` | `/etc/sudoers.d/acme-deploy-cert` |
+检查点五会把脚本装到 `/usr/local/bin` 和 `/usr/local/sbin`。自己加装不用装到系统目录：整个文件夹拷走，在文件夹里运行。
 
 `/etc/acme-deploy.conf` 告诉脚本：业务用户、acme.sh 目录、证书拷到 `~/cert`、主域名和 SAN、网站根目录、nginx 还是 apache2。
 
 ## 自己加装
 
-先确认这台机器已经装了 acme.sh。在本目录用 root 执行，把 `【$...】` 改成这台机器的值：
+先确认这台机器已经装了 acme.sh。用 root 在这个文件夹里执行 `./acme-ctl.sh`。
 
-```bash
-sed -e 's|【$CURRENT_USER】|业务用户名|g' \
-    -e 's|【$SET_ACME_HOME】|/home/业务用户名/.acme.sh|g' \
-    -e 's|【$_acme_cert_root】|/home/业务用户名/.acme.sh|g' \
-    -e 's|【$HOME_INDEX】|/home/业务用户名|g' \
-    -e 's|【$_acme_http】|nginx|g' \
-    -e 's|【$SET_SERVER_NAME】|主域名|g' \
-    -e 's|【$SET_ACME_SERVER_NAMES】|主域名 额外域名|g' \
-    -e 's|【$_acme_webroot】|/home/业务用户名/nginx|g' \
-    acme-deploy.conf.src > /etc/acme-deploy.conf
-chmod 644 /etc/acme-deploy.conf
+菜单 7 生成 `/etc/acme-deploy.conf`。菜单 3 部署证书，并把续签钩子改成这个文件夹里的 `acme-deploy-cert.sh`，同时写上免密。钩子记的是当时这个文件的路径，不要再把文件夹挪走。
 
-cp acme-ctl.sh /usr/local/bin/acme-ctl
-cp acme-deploy-cert.sh /usr/local/sbin/acme-deploy-cert
-chmod 755 /usr/local/bin/acme-ctl /usr/local/sbin/acme-deploy-cert
+已经部署过、不再跑 Init 的机器，迁移是分开的步骤，没有一键。菜单里按这个顺序自己做：
 
-sed 's|【$CURRENT_USER】|业务用户名|g' acme-deploy-cert.sudoers.src > /etc/sudoers.d/acme-deploy-cert
-chmod 440 /etc/sudoers.d/acme-deploy-cert
-visudo -cf /etc/sudoers.d/acme-deploy-cert
-```
+1. `5` 查出 acme.sh 托管目录，以及登记过的旧证书路径
+2. `6` 删掉那些已安装副本，并清空登记。托管目录里的原件不动
+3. `7` 按提示生成 `/etc/acme-deploy.conf`。`ACME_BIN` 填目录，不要填到 `acme.sh` 这个文件
+4. `3` 把证书部署到 `~/cert` 并 reload
+5. `8` 删掉 `/etc/ssl` 等旧位置的副本。托管目录和 `~/cert` 不动
 
-然后执行 `acme-ctl`。只看状态：`acme-ctl status`。
-
-apache2 把 `HTTP` 改成 `apache2`。网站根目录改成实际的校验目录。
+apache2 在第 7 步把 Web 服务填成 `apache2`。网站根目录填实际的校验目录。
