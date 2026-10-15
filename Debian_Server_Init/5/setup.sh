@@ -169,7 +169,7 @@ if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
             ln -sfn /etc/nginx/sites-available/acme.conf /etc/nginx/sites-enabled/acme.conf
         fi
         if [ "$SET_ENABLE_SITE" -eq 2 ]; then
-            prompt -x "启用 ssl.conf（请确认 /etc/ssl 下已有证书）"
+            prompt -x "启用 ssl.conf（请确认 ~/cert 下已有证书）"
             ln -sfn /etc/nginx/sites-available/ssl.conf /etc/nginx/sites-enabled/ssl.conf
         fi
         deploy_ufw_sync_ports
@@ -387,15 +387,22 @@ EOF
     else
         _acme_http=none
     fi
-    # 普通用户跑 acme.sh / cron 不能 systemctl reload，也不能写 /etc/ssl。
-    # 用 root 助手 + sudoers 免密：拷证书并 reload。
+    # 普通用户跑 acme.sh / cron 不能 systemctl reload。
+    # 用 root 助手 + sudoers 免密：拷到 ~/cert 并 reload。
+    deploy_acme_refresh_names
     cat >/etc/acme-deploy.conf <<EOF
 ACME_USER=$CURRENT_USER
+ACME_BIN=$SET_ACME_HOME
 ACME_HOME=$_acme_cert_root
+DEPLOY_DIR=$HOME_INDEX/cert
 HTTP=$_acme_http
+PRIMARY=$SET_SERVER_NAME
+DOMAINS=$SET_ACME_SERVER_NAMES
+WEBROOT=$_acme_webroot
 EOF
     chmod 644 /etc/acme-deploy.conf
     deploy_install_exec "acme-deploy-cert.sh" /usr/local/sbin/acme-deploy-cert
+    deploy_install_exec "acme-ctl.sh" /usr/local/bin/acme-ctl
     _acme_sudoers=/etc/sudoers.d/acme-deploy-cert
     cat >"$_acme_sudoers" <<EOF
 Defaults:${CURRENT_USER} !requiretty
@@ -422,19 +429,35 @@ EOF
         elif [ "$SET_INSTALL_HTTP_SERVER" -eq 2 ] && systemctl is-active --quiet apache2; then
             _acme_http_up=1
         fi
+        _acme_issue_args=(--issue)
+        _acme_can_issue=0
+        while IFS= read -r _acme_one; do
+            [ -n "$_acme_one" ] || continue
+            if deploy_acme_domain_usable "$_acme_one"; then
+                _acme_issue_args+=(-d "$_acme_one")
+                _acme_can_issue=1
+            else
+                prompt -w "跳过不能签的域名: $_acme_one"
+            fi
+        done < <(deploy_acme_domain_list)
+        _acme_issue_args+=(-w "$_acme_webroot")
         if ! deploy_acme_domain_usable "$SET_SERVER_NAME"; then
-            prompt -w "SET_ACME_ISSUE=1，但 SET_SERVER_NAME=$SET_SERVER_NAME 不能签 Let's Encrypt。填已解析到本机的域名后再签发。"
+            prompt -w "SET_ACME_ISSUE=1，但主域名 SET_SERVER_NAME=$SET_SERVER_NAME 不能签 Let's Encrypt。填已解析到本机的域名后再签发。"
+        elif [ "$_acme_can_issue" -ne 1 ]; then
+            prompt -w "没有可签发的域名，跳过自动签发。"
         elif [ "$_acme_http_up" -ne 1 ]; then
             prompt -w "HTTP 服务未在运行，跳过自动签发。"
         else
-            prompt -x "自动签发 $SET_SERVER_NAME （webroot=${_acme_webroot}，不启用 https 站点）"
-            deploy_run_acme --issue -d "$SET_SERVER_NAME" -w "$_acme_webroot"
+            prompt -x "自动签发 $SET_ACME_SERVER_NAMES （一张证书，webroot=${_acme_webroot}，不启用 https 站点）"
+            deploy_run_acme "${_acme_issue_args[@]}"
             _acme_issue_rc=$?
             # 0=新签 2=已有且未到期
             if [ "$_acme_issue_rc" -eq 0 ] || [ "$_acme_issue_rc" -eq 2 ]; then
-                # acme.sh 只登记 reloadcmd；写 /etc/ssl 和 reload 由助手做（助手不是 acme.sh）。
+                # acme.sh 只登记 reloadcmd；拷到 ~/cert 和 reload 由助手做。
                 deploy_run_acme --install-cert -d "$SET_SERVER_NAME" --reloadcmd "$_acme_reload" || true
                 for _acme_conf in \
+                    "$_acme_cert_root/${SET_SERVER_NAME}_ecc/${SET_SERVER_NAME}.conf" \
+                    "$_acme_cert_root/${SET_SERVER_NAME}/${SET_SERVER_NAME}.conf" \
                     "$SET_ACME_HOME/${SET_SERVER_NAME}_ecc/${SET_SERVER_NAME}.conf" \
                     "$SET_ACME_HOME/${SET_SERVER_NAME}/${SET_SERVER_NAME}.conf"; do
                     if [ -f "$_acme_conf" ]; then
@@ -449,25 +472,29 @@ EOF
                 unset _acme_conf
                 /usr/local/sbin/acme-deploy-cert "$SET_SERVER_NAME" || true
                 _acme_issued=1
-                prompt -s "证书已放到 /etc/ssl/${SET_SERVER_NAME}.pem 与 .key"
+                prompt -s "证书已放到 $HOME_INDEX/cert/${SET_SERVER_NAME}.pem 与 .key"
                 prompt -i "接下来改 /etc/nginx/sites-available/ssl.conf ，然后： sudo ngx-site"
             else
                 prompt -e "自动签发失败（检查域名 A 记录、80 端口、UFW）。部署继续，可稍后手动签发。"
             fi
         fi
-        unset _acme_http_up _acme_issue_rc
+        unset _acme_http_up _acme_issue_rc _acme_issue_args _acme_can_issue _acme_one
     fi
 
     # 写入说明文件（安装目录 + 家目录各一份，跑完脚本也好找）
     _acme_readme_body="$(cat <<EOF
 # 证书与 Nginx（Debian_Server_Init）
 
-域名: ${SET_SERVER_NAME}
+主域名: ${SET_SERVER_NAME}
+全部域名: ${SET_ACME_SERVER_NAMES}
 邮箱: ${SET_ACME_EMAIL}
-证书: /etc/ssl/${SET_SERVER_NAME}.pem
-密钥: /etc/ssl/${SET_SERVER_NAME}.key
+部署目录: ${HOME_INDEX}/cert
+证书: ${HOME_INDEX}/cert/${SET_SERVER_NAME}.pem
+密钥: ${HOME_INDEX}/cert/${SET_SERVER_NAME}.key
+acme.sh 托管: ${_acme_cert_root}
 校验目录: ${_acme_webroot}/.well-known/acme-challenge/
 acme.sh: ${SET_ACME_HOME}/acme.sh
+状态: acme-ctl
 
 ## Nginx 两个文件
 
@@ -490,11 +517,14 @@ acme.sh: ${SET_ACME_HOME}/acme.sh
 ## 手动重签（用业务用户，不要 sudo acme.sh）
 
   acme.sh --issue -d ${SET_SERVER_NAME} -w ${_acme_webroot}
+  # 多个域名写在同一张证书上时，每个名字一个 -d：
+  # acme.sh --issue -d 主域名 -d www.主域名 -w ${_acme_webroot}
   acme.sh --install-cert -d ${SET_SERVER_NAME} --reloadcmd "${_acme_reload}"
 
-写 /etc/ssl 和 reload 用助手（部署已写入 sudoers，这不是 acme.sh）：
+拷到 ~/cert 和 reload 用助手（部署已写入 sudoers，这不是 acme.sh）：
 
   sudo -n /usr/local/sbin/acme-deploy-cert
+  acme-ctl
 
 不要: sudo acme.sh / sudo -u 用户 acme.sh（官方会拒绝）。
 

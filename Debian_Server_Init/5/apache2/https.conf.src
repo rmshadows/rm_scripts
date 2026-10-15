@@ -14,13 +14,15 @@
     # 访问日志路径
     CustomLog ${APACHE_LOG_DIR}/access.log combined
 
+    ServerName 【$SET_SERVER_NAME】
+    ServerAlias 【$SET_ACME_SERVER_NAMES】
+
     # 启用 SSL 功能
     SSLEngine on
 
-    # SSL 证书文件路径
-    SSLCertificateFile      /etc/ssl/【$SET_SERVER_NAME】.pem
-    # SSL 证书密钥文件路径
-    SSLCertificateKeyFile   /etc/ssl/【$SET_SERVER_NAME】.key
+    # SSL 证书（SAN 也用主域名这一对文件）
+    SSLCertificateFile      【$HOME_INDEX】/cert/【$SET_SERVER_NAME】.pem
+    SSLCertificateKeyFile   【$HOME_INDEX】/cert/【$SET_SERVER_NAME】.key
 
     # 安全设置：禁用不安全的 SSL/TLS 协议版本，只使用 TLS 1.2 和 1.3
     SSLProtocol -All +TLSv1.2 +TLSv1.3

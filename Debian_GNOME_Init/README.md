@@ -7,7 +7,7 @@
 - `0`、`1`等数字文件夹：0表示固定运行的脚本。1，2，3分别对应检查的一、二、三等，里面可能有子配置文件`cfg.sh`，同时还有一个`setup.sh`是运行的脚本。
 - `Config.sh`是总配置，`Config_Templates`是配置模板。
 - `Debian_13_Bookworm_GNOME_Setup.sh`，程序入口，主要运行的脚本。
-- `GlobalVariables.sh`，全局变量，需要填写密码。
+- `GlobalVariables.sh`，全局变量。root 密码在 `Config.sh` 开头的 `ROOT_PASSWD`。
 - `Lib.sh`脚本函数库。
 - `Archive`时归档，从Debian10至今的存档。
 - `other`时其他资源文件。

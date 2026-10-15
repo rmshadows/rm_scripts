@@ -81,9 +81,9 @@ HTTP=none
 EOF
 install -m 755 5/acme-deploy-cert.sh /usr/local/sbin/acme-deploy-cert
 /usr/local/sbin/acme-deploy-cert ci.example.test
-test -f /etc/ssl/ci.example.test.pem
-test -f /etc/ssl/ci.example.test.key
-rm -rf "$_fake" /etc/ssl/ci.example.test.pem /etc/ssl/ci.example.test.key
+test -f /home/ciinit/cert/ci.example.test.pem
+test -f /home/ciinit/cert/ci.example.test.key
+rm -rf "$_fake" /home/ciinit/cert
 
 echo "== sudoers 片段 =="
 cat >/etc/sudoers.d/acme-deploy-cert <<EOF

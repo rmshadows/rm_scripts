@@ -1,14 +1,23 @@
 #!/bin/bash
 :<<!说明
 这里是执行的配置
-另外，记得配置GlobalVariables中的# root用户密码ROOT_PASSWD！
 !说明
+
+## 常用项 ##
+# 部署前先看这里。下面检查点不再重复赋值。
+
+# root 密码。已经在 sudo 组就留空。运行前也可用环境变量 ROOT_PASSWD 覆盖。
+ROOT_PASSWD="${ROOT_PASSWD:-}"
+# 出自检查点一。APT 源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源
+# 选 3 时，源正文是 1/cfg.sh 的 SET_YOUR_APT_SOURCE。
+SET_APT_SOURCE=3
+# 出自检查点四。SSH 开机自启。0=禁用
+SET_ENABLE_SSH=0
 
 ## 检查点一 ##==
 # 是否使用DEB822 Preset=1
 SET_DEB822=1
-# 使用的APT源 0:跳过 1:清华大学镜像源 2:清华大学Sid镜像源 3:你的源  Preset:3
-SET_APT_SOURCE=3
+# APT 源在文件开头「常用项」SET_APT_SOURCE
 #==== 自定义源请在检查的1文件夹中定义!
 # 更新与安装是否不过问 Preset:1
 SET_APT_RUN_WITHOUT_ASKING=1
@@ -100,8 +109,7 @@ SET_GIT_USER=0
 SET_GIT_EMAIL=0
 # 安装配置ssh Preset=1
 SET_INSTALL_OPENSSH=1
-# SSH开机是否自启 Preset=0 默认禁用
-SET_ENABLE_SSH=0
+# SSH 开机自启在文件开头「常用项」SET_ENABLE_SSH
 # 安装配置npm Preset=0
 SET_INSTALL_NPM=0
 # 是否安装Nodejs(注意：nodejs来源于apt仓库！如需nvm请手动安装) Preset=0

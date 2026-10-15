@@ -60,8 +60,10 @@ echo "== 渲染 nginx 模板 =="
 _tmp=$(mktemp -d)
 trap 'rm -rf "$_tmp"' EXIT
 SET_SERVER_NAME=ci.example.test
+SET_ACME_SAN="www.ci.example.test,api.ci.example.test"
 HOME_INDEX=/home/ciinit
 SET_HTTP_SERVER_ROOT=/home/ciinit/nginx
+deploy_acme_refresh_names
 phpfpmVersion=8.4
 cp 5/nginx/acme.conf.src "$_tmp/acme.conf.src"
 cp 5/nginx/ssl.conf.src "$_tmp/ssl.conf.src"
@@ -72,10 +74,15 @@ if grep -n '【$' "$_tmp/acme.conf" "$_tmp/ssl.conf"; then
 else
 	ok "占位符已替换"
 fi
-if grep -q 'server_name ci.example.test' "$_tmp/acme.conf"; then
-	ok "acme.conf server_name"
+if grep -q 'server_name ci.example.test www.ci.example.test api.ci.example.test' "$_tmp/acme.conf"; then
+	ok "acme.conf server_name 含 SAN"
 else
 	bad "acme.conf 域名未写入"
+fi
+if grep -q 'ssl_certificate /home/ciinit/cert/ci.example.test.pem' "$_tmp/ssl.conf"; then
+	ok "ssl.conf 证书在 ~/cert"
+else
+	bad "ssl.conf 证书路径不是 ~/cert"
 fi
 if grep -q 'root /home/ciinit/nginx/home_page' "$_tmp/ssl.conf"; then
 	ok "ssl.conf home_page"

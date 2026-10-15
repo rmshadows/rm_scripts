@@ -308,7 +308,7 @@ deploy_gnome_prepare() {
 			prompt -e "需要 root 密码，但当前无终端。"
 			exit 1
 		fi
-		prompt -w "未在 GlobalVariables/环境变量里设置 ROOT_PASSWD，请输入 root 密码: "
+		prompt -w "未在 Config.sh / 环境变量里设置 ROOT_PASSWD，请输入 root 密码: "
 		read -r ROOT_PASSWD
 		checkRootPasswd
 		prompt -s "root 密码可用"

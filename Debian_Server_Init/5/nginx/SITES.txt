@@ -4,7 +4,7 @@ Nginx 站点文件（Debian_Server_Init）
       80 端口。ACME 校验 + 测试欢迎页。默认已启用。续期需要它，不要关。
 
   /etc/nginx/sites-available/ssl.conf
-      443 正式站。默认不启用。证书在 /etc/ssl/<域名>.pem 之后再开。
+      443 正式站。默认不启用。证书在 ~/cert/<主域名>.pem 之后再开。
       主页：~/nginx/home_page（443 反代本机 8000，8000 不对外）。
       分享：~/nginx/nres    加密目录：~/nginx/res
 

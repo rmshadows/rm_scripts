@@ -8,6 +8,37 @@ if [ "$" -eq 1 ];then
 fi
 !说明
 
+## 常用项 ##
+# 部署前先看这里。下面检查点不再重复赋值。每项注明出自哪个检查点。
+
+# 出自检查点二。占位账号。不要用 admin/passwd 上公网。
+# 部署时若仍是占位：终端询问 1=自动生成 / 2=自己输入，写入 .deploy_credentials。
+# 跳过菜单：SET_CREDENTIALS_AUTO=1 或 SET_CREDENTIALS_MANUAL=1；也可先 bash gen_credentials.sh。
+SET_USER_NAME="${SET_USER_NAME:-admin}"
+SET_USER_PASSWD="${SET_USER_PASSWD:-passwd}"
+_CRED_FILE="${DEPLOY_SCRIPT_ROOT:-.}/.deploy_credentials"
+if [ -f "$_CRED_FILE" ]; then
+    if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
+        # shellcheck disable=SC1090
+        source "$_CRED_FILE"
+    fi
+fi
+
+# 出自检查点五。主域名。localhost 不能签 Let's Encrypt。证书是 ~/cert/<主域名>.pem
+# nginx / apache 的站点名 = 主域名 + 下面的 SAN。
+SET_SERVER_NAME=localhost
+# 出自检查点五。额外域名（SAN），逗号或空格分隔。留空=只有主域名。
+# 例: SET_ACME_SAN="www.example.com api.example.com"
+SET_ACME_SAN=
+# 出自检查点五。账户邮箱：0=用户名@主机名。那个地址收不到信时改成真实邮箱。
+SET_ACME_EMAIL=0
+# 出自检查点五。~/nginx/res 的用户和密码。启用 443（ssl.conf）之前换掉。
+SET_NGINX_RES_USER=default
+SET_NGINX_RES_PASSWD=nginxLogin
+# 出自检查点三。时区。默认上海。不改系统时区就改用下一行。
+SET_TIME_ZONE=/usr/share/zoneinfo/Asia/Shanghai
+# SET_TIME_ZONE=0
+
 ## 检查点一 ##==
 # 是否使用DEB822 Preset=1
 SET_DEB822=1
@@ -24,18 +55,7 @@ SET_APT_UPGRADE=1
 ## 检查点二 ##==
 # Set to 1 will specify a user.User will be created if not exist.If set to 0, continue with root(是否指定某用户进行配置，否的话将以root用户继续)  Preset:1
 SET_USER="${SET_USER:-1}"
-# ! 下面两个是占位。不要用 admin/passwd 上公网。
-# 部署时若仍是占位：终端询问 1=自动生成 / 2=自己输入，写入 .deploy_credentials。
-# 跳过菜单：SET_CREDENTIALS_AUTO=1 或 SET_CREDENTIALS_MANUAL=1；也可先 bash gen_credentials.sh。
-SET_USER_NAME="${SET_USER_NAME:-admin}"
-SET_USER_PASSWD="${SET_USER_PASSWD:-passwd}"
-_CRED_FILE="${DEPLOY_SCRIPT_ROOT:-.}/.deploy_credentials"
-if [ -f "$_CRED_FILE" ]; then
-    if cred_username_is_weak "$SET_USER_NAME" || cred_password_is_weak "$SET_USER_PASSWD" "$SET_USER_NAME"; then
-        # shellcheck disable=SC1090
-        source "$_CRED_FILE"
-    fi
-fi
+# 用户名、密码在文件开头「常用项」
 # 是否加入sudo组 Preset:1
 SET_SUDOER=1
 # 是否设置sudo无需密码 Preset:1
@@ -70,10 +90,7 @@ SET_HOST_NAME="${SET_HOST_NAME:-0}"
 SET_LOCALES="en_US.UTF-8 UTF-8
 zh_CN.UTF-8 UTF-8
 "
-# Set time zone (zoneinfo file path)(设置时间支持) Preset=0
-# e.g.:Shanghai China,You need to set this: /usr/share/zoneinfo/Asia/Shanghai
-# SET_TIME_ZONE=/usr/share/zoneinfo/Asia/Shanghai
-SET_TIME_ZONE=0
+# 时区在文件开头「常用项」SET_TIME_ZONE
 # Set tty1 auto-login (设置TTY1自动登录) Preset=1
 SET_TTY_AUTOLOGIN=1
 
@@ -140,11 +157,7 @@ SET_HTTP_SERVER_ROOT=0
 SET_ENABLE_HTTP_SERVICE=1
 # 启用站点：0=不动 1=只开 acme.conf（80，默认） 2=再开 ssl.conf（443，证书未签好会起不来）
 SET_ENABLE_SITE=1
-# 域名。localhost 不能签 Let's Encrypt。要自动签发请填已解析到本机的域名。
-SET_SERVER_NAME=localhost
-# If NGINX: set ~/nginx/res passwd (如果是nginx，配置~/nginx/res的访问用户、密码) Preset:default nginxLogin
-SET_NGINX_RES_USER=default
-SET_NGINX_RES_PASSWD=nginxLogin
+# 主域名、SAN、~/nginx/res 账号在文件开头「常用项」
 # If APACHE Deny access /usr/share (配置禁止访问/usr/share目录) Preset=0
 SET_APACHE_DENY_USR_SHARE=0
 # 是否安装PHP（包括php fpm） Preset=1
@@ -161,10 +174,10 @@ SET_INSTALL_ACME_SH=1
 SET_ACME_ISSUE=1
 # acme.sh 安装目录：0=默认 $HOME_INDEX/.acme.sh ；其它填绝对路径（如 /usr/local/acme.sh）
 SET_ACME_HOME=0
-# 证书存放目录：0=默认(随安装目录) ；其它填绝对路径
+# acme.sh 自己的证书目录：0=跟安装目录走。这不是 nginx 读的目录。
+# nginx / apache 用的是部署副本：~/cert/<主域名>.pem 与 .key（acme-deploy-cert 负责拷贝）。
 SET_ACME_CERT_HOME=0
-# 账户邮箱：0=默认 $CURRENT_USER@$HOSTNAME
-SET_ACME_EMAIL=0
+# 账户邮箱在文件开头「常用项」SET_ACME_EMAIL
 # 默认 CA：0=不改(acme.sh 当前默认多为 ZeroSSL) 1:letsencrypt 2:zerossl  Preset=1
 SET_ACME_DEFAULT_CA=1
 
@@ -264,6 +277,12 @@ config_resolve_identity() {
     if [ "$_CFG_ACME_EMAIL_RAW" = "0" ]; then
         SET_ACME_EMAIL="$CURRENT_USER@$HOSTNAME"
     fi
+    if declare -F deploy_acme_refresh_names >/dev/null 2>&1; then
+        deploy_acme_refresh_names
+    else
+        SET_ACME_SERVER_NAMES="${SET_SERVER_NAME:-localhost}"
+    fi
+
     if [ "$_CFG_HTTP_ROOT_RAW" = "0" ]; then
         if [ "$SET_INSTALL_HTTP_SERVER" -eq 1 ]; then
             SET_HTTP_SERVER_ROOT="/home/$CURRENT_USER/nginx"

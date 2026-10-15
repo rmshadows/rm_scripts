@@ -855,6 +855,33 @@ deploy_run_acme() {
 	deploy_as_acme_user "$SET_ACME_HOME/acme.sh" --home "$SET_ACME_HOME" "$@"
 }
 
+# 主域名在前，再接 SET_ACME_SAN（逗号或空格）。结果放进 SET_ACME_SERVER_NAMES。
+deploy_acme_refresh_names() {
+	local raw d seen
+	SET_ACME_SERVER_NAMES=""
+	seen=" "
+	raw=$(printf '%s %s' "${SET_SERVER_NAME:-}" "${SET_ACME_SAN:-}" | tr ',，' ' ')
+	for d in $raw; do
+		[ -n "$d" ] || continue
+		case "$seen" in
+		*" $d "*) continue ;;
+		esac
+		seen="$seen$d "
+		if [ -z "$SET_ACME_SERVER_NAMES" ]; then
+			SET_ACME_SERVER_NAMES=$d
+		else
+			SET_ACME_SERVER_NAMES="$SET_ACME_SERVER_NAMES $d"
+		fi
+	done
+	[ -n "$SET_ACME_SERVER_NAMES" ] || SET_ACME_SERVER_NAMES="${SET_SERVER_NAME:-localhost}"
+}
+
+# 一行一个域名，主域名在第一行。
+deploy_acme_domain_list() {
+	deploy_acme_refresh_names
+	printf '%s\n' $SET_ACME_SERVER_NAMES
+}
+
 # 能否用 Let's Encrypt 签这个名字（localhost / 裸 IP 不行）
 deploy_acme_domain_usable() {
 	local d

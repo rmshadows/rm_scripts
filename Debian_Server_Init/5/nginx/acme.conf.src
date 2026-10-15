@@ -1,12 +1,12 @@
 # 安装后文件名：/etc/nginx/sites-available/acme.conf
 # 作用：80 端口 — Let's Encrypt HTTP-01 校验 + Debian 测试欢迎页。
 # 站点内容请写 ssl.conf（443），不要写在这里。
-# 部署时替换：【$SET_SERVER_NAME】【$SET_HTTP_SERVER_ROOT】【$HOME_INDEX】
+# 部署时替换：【$SET_SERVER_NAME】【$SET_ACME_SERVER_NAMES】【$SET_HTTP_SERVER_ROOT】【$HOME_INDEX】
 
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name 【$SET_SERVER_NAME】;
+    server_name 【$SET_ACME_SERVER_NAMES】;
 
     location ^~ /.well-known/acme-challenge/ {
         default_type "text/plain";

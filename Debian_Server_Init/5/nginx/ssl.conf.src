@@ -5,18 +5,18 @@
 #   nginx -t && systemctl reload nginx
 # 不要在本文件 listen 80（80 由 acme.conf 占用，续期靠它）。
 # 主页文件放：【$SET_HTTP_SERVER_ROOT】/home_page
-# 部署时替换：【$SET_SERVER_NAME】【$SET_HTTP_SERVER_ROOT】【$HOME_INDEX】【$phpfpmVersion】
+# 部署时替换：【$SET_SERVER_NAME】【$SET_ACME_SERVER_NAMES】【$SET_HTTP_SERVER_ROOT】【$HOME_INDEX】【$phpfpmVersion】
 
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name 【$SET_SERVER_NAME】;
+    server_name 【$SET_ACME_SERVER_NAMES】;
 
     # 安全扫描拦截（.env/.git/wp 等），必须在下方其他 location 之前
     include /etc/nginx/snippets/security-scan.conf;
 
-    ssl_certificate /etc/ssl/【$SET_SERVER_NAME】.pem;
-    ssl_certificate_key /etc/ssl/【$SET_SERVER_NAME】.key;
+    ssl_certificate 【$HOME_INDEX】/cert/【$SET_SERVER_NAME】.pem;
+    ssl_certificate_key 【$HOME_INDEX】/cert/【$SET_SERVER_NAME】.key;
     ssl_protocols TLSv1.3;
     ssl_ecdh_curve X25519:prime256v1:secp384r1;
     ssl_prefer_server_ciphers off;

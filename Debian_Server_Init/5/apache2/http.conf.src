@@ -5,6 +5,7 @@
     # 对于默认的虚拟主机（此文件），此值不决定性，因为它是作为最后的宿主来使用的。
     # 然而，对于任何其他虚拟主机，必须显式设置它。
     ServerName 【$SET_SERVER_NAME】
+    ServerAlias 【$SET_ACME_SERVER_NAMES】
 
     ServerAdmin webmaster@localhost  # 服务器管理员的电子邮件
     DocumentRoot 【$SET_HTTP_SERVER_ROOT】  # 设置网站根目录
