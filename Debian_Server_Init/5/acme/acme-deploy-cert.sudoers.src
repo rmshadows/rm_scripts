@@ -1,0 +1,2 @@
+Defaults:【$CURRENT_USER】 !requiretty
+【$CURRENT_USER】 ALL=(root) NOPASSWD: /usr/local/sbin/acme-deploy-cert
