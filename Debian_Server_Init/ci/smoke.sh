@@ -79,7 +79,7 @@ ACME_USER=ciinit
 ACME_HOME=$_fake
 HTTP=none
 EOF
-install -m 755 5/acme/acme-deploy-cert.sh /usr/local/sbin/acme-deploy-cert
+install -m 755 5/acme-ctl/acme-deploy-cert.sh /usr/local/sbin/acme-deploy-cert
 /usr/local/sbin/acme-deploy-cert ci.example.test
 test -f /home/ciinit/cert/ci.example.test.pem
 test -f /home/ciinit/cert/ci.example.test.key

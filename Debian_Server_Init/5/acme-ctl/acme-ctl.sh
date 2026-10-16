@@ -1,7 +1,7 @@
 #!/bin/bash
 # 交互查看 / 迁移 acme.sh。没有 /etc/acme-deploy.conf 也能先查托管目录、再生成配置。
 # 安装后：acme-ctl
-# 只看状态：acme-ctl status
+# 只看状态：acme-ctl status / certs / cron
 # 迁移是分开的步骤，没有一键：locate / clear / write-conf / deploy / remove-old
 CONF="${ACME_CONF:-/etc/acme-deploy.conf}"
 
@@ -52,11 +52,51 @@ load_conf() {
 
 load_conf || true
 
+# 终端彩色（管道/重定向或 NO_COLOR=1 时自动关掉）
+_C0= _Cb= _Cd= _Cr= _Cg= _Cy= _Cc= _Cm=
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+	_C0=$'\033[0m'
+	_Cb=$'\033[1m'
+	_Cd=$'\033[2m'
+	_Cr=$'\033[31m'
+	_Cg=$'\033[32m'
+	_Cy=$'\033[33m'
+	_Cc=$'\033[36m'
+	_Cm=$'\033[35m'
+fi
+
+say_hdr() {
+	printf '\n%s%s════════ %s ════════%s\n' "$_Cc" "$_Cb" "$1" "$_C0"
+}
+
+say_end() {
+	printf '%s%s════════════════════════════%s\n' "$_Cc" "$_Cd" "$_C0"
+}
+
+# say_kv 标签 值 [ok|warn|bad|info|dim]
+say_kv() {
+	local k="$1" v="$2" tone="${3:-}" color="$_C0"
+	case "$tone" in
+	ok) color="$_Cg" ;;
+	warn) color="$_Cy" ;;
+	bad) color="$_Cr" ;;
+	info) color="$_Cc" ;;
+	dim) color="$_Cd" ;;
+	esac
+	printf '  %s%-12s%s %s%s%s\n' "$_Cd" "$k" "$_C0" "$color" "$v" "$_C0"
+}
+
+say_ok() { printf '  %s%s%s\n' "$_Cg" "$*" "$_C0"; }
+say_warn() { printf '  %s%s%s\n' "$_Cy" "$*" "$_C0"; }
+say_bad() { printf '  %s%s%s\n' "$_Cr" "$*" "$_C0"; }
+say_info() { printf '  %s%s%s\n' "$_Cc" "$*" "$_C0"; }
+say_dim() { printf '  %s%s%s\n' "$_Cd" "$*" "$_C0"; }
+
 need_tty() {
 	if [ -t 0 ]; then
 		return 0
 	fi
-	echo "这一步要在终端里确认。" >&2
+	printf '%s这一步要在终端里确认。%s\n' "$_Cr" "$_C0" >&2
 	return 1
 }
 
@@ -64,7 +104,7 @@ need_root() {
 	if [ "$(id -u)" -eq 0 ]; then
 		return 0
 	fi
-	echo "请用 root 运行这一步。" >&2
+	printf '%s请用 root 运行这一步。%s\n' "$_Cr" "$_C0" >&2
 	return 1
 }
 
@@ -251,42 +291,231 @@ old_cert_candidates() {
 	fi
 }
 
-show_locate() {
-	local homes home owner domains domain cdir f p
-	echo
-	echo "======== acme 托管位置 ========"
-	homes=$(discover_homes || true)
+# 读证书到期：输出 "ISO日期|剩余天数|tone"，tone=ok/warn/bad
+cert_expiry_line() {
+	local cer="$1" end end_epoch now days tone
+	[ -f "$cer" ] || return 1
+	command -v openssl >/dev/null 2>&1 || return 1
+	end=$(openssl x509 -in "$cer" -noout -enddate 2>/dev/null | sed 's/^notAfter=//') || return 1
+	[ -n "$end" ] || return 1
+	end_epoch=$(date -d "$end" +%s 2>/dev/null || true)
+	now=$(date +%s)
+	if [ -n "$end_epoch" ]; then
+		days=$(((end_epoch - now) / 86400))
+		if [ "$days" -lt 0 ]; then
+			tone=bad
+		elif [ "$days" -le 30 ]; then
+			tone=warn
+		else
+			tone=ok
+		fi
+		printf '%s|%s|%s\n' "$(date -d "$end" '+%Y-%m-%d %H:%M' 2>/dev/null || printf '%s' "$end")" "$days" "$tone"
+	else
+		printf '%s||info\n' "$end"
+	fi
+}
+
+print_one_cert() {
+	local home="$1" domain="$2" cdir cer info end days tone conf next reload san kind
+	cdir=$(cert_dir_for "$home" "$domain" || true)
+	[ -n "$cdir" ] || return 1
+	cer="$cdir/fullchain.cer"
+	case "$cdir" in
+	*_ecc) kind=ecc ;;
+	*) kind=rsa ;;
+	esac
+	printf '  %s●%s %s%s%s  %s(%s)%s\n' "$_Cg" "$_C0" "$_Cb" "$domain" "$_C0" "$_Cd" "$kind" "$_C0"
+	say_kv "库存" "$cer" dim
+	if info=$(cert_expiry_line "$cer"); then
+		IFS='|' read -r end days tone <<<"$info"
+		if [ -n "$days" ]; then
+			if [ "$days" -lt 0 ]; then
+				say_kv "到期" "$end（已过期 $((-days)) 天）" bad
+			else
+				say_kv "到期" "$end（还剩 ${days} 天）" "$tone"
+			fi
+		else
+			say_kv "到期" "$end" info
+		fi
+		san=$(names_from_cert "$cer" 2>/dev/null || true)
+		[ -n "$san" ] && say_kv "SAN" "$san" dim
+	else
+		say_kv "到期" "读不到（缺 openssl 或证书坏了）" warn
+	fi
+	conf=""
+	for conf in "$home/${domain}_ecc/${domain}.conf" "$home/${domain}/${domain}.conf"; do
+		[ -f "$conf" ] || continue
+		next=$(conf_field "$conf" Le_NextRenewTimeStr 2>/dev/null || conf_field "$conf" Le_NextRenewTime 2>/dev/null || true)
+		reload=$(conf_field "$conf" Le_ReloadCmd 2>/dev/null || true)
+		[ -n "$next" ] && say_kv "下次续签" "$next" info
+		[ -n "$reload" ] && say_kv "续签钩子" "$reload" dim
+		break
+	done
+}
+
+# 列出托管目录里的证书（可指定 home；默认配置里的 ACME_HOME，没有就扫描）
+show_certs() {
+	local homes home domains domain count=0
+	say_hdr "托管证书"
+	if [ -n "${1:-}" ]; then
+		homes="$1"
+	elif [ -n "$ACME_HOME" ] && [ -d "$ACME_HOME" ]; then
+		homes="$ACME_HOME"
+	else
+		homes=$(discover_homes || true)
+	fi
 	if [ -z "$homes" ]; then
-		echo "没找到 acme.sh 目录。常见位置是 /home/用户/.acme.sh"
-		echo "==============================="
+		say_bad "没找到托管目录。先 acme-ctl locate，或写好 $CONF。"
+		say_end
 		return 1
 	fi
 	while IFS= read -r home; do
 		[ -n "$home" ] || continue
-		owner=$(stat -c '%U' "$home" 2>/dev/null || echo 未知)
-		echo "托管目录    $home"
-		echo "属主        $owner"
-		if [ -x "$home/acme.sh" ]; then
-			echo "程序        $home/acme.sh"
-		else
-			echo "程序        这个目录里没有 acme.sh（可能只是证书库）"
-		fi
+		say_kv "目录" "$home" info
 		domains=$(domains_in "$home" || true)
 		if [ -z "$domains" ]; then
-			echo "域名        还没有证书"
+			say_warn "还没有证书"
 			echo
 			continue
 		fi
 		while IFS= read -r domain; do
 			[ -n "$domain" ] || continue
-			cdir=$(cert_dir_for "$home" "$domain" || true)
-			echo "域名        $domain"
-			echo "  库存      ${cdir:-未知}/fullchain.cer"
+			print_one_cert "$home" "$domain" || true
+			count=$((count + 1))
+			echo
+		done <<<"$domains"
+	done <<<"$homes"
+	if [ "$count" -eq 0 ]; then
+		say_warn "合计 0 张证书"
+	else
+		say_ok "合计 ${count} 张证书"
+	fi
+	say_end
+}
+
+cron_spool_path() {
+	local u="$1"
+	if [ -f "/var/spool/cron/crontabs/$u" ]; then
+		printf '%s\n' "/var/spool/cron/crontabs/$u"
+		return 0
+	fi
+	if [ -f "/var/spool/cron/$u" ]; then
+		printf '%s\n' "/var/spool/cron/$u"
+		return 0
+	fi
+	return 1
+}
+
+# 输出: 来源文件<TAB>crontab行
+collect_acme_cron() {
+	local u line file f
+	for u in ${ACME_USER:-} root "$(id -un)"; do
+		[ -n "$u" ] || continue
+		while IFS= read -r line; do
+			[ -n "$line" ] || continue
+			case "$line" in
+			\#*) continue ;;
+			esac
+			if file=$(cron_spool_path "$u"); then
+				printf '%s\t%s\n' "$file" "$line"
+			else
+				printf 'crontab -u %s\t%s\n' "$u" "$line"
+			fi
+		done < <(crontab -u "$u" -l 2>/dev/null | grep -E 'acme\.sh|[[:space:]]acme[[:space:]]' || true)
+	done
+	# /etc/cron.d 里也可能有
+	for f in /etc/cron.d/*; do
+		[ -f "$f" ] || continue
+		while IFS= read -r line; do
+			[ -n "$line" ] || continue
+			case "$line" in
+			\#*) continue ;;
+			esac
+			printf '%s\t%s\n' "$f" "$line"
+		done < <(grep -E 'acme\.sh' "$f" 2>/dev/null || true)
+	done
+}
+
+show_cron() {
+	local found=0 file line tone
+	say_hdr "自动续签（cron）"
+	if [ -n "$ACME_USER" ]; then
+		say_kv "业务用户" "$ACME_USER" info
+	else
+		say_kv "业务用户" "未配置（$CONF）" warn
+	fi
+	while IFS=$'\t' read -r file line; do
+		[ -n "$line" ] || continue
+		found=1
+		if printf '%s' "$line" | grep -qF -- '--cron'; then
+			tone=ok
+			say_kv "状态" "已找到 acme.sh --cron" ok
+		else
+			tone=warn
+			say_kv "状态" "有 acme 相关行，但不是 --cron" warn
+		fi
+		say_kv "来源文件" "$file" info
+		printf '  %s%-12s%s %s%s%s\n' "$_Cd" "crontab行" "$_C0" "$_Cb" "$line" "$_C0"
+		echo
+	done < <(collect_acme_cron | awk -F '\t' '!seen[$0]++')
+	if [ "$found" -eq 0 ]; then
+		say_bad "没有找到自动续签。"
+		say_dim "安装 acme.sh 时通常会给业务用户写一条："
+		say_dim '  <分> <时> * * * "/path/.acme.sh"/acme.sh --cron --home "/path/.acme.sh"'
+		if [ -n "$ACME_USER" ]; then
+			say_dim "查看: crontab -u $ACME_USER -l"
+			if file=$(cron_spool_path "$ACME_USER"); then
+				say_dim "Debian 上文件一般是: $file"
+			else
+				say_dim "Debian 上文件一般是: /var/spool/cron/crontabs/$ACME_USER"
+			fi
+		fi
+	fi
+	# systemd timer 顺带扫一眼
+	if command -v systemctl >/dev/null 2>&1; then
+		line=$(systemctl list-timers --all 2>/dev/null | grep -i acme || true)
+		if [ -n "$line" ]; then
+			say_kv "systemd" "还发现 timer（少见）" info
+			say_dim "$line"
+		fi
+	fi
+	say_end
+	[ "$found" -gt 0 ]
+}
+
+show_locate() {
+	local homes home owner domains domain cdir f p
+	say_hdr "acme 托管位置"
+	homes=$(discover_homes || true)
+	if [ -z "$homes" ]; then
+		say_bad "没找到 acme.sh 目录。常见位置是 /home/用户/.acme.sh"
+		say_end
+		return 1
+	fi
+	while IFS= read -r home; do
+		[ -n "$home" ] || continue
+		owner=$(stat -c '%U' "$home" 2>/dev/null || echo 未知)
+		say_kv "托管目录" "$home" info
+		say_kv "属主" "$owner"
+		if [ -x "$home/acme.sh" ]; then
+			say_kv "程序" "$home/acme.sh" ok
+		else
+			say_kv "程序" "这个目录里没有 acme.sh（可能只是证书库）" warn
+		fi
+		domains=$(domains_in "$home" || true)
+		if [ -z "$domains" ]; then
+			say_kv "域名" "还没有证书" warn
+			echo
+			continue
+		fi
+		while IFS= read -r domain; do
+			[ -n "$domain" ] || continue
+			print_one_cert "$home" "$domain" || true
 			f=$(registered_install_paths "$home" "$domain" | tr '\n' ' ')
 			if [ -n "$f" ]; then
-				echo "  登记安装  $f"
+				say_kv "登记安装" "$f" dim
 			else
-				echo "  登记安装  没有（Le_Real* 是空的）"
+				say_kv "登记安装" "没有（Le_Real* 是空的）" dim
 			fi
 			f=""
 			while IFS= read -r p; do
@@ -298,14 +527,14 @@ show_locate() {
 			done < <(old_cert_candidates "$domain" "$home")
 			f=${f# }
 			if [ -n "$f" ]; then
-				echo "  旧文件    $f"
+				say_kv "旧文件" "$f" warn
 			fi
+			echo
 		done <<<"$domains"
-		echo
 	done <<<"$homes"
-	echo "ACME_BIN 填托管目录，不是 acme.sh 这个文件。"
-	echo "ACME_HOME 是证书库。默认安装时两者是同一个目录。"
-	echo "==============================="
+	say_dim "ACME_BIN 填托管目录，不是 acme.sh 这个文件。"
+	say_dim "ACME_HOME 是证书库。默认安装时两者是同一个目录。"
+	say_end
 }
 
 pick_home() {
@@ -410,7 +639,7 @@ do_clear() {
 		echo "没有可删除的已安装副本。"
 	fi
 	if [ -f "/etc/ssl/${domain}.pem" ] || [ -f "/etc/ssl/${domain}.key" ]; then
-		echo "/etc/ssl 里还有旧副本。这一步不删它们，用菜单 8。"
+		echo "/etc/ssl 里还有旧副本。这一步不删它们，用菜单 a。"
 	fi
 	confirm_no "清除这些已安装副本，并清空 Le_Real* 登记？" || {
 		echo "已取消。"
@@ -532,7 +761,7 @@ do_write_conf() {
 	chmod 644 "$CONF"
 	load_conf || true
 	echo "已写入 $CONF"
-	echo "部署用本目录的 acme-deploy-cert.sh。选菜单 3 时会把续签钩子改成这个文件，并写上免密。"
+	echo "部署用本目录的 acme-deploy-cert.sh。选菜单 5 时会把续签钩子改成这个文件，并写上免密。"
 }
 
 do_remove_old() {
@@ -575,41 +804,49 @@ do_remove_old() {
 }
 
 show_status() {
-	local bin cron next expire san conf pem
-	echo
-	echo "======== acme 状态 ========"
+	local bin next conf pem info end days tone file line cron_ok=0 cron_any=0 domains domain count
+	say_hdr "acme 状态"
 	if [ ! -f "$CONF" ]; then
-		echo "配置        还没有 $CONF"
-		echo "先用菜单查出托管目录，再生成这份配置。部署和续签要等它写好。"
+		say_kv "配置" "还没有 $CONF" warn
+		say_dim "先 locate 查托管目录，再 write-conf / 菜单 9 生成配置。"
 	else
-		echo "配置        $CONF"
+		say_kv "配置" "$CONF" ok
 	fi
-	echo "用户        ${ACME_USER:-未知}"
-	echo "主域名      ${PRIMARY:-未写}"
-	echo "证书域名    ${DOMAINS:-未写}"
+	say_kv "用户" "${ACME_USER:-未知}" "${ACME_USER:+ok}"
+	say_kv "主域名" "${PRIMARY:-未写}" "${PRIMARY:+info}"
+	say_kv "证书域名" "${DOMAINS:-未写}" dim
 	bin=$(acme_bin || true)
 	if [ -n "$bin" ]; then
-		echo "acme.sh     $bin"
+		say_kv "acme.sh" "$bin" ok
 	else
-		echo "acme.sh     未安装"
+		say_kv "acme.sh" "未安装" bad
 	fi
-	echo "托管目录    ${ACME_HOME:-未知}    （acme.sh 自己存的证书）"
-	echo "部署目录    ${DEPLOY_DIR:-未知}    （nginx / apache 读这里）"
+	say_kv "托管目录" "${ACME_HOME:-未知}" info
+	say_dim "（acme.sh 自己存的证书）"
+	say_kv "部署目录" "${DEPLOY_DIR:-未知}" info
+	say_dim "（nginx / apache 读这里）"
+
 	pem=""
 	if [ -n "$PRIMARY" ] && [ -n "$DEPLOY_DIR" ]; then
 		pem="$DEPLOY_DIR/${PRIMARY}.pem"
 	fi
 	if [ -n "$pem" ] && [ -f "$pem" ]; then
-		echo "已部署      $pem"
-		echo "密钥        $DEPLOY_DIR/${PRIMARY}.key"
-		if command -v openssl >/dev/null 2>&1; then
-			expire=$(openssl x509 -in "$pem" -noout -enddate -dateopt iso_8601 2>/dev/null || openssl x509 -in "$pem" -noout -enddate 2>/dev/null || true)
-			san=$(openssl x509 -in "$pem" -noout -ext subjectAltName 2>/dev/null | tr '\n' ' ' | sed 's/  */ /g' || true)
-			echo "到期        ${expire:-读不到}"
-			[ -n "$san" ] && echo "SAN         $san"
+		say_kv "已部署" "$pem" ok
+		say_kv "密钥" "$DEPLOY_DIR/${PRIMARY}.key" dim
+		if info=$(cert_expiry_line "$pem"); then
+			IFS='|' read -r end days tone <<<"$info"
+			if [ -n "$days" ]; then
+				if [ "$days" -lt 0 ]; then
+					say_kv "部署到期" "$end（已过期 $((-days)) 天）" bad
+				else
+					say_kv "部署到期" "$end（还剩 ${days} 天）" "$tone"
+				fi
+			else
+				say_kv "部署到期" "$end" info
+			fi
 		fi
 	else
-		echo "已部署      还没有 ${pem:-证书文件}"
+		say_kv "已部署" "还没有 ${pem:-证书文件}" warn
 	fi
 
 	conf=""
@@ -618,29 +855,75 @@ show_status() {
 	fi
 	next=""
 	if [ -n "$conf" ]; then
-		next=$(sed -n 's/^Le_NextRenewTimeStr=//p' "$conf" | head -n 1 | tr -d "'\"")
-		[ -n "$next" ] || next=$(sed -n 's/^Le_NextRenewTime=//p' "$conf" | head -n 1 | tr -d "'\"")
+		next=$(conf_field "$conf" Le_NextRenewTimeStr 2>/dev/null || conf_field "$conf" Le_NextRenewTime 2>/dev/null || true)
 	fi
-	echo "下次续签    ${next:-还没登记}"
+	say_kv "下次续签" "${next:-还没登记}" "${next:+info}"
 
-	cron=""
-	if [ -n "$ACME_USER" ]; then
-		cron=$(as_user crontab -l 2>/dev/null | grep -F 'acme.sh' | grep -F -- '--cron' || true)
-	fi
-	if [ -n "$cron" ]; then
-		echo "自动续签    有（用户 crontab 里的 acme.sh --cron）"
+	say_kv "Web 服务" "${HTTP:-未知}"
+	say_kv "校验目录" "${WEBROOT:-未知}/.well-known/acme-challenge/" dim
+	say_end
+
+	# 托管证书摘要
+	say_hdr "托管证书"
+	count=0
+	if [ -n "$ACME_HOME" ] && [ -d "$ACME_HOME" ]; then
+		domains=$(domains_in "$ACME_HOME" || true)
+		if [ -z "$domains" ]; then
+			say_warn "托管目录里还没有证书"
+		else
+			while IFS= read -r domain; do
+				[ -n "$domain" ] || continue
+				print_one_cert "$ACME_HOME" "$domain" || true
+				count=$((count + 1))
+				echo
+			done <<<"$domains"
+			say_ok "合计 ${count} 张（详情: acme-ctl certs）"
+		fi
 	else
-		echo "自动续签    没找到。安装 acme.sh 时会给业务用户写一条 cron。"
+		say_warn "未配置 ACME_HOME。用 acme-ctl locate / certs 扫描。"
 	fi
-	echo "Web 服务    ${HTTP:-未知}"
-	echo "校验目录    ${WEBROOT:-未知}/.well-known/acme-challenge/"
-	echo "==========================="
+	say_end
+
+	# cron：显示来源文件 + 整行
+	say_hdr "自动续签（cron）"
+	while IFS=$'\t' read -r file line; do
+		[ -n "$line" ] || continue
+		cron_any=1
+		if printf '%s' "$line" | grep -qF -- '--cron'; then
+			cron_ok=1
+			say_kv "状态" "已开启（acme.sh --cron）" ok
+		else
+			say_kv "状态" "有 acme 相关行，但不是 --cron" warn
+		fi
+		say_kv "来源文件" "$file" info
+		printf '  %s%-12s%s %s%s%s\n' "$_Cd" "crontab行" "$_C0" "$_Cb" "$line" "$_C0"
+		echo
+	done < <(collect_acme_cron | awk -F '\t' '!seen[$0]++')
+	if [ "$cron_any" -eq 0 ]; then
+		say_bad "没找到自动续签 cron"
+		if [ -n "$ACME_USER" ]; then
+			say_dim "应在用户 $ACME_USER 的 crontab 里"
+			if file=$(cron_spool_path "$ACME_USER"); then
+				say_dim "文件: $file"
+			else
+				say_dim "文件一般是: /var/spool/cron/crontabs/$ACME_USER"
+			fi
+			say_dim "查看: crontab -u $ACME_USER -l"
+		fi
+	elif [ "$cron_ok" -eq 0 ]; then
+		say_warn "有相关行，但缺少 acme.sh --cron（续签可能不会自动跑）"
+	fi
+	say_dim "只看续签: acme-ctl cron"
+	say_end
+
 	echo
-	echo "常用："
-	echo "  acme-ctl                  看状态并进入菜单"
-	echo "  acme-ctl status           只看状态"
-	echo "  acme-ctl locate           查出托管目录和旧证书"
-	echo "  部署脚本    $(deploy_helper 2>/dev/null || echo '本目录的 acme-deploy-cert.sh')"
+	printf '%s%s常用%s\n' "$_Cm" "$_Cb" "$_C0"
+	say_dim "acme-ctl              状态 + 菜单"
+	say_dim "acme-ctl status       只看状态"
+	say_dim "acme-ctl certs        托管证书列表"
+	say_dim "acme-ctl cron         自动续签与来源文件"
+	say_dim "acme-ctl locate       查出托管目录和旧证书"
+	say_kv "部署脚本" "$(deploy_helper 2>/dev/null || echo '本目录的 acme-deploy-cert.sh')" dim
 }
 
 # 优先用和 acme-ctl 放在一起的脚本，拷到哪就用哪。没有时才用检查点五装的 /usr/local/sbin。
@@ -757,40 +1040,51 @@ menu() {
 	local choice
 	while true; do
 		show_status
-		echo "  1) 再看一次状态"
-		echo "  2) 按 cron 的方式续签（acme.sh --cron）"
-		echo "  3) 把证书再部署到 ${DEPLOY_DIR:-~/cert} 并 reload"
-		echo "  4) 按配置重新签发（主域名 + SAN）"
-		echo "  5) 查出 acme 托管目录和旧证书"
-		echo "  6) 清除已安装副本（不动托管目录里的原件）"
-		echo "  7) 生成 $CONF"
-		echo "  8) 删除旧位置的证书（不动托管目录和部署目录）"
-		echo "  q) 退出"
-		read -r -p "请选择 [1-8/q]: " choice || exit 0
+		printf '\n%s%s菜单%s\n' "$_Cm" "$_Cb" "$_C0"
+		printf '  %s1)%s 再看一次状态\n' "$_Cc" "$_C0"
+		printf '  %s2)%s 列出托管证书（到期 / SAN / 续签钩子）\n' "$_Cc" "$_C0"
+		printf '  %s3)%s 查看自动续签 cron（来源文件 + 内容）\n' "$_Cc" "$_C0"
+		printf '  %s4)%s 按 cron 方式续签（acme.sh --cron）\n' "$_Cy" "$_C0"
+		printf '  %s5)%s 把证书部署到 %s 并 reload\n' "$_Cy" "$_C0" "${DEPLOY_DIR:-~/cert}"
+		printf '  %s6)%s 按配置重新签发（主域名 + SAN）\n' "$_Cy" "$_C0"
+		printf '  %s7)%s 查出 acme 托管目录和旧证书\n' "$_Cc" "$_C0"
+		printf '  %s8)%s 清除已安装副本（不动托管原件）\n' "$_Cr" "$_C0"
+		printf '  %s9)%s 生成 %s\n' "$_Cg" "$_C0" "$CONF"
+		printf '  %sa)%s 删除旧位置证书（不动托管/部署目录）\n' "$_Cr" "$_C0"
+		printf '  %sq)%s 退出\n' "$_Cd" "$_C0"
+		read -r -p "请选择 [1-9/a/q]: " choice || exit 0
 		case "$choice" in
 		1 | "") ;;
-		2) do_cron || true ;;
-		3) do_deploy || true ;;
-		4) do_issue || true ;;
-		5) show_locate || true ;;
-		6) do_clear || true ;;
-		7) do_write_conf || true ;;
-		8) do_remove_old || true ;;
+		2) show_certs || true ;;
+		3) show_cron || true ;;
+		4) do_cron || true ;;
+		5) do_deploy || true ;;
+		6) do_issue || true ;;
+		7) show_locate || true ;;
+		8) do_clear || true ;;
+		9) do_write_conf || true ;;
+		a | A) do_remove_old || true ;;
 		q | Q) exit 0 ;;
-		*) echo "请输入 1 到 8 或 q。" ;;
+		*) printf '%s请输入 1-9、a 或 q。%s\n' "$_Cy" "$_C0" ;;
 		esac
 		echo
 	done
 }
 
 usage() {
-	echo "用法: acme-ctl [status|locate|clear|write-conf|deploy|remove-old]" >&2
-	echo "无参数：终端里进菜单。迁移不要一键，按 5 → 6 → 7 → 3 → 8 自己做。" >&2
+	echo "用法: acme-ctl [status|certs|cron|locate|clear|write-conf|deploy|remove-old]" >&2
+	echo "无参数：终端里进菜单。迁移按 7 → 8 → 9 → 5 → a 自己做。" >&2
 }
 
 case "${1:-}" in
 status | --status | -s)
 	show_status
+	;;
+certs | cert | list)
+	show_certs
+	;;
+cron)
+	show_cron || true
 	;;
 locate)
 	show_locate

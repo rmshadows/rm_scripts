@@ -8,10 +8,11 @@
 #   ./git-github-proxy.sh --status             # 看代理端口与 SSH 配置
 #   ./git-github-proxy.sh test                 # ssh -T git@github-proxy
 #   ./git-github-proxy.sh clone <仓库> [git参数...]
-#   ./git-github-proxy.sh pull [git参数...]    # 当前仓库临时经代理 pull
-#   ./git-github-proxy.sh fetch [git参数...]
-#   ./git-github-proxy.sh set-url              # 永久把 origin 改成 github-proxy
-#   ./git-github-proxy.sh unset-url            # origin 改回 github.com
+#   ./git-github-proxy.sh pull [文件夹] [git参数...]   # 可在仓库上层指定子目录
+#   ./git-github-proxy.sh push [文件夹] [git参数...]
+#   ./git-github-proxy.sh fetch [文件夹] [git参数...]
+#   ./git-github-proxy.sh set-url [文件夹]     # 永久把 origin 改成 github-proxy
+#   ./git-github-proxy.sh unset-url [文件夹]   # origin 改回 github.com
 #
 # 环境变量:
 #   GIT_SOCKS_PROXY=127.0.0.1:10808   # SOCKS5 地址（默认与本仓库 zshrc 一致）
@@ -295,38 +296,84 @@ cmd_clone() {
 	git clone "$@" "$url"
 }
 
-# 当前仓库：把 origin 临时改成代理 URL 跑一条 git 子命令
+# 第一个参数若是已有 git 仓库目录，则用它（方便在仓库上层调用）；否则用当前目录。
+# 成功选用目录时会 shift 掉该参数；REPO_DIR 写入调用方传入的变量名。
+take_repo_dir() {
+	local -n _repo_out="$1"
+	shift
+	_repo_out="."
+	[[ $# -ge 1 ]] || return 1
+	# 以 - 开头的是 git 选项，不是文件夹
+	[[ "$1" == -* ]] && return 1
+	if [[ -d "$1" ]]; then
+		if git -C "$1" rev-parse --git-dir >/dev/null 2>&1; then
+			_repo_out="$1"
+			return 0
+		fi
+		die "目录存在但不是 git 仓库: $1"
+	fi
+	return 1
+}
+
+require_git_repo() {
+	local repo="$1"
+	if git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
+		return 0
+	fi
+	die "不是 git 仓库: ${repo}（可在上层目录指定文件夹，例如: $(basename "$0") pull <文件夹>）"
+}
+
+# 指定仓库：把 origin 临时改成代理 URL 跑一条 git 子命令（不改磁盘上的 origin）
 cmd_git_via_proxy() {
 	local sub="$1"
 	shift
-	[[ -d .git ]] || die "当前目录不是 git 仓库"
+	local repo="."
+	if take_repo_dir repo "$@"; then
+		shift
+	fi
+	require_git_repo "$repo"
 	ensure_ssh_ready
 	local origin path proxy_url
-	origin=$(git remote get-url origin 2>/dev/null) || die "没有 origin"
+	origin=$(git -C "$repo" remote get-url origin 2>/dev/null) || die "没有 origin: $repo"
 	path=$(github_path_from_url "$origin") || die "origin 不是 GitHub 地址: $origin"
 	proxy_url="git@${HOST_ALIAS}:${path}.git"
+	log "仓库: $repo"
 	log "临时经代理 ${sub}: $proxy_url"
-	git -c "remote.origin.url=${proxy_url}" "$sub" "$@"
+	git -C "$repo" -c "remote.origin.url=${proxy_url}" "$sub" "$@"
 }
 
 cmd_set_url() {
-	[[ -d .git ]] || die "当前目录不是 git 仓库"
+	local repo="."
+	if take_repo_dir repo "$@"; then
+		shift
+	fi
+	[[ $# -eq 0 ]] || die "用法: $(basename "$0") set-url [文件夹]"
+	require_git_repo "$repo"
 	ensure_ssh_ready
 	local origin path
-	origin=$(git remote get-url origin 2>/dev/null) || die "没有 origin"
+	origin=$(git -C "$repo" remote get-url origin 2>/dev/null) || die "没有 origin: $repo"
 	path=$(github_path_from_url "$origin") || die "origin 不是 GitHub 地址: $origin"
-	git remote set-url origin "git@${HOST_ALIAS}:${path}.git"
-	log "origin 已改为: $(git remote get-url origin)"
-	warn "以后该仓库会一直走代理。恢复: $(basename "$0") unset-url"
+	git -C "$repo" remote set-url origin "git@${HOST_ALIAS}:${path}.git"
+	log "origin 已改为: $(git -C "$repo" remote get-url origin)"
+	if [[ "$repo" == . ]]; then
+		warn "以后该仓库会一直走代理。恢复: $(basename "$0") unset-url"
+	else
+		warn "以后该仓库会一直走代理。恢复: $(basename "$0") unset-url $repo"
+	fi
 }
 
 cmd_unset_url() {
-	[[ -d .git ]] || die "当前目录不是 git 仓库"
+	local repo="."
+	if take_repo_dir repo "$@"; then
+		shift
+	fi
+	[[ $# -eq 0 ]] || die "用法: $(basename "$0") unset-url [文件夹]"
+	require_git_repo "$repo"
 	local origin path
-	origin=$(git remote get-url origin 2>/dev/null) || die "没有 origin"
+	origin=$(git -C "$repo" remote get-url origin 2>/dev/null) || die "没有 origin: $repo"
 	path=$(github_path_from_url "$origin") || die "origin 不是 GitHub 地址: $origin"
-	git remote set-url origin "git@github.com:${path}.git"
-	log "origin 已改回: $(git remote get-url origin)"
+	git -C "$repo" remote set-url origin "git@github.com:${path}.git"
+	log "origin 已改回: $(git -C "$repo" remote get-url origin)"
 }
 
 usage() {
@@ -339,17 +386,24 @@ usage() {
   --status    看 SOCKS5 端口与 SSH 配置
 
 失败时走代理（平时不用）:
-  test                          ssh -T 测代理通道
-  clone <仓库> [参数...]        经代理克隆
-  pull [参数...]                当前仓库临时经代理 pull（不改 origin）
-  fetch [参数...]               当前仓库临时经代理 fetch
-  set-url                       永久把 origin 改成 github-proxy
-  unset-url                     origin 改回 git@github.com:...
+  test                              ssh -T 测代理通道
+  clone <仓库> [参数...]            经代理克隆
+  pull [文件夹] [git参数...]        临时经代理 pull（不改 origin）
+  push [文件夹] [git参数...]        临时经代理 push（不改 origin）
+  fetch [文件夹] [git参数...]       临时经代理 fetch
+  set-url [文件夹]                  永久把 origin 改成 github-proxy
+  unset-url [文件夹]                origin 改回 git@github.com:...
+
+  文件夹可省略：省略则用当前目录。可在仓库上层直接指定子目录。
 
 例子:
   $(basename "$0") --apply
   $(basename "$0") clone rmshadows/rm_scripts
   $(basename "$0") clone git@github.com:rmshadows/rm_scripts.git --depth=1 --single-branch
+  # 在 Project/ 下对子仓库操作：
+  $(basename "$0") pull rm_scripts
+  $(basename "$0") push rm_scripts
+  $(basename "$0") pull rm_scripts --rebase
   cd 某仓库 && $(basename "$0") pull
 
 SOCKS5 默认 ${SOCKS}，可改: GIT_SOCKS_PROXY=127.0.0.1:端口
@@ -367,9 +421,10 @@ main() {
 	test) cmd_test ;;
 	clone) cmd_clone "$@" ;;
 	pull) cmd_git_via_proxy pull "$@" ;;
+	push) cmd_git_via_proxy push "$@" ;;
 	fetch) cmd_git_via_proxy fetch "$@" ;;
-	set-url) cmd_set_url ;;
-	unset-url) cmd_unset_url ;;
+	set-url) cmd_set_url "$@" ;;
+	unset-url) cmd_unset_url "$@" ;;
 	*) die "未知参数: $cmd（见 --help）" ;;
 	esac
 }

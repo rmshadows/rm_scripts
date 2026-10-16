@@ -25,7 +25,7 @@ ok "脚本语法"
 
 echo "== 源模板不要机器专用域名 =="
 if grep -RInE 'civiccccc|justaaaa' --include='*.src' --include='*.sh' --include='*.txt' \
-	5/nginx 5/acme 6/SW_CONF Config.sh Lib.sh 5/setup.sh 2>/dev/null; then
+	5/nginx 5/acme-ctl 6/SW_CONF Config.sh Lib.sh 5/setup.sh 2>/dev/null; then
 	bad "模板/脚本里有机器专用域名或邮箱"
 else
 	ok "模板无机器专用域名"

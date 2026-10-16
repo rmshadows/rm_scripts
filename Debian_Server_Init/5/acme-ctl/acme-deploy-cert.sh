@@ -1,6 +1,6 @@
 #!/bin/bash
 # 把 acme.sh 目录里的证书拷到 ~/cert/<主域名>.pem 与 .key，再 reload nginx/apache2。
-# 由普通用户 cron 调用：sudo -n /path/to/acme/acme-deploy-cert.sh
+# 由普通用户 cron 调用：sudo -n /path/to/acme-ctl/acme-deploy-cert.sh
 # 配置：/etc/acme-deploy.conf（DEPLOY_DIR 默认是该用户的 ~/cert）
 
 set -euo pipefail

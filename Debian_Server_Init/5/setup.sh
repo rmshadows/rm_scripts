@@ -390,15 +390,15 @@ EOF
     # 普通用户跑 acme.sh / cron 不能 systemctl reload。
     # 用 root 助手 + sudoers 免密：拷到 ~/cert 并 reload。
     deploy_acme_refresh_names
-    replace_placeholders_with_values "acme/acme-deploy.conf.src"
-    install -m 644 acme/acme-deploy.conf /etc/acme-deploy.conf
-    rm -f acme/acme-deploy.conf
-    deploy_install_exec "acme/acme-deploy-cert.sh" /usr/local/sbin/acme-deploy-cert
-    deploy_install_exec "acme/acme-ctl.sh" /usr/local/bin/acme-ctl
+    replace_placeholders_with_values "acme-ctl/acme-deploy.conf.src"
+    install -m 644 acme-ctl/acme-deploy.conf /etc/acme-deploy.conf
+    rm -f acme-ctl/acme-deploy.conf
+    deploy_install_exec "acme-ctl/acme-deploy-cert.sh" /usr/local/sbin/acme-deploy-cert
+    deploy_install_exec "acme-ctl/acme-ctl.sh" /usr/local/bin/acme-ctl
     _acme_sudoers=/etc/sudoers.d/acme-deploy-cert
-    replace_placeholders_with_values "acme/acme-deploy-cert.sudoers.src"
-    install -m 440 acme/acme-deploy-cert.sudoers "$_acme_sudoers"
-    rm -f acme/acme-deploy-cert.sudoers
+    replace_placeholders_with_values "acme-ctl/acme-deploy-cert.sudoers.src"
+    install -m 440 acme-ctl/acme-deploy-cert.sudoers "$_acme_sudoers"
+    rm -f acme-ctl/acme-deploy-cert.sudoers
     if ! visudo -cf "$_acme_sudoers" >/dev/null 2>&1; then
         prompt -e "写入 sudoers 失败，已删除 $_acme_sudoers"
         rm -f "$_acme_sudoers"

@@ -273,10 +273,45 @@ build_vc_crypto_args() {
     if [ "$readOnly" -eq 1 ]; then
         VC_CRYPTO_ARGS+=(--mount-options=ro)
     fi
+    # 密码走标准输入，不放进命令行。--non-interactive 让密码错误时退出，而不是再问一次。
     if [ -n "${keyPass:-}" ]; then
-        VC_CRYPTO_ARGS+=(--non-interactive --password="$keyPass")
+        VC_CRYPTO_ARGS+=(--non-interactive --stdin)
     fi
     return 0
+}
+
+# 配置里没写密码就在终端问一次。问到的结果放进 keyPass，后面只试这一次。
+ensure_volume_password() {
+    local pass
+    if [ -n "${keyPass:-}" ]; then
+        prompt -m "使用 config.sh 里的密码解密 $VOLUME_PATH"
+        return 0
+    fi
+    if [ ! -r /dev/tty ]; then
+        prompt -e "没有终端可输入密码。请在 config.sh 设置 keyPass，或在终端里运行。"
+        return 1
+    fi
+    prompt -m "请输入 $VOLUME_PATH 的 VeraCrypt 密码（只输一次，错误就停止）。"
+    IFS= read -rs pass </dev/tty || return 1
+    printf '\n' >/dev/tty
+    if [ -z "$pass" ]; then
+        prompt -e "密码是空的，已停止。"
+        return 1
+    fi
+    keyPass="$pass"
+    return 0
+}
+
+# sudo 先在终端上完成，避免后面把卷密码管道喂进去时被 sudo 吃掉。
+ensure_sudo_ready() {
+    if sudo --non-interactive true 2>/dev/null; then
+        return 0
+    fi
+    if [ -r /dev/tty ]; then
+        sudo -v </dev/tty
+        return $?
+    fi
+    sudo -v
 }
 
 get_veracrypt_mapped_device() {
@@ -336,8 +371,29 @@ tcplay_release_loop() {
 }
 
 open_crypto_slot() {
-    local dev args=()
+    local dev args=() rc t
     if [ "${VC_BACKEND:-}" != "tcplay" ]; then
+        if ! ensure_sudo_ready; then
+            prompt -e "sudo 没有通过，没法解密。"
+            return 1
+        fi
+        t="${decryptTimeout:-60}"
+        if [ -n "${keyPass:-}" ]; then
+            # 密码只送一行。有的旧 veracrypt 密码错误还会再读一次，管道结束后应立刻失败。
+            # 仍不退出的，到 decryptTimeout 秒就杀掉，避免只能 Ctrl+C。
+            if command -v timeout >/dev/null 2>&1 && [ "$t" != "0" ]; then
+                printf '%s\n' "$keyPass" | timeout -k 5 "$t" sudo --non-interactive "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"
+                rc=${PIPESTATUS[1]}
+            else
+                printf '%s\n' "$keyPass" | sudo --non-interactive "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"
+                rc=${PIPESTATUS[1]}
+            fi
+            if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+                prompt -e "解密超过 ${t} 秒没有结果。密码错误时有的 veracrypt 会一直等，已经停掉。"
+                return 1
+            fi
+            return "$rc"
+        fi
         sudo "$VERACRYPT_BIN" "${VC_CRYPTO_ARGS[@]}" --filesystem=none "$VOLUME_PATH"
         return $?
     fi
@@ -732,23 +788,114 @@ try_idmap_mount() {
     return 1
 }
 
-ensure_bindfs() {
-    if command -v bindfs >/dev/null 2>&1; then
+# 相对路径按脚本目录（打包后按打包二进制所在目录）解析。
+custom_bin_path() {
+    local custom="$1"
+    [ -n "$custom" ] || return 1
+    if [[ "$custom" != /* ]]; then
+        if [ -n "${PACK_BIN_DIR:-}" ]; then
+            custom="$PACK_BIN_DIR/$custom"
+        else
+            custom="$LIB_DIR/$custom"
+        fi
+    fi
+    if [ -x "$custom" ] && [ ! -d "$custom" ]; then
+        printf '%s\n' "$custom"
         return 0
     fi
-    prompt -w "没有 bindfs，尝试安装..."
-    if ! sudo apt install -y bindfs; then
-        prompt -e "bindfs 安装失败。Debian 10 / 内核 4.19 需要这个包才能做属主映射。"
+    return 1
+}
+
+apt_install_bindfs() {
+    local t="${aptTimeout:-90}" rc
+    prompt -w "尝试 apt 安装 bindfs（最多 ${t} 秒，没网会停）。"
+    if ! ensure_sudo_ready; then
+        prompt -e "sudo 没有通过，不能安装 bindfs。"
+        return 1
+    fi
+    if command -v timeout >/dev/null 2>&1 && [ "$t" != "0" ]; then
+        sudo --non-interactive timeout -k 5 "$t" apt-get install -y bindfs
+        rc=$?
+        if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+            prompt -e "apt 超过 ${t} 秒没有装完，已停。没网时请改用 BINDFS_CUSTOM。"
+            return 1
+        fi
+    else
+        sudo --non-interactive apt-get install -y bindfs
+        rc=$?
+    fi
+    if [ "$rc" -ne 0 ]; then
+        prompt -e "bindfs 安装失败。"
         return 1
     fi
     command -v bindfs >/dev/null 2>&1
+}
+
+# 找到可用的 bindfs：config 里的离线路径、系统命令、或（允许时）apt。
+# 成功时写入 BINDFS_BIN。
+ensure_bindfs() {
+    local custom="" choice
+    if [ -n "${BINDFS_BIN:-}" ] && [ -x "$BINDFS_BIN" ]; then
+        return 0
+    fi
+    if [ -n "${BINDFS_CUSTOM:-}" ]; then
+        if custom="$(custom_bin_path "$BINDFS_CUSTOM")"; then
+            BINDFS_BIN="$custom"
+            prompt -k "bindfs" "$BINDFS_BIN"
+            return 0
+        fi
+        prompt -e "BINDFS_CUSTOM 不可执行: ${BINDFS_CUSTOM}"
+        return 1
+    fi
+    if command -v bindfs >/dev/null 2>&1; then
+        BINDFS_BIN="$(command -v bindfs)"
+        return 0
+    fi
+    if custom="$(custom_bin_path "$LIB_DIR/bindfs")"; then
+        BINDFS_BIN="$custom"
+        prompt -k "bindfs" "$BINDFS_BIN"
+        return 0
+    fi
+    case "${allowAptInstall:-ask}" in
+        1|yes|true|on)
+            apt_install_bindfs || return 1
+            BINDFS_BIN="$(command -v bindfs 2>/dev/null || true)"
+            [ -n "$BINDFS_BIN" ] && [ -x "$BINDFS_BIN" ]
+            return $?
+            ;;
+        0|no|false|off)
+            prompt -w "没有 bindfs，allowAptInstall=0，不尝试联网安装。"
+            return 1
+            ;;
+    esac
+    if [ ! -r /dev/tty ]; then
+        prompt -w "没有 bindfs，也没有终端可询问。不联网安装。"
+        return 1
+    fi
+    echo
+    echo "没有 bindfs。idmap 需要内核 5.12 以上，这台用不上。没网就不要选 apt。"
+    echo "  a) apt 安装 bindfs（需要网络）"
+    echo "  s) 不映射，按卷内权限挂上（离线）"
+    while true; do
+        _read_user -p "请选择 [S/a]: " choice
+        case "${choice:-s}" in
+            a|A)
+                apt_install_bindfs || return 1
+                BINDFS_BIN="$(command -v bindfs 2>/dev/null || true)"
+                [ -n "$BINDFS_BIN" ] && [ -x "$BINDFS_BIN" ]
+                return $?
+                ;;
+            s|S) return 1 ;;
+            *) prompt -w "请输入 s 或 a。" ;;
+        esac
+    done
 }
 
 try_bindfs_mount() {
     local dev="$1" mp="$2" vuid="$3" vgid="$4" uid="$5" gid="$6"
     local raw mapopt
     ensure_bindfs || return 1
-    if ! bindfs --help 2>&1 | grep -q -- '--map'; then
+    if ! "$BINDFS_BIN" --help 2>&1 | grep -q -- '--map'; then
         prompt -e "这台 bindfs 没有 --map，做不了属主映射。"
         return 1
     fi
@@ -770,7 +917,7 @@ try_bindfs_mount() {
         mapopt="${mapopt}:@${vgid}/@${gid}"
     fi
     prompt -x "bindfs --map=$mapopt $raw $mp"
-    if ! sudo bindfs --map="$mapopt" -o allow_other "$raw" "$mp"; then
+    if ! sudo "$BINDFS_BIN" --map="$mapopt" -o allow_other "$raw" "$mp"; then
         sudo umount "$raw" 2>/dev/null || true
         sudo rmdir "$raw" 2>/dev/null || true
         return 1
@@ -894,7 +1041,7 @@ reconcile_native_fs_owner() {
     prompt -w "属主映射失败，尝试按卷内权限重新挂上。"
     if mount_mapped_filesystem "$dev" "$fstype" 0; then
         VC_OWNER_FAILED=1
-        VC_WARN_REASON="属主没有映射成功。这台请先安装 bindfs 再挂: sudo apt install bindfs"
+        VC_WARN_REASON="属主没有映射成功。没网时把 bindfs 放到脚本旁，并在 config.sh 设置 BINDFS_CUSTOM。卷已按原来的属主挂上，可以读。"
         clear_owner_view_state
         return 0
     fi
@@ -1032,6 +1179,13 @@ print_mount_plan() {
 print_mount_result() {
     local src fstype opts label
     src="$(findmnt -n -o SOURCE --target "$readMount" 2>/dev/null || true)"
+    if [ -n "$src" ] && [ ! -b "$src" ] && [ -d "$src" ]; then
+        local under
+        under="$(findmnt -n -o SOURCE --mountpoint "$src" 2>/dev/null || true)"
+        if [ -n "$under" ]; then
+            src="$under"
+        fi
+    fi
     fstype="$(findmnt -n -o FSTYPE --target "$readMount" 2>/dev/null || true)"
     opts="$(findmnt -n -o OPTIONS --target "$readMount" 2>/dev/null || true)"
     label="$(sudo blkid -o value -s LABEL "$src" 2>/dev/null || true)"
@@ -1231,16 +1385,14 @@ _mount_veracrypt_impl() {
         return 1
     fi
 
+    print_mount_plan
+    if ! ensure_volume_password; then
+        VC_FAIL_REASON="没有密码"
+        return 1
+    fi
     if ! build_vc_crypto_args; then
         VC_FAIL_REASON="解密参数不正确"
         return 1
-    fi
-    print_mount_plan
-
-    if [ -n "${keyPass:-}" ]; then
-        prompt -m "使用 config.sh 里的密码解密 $VOLUME_PATH"
-    else
-        prompt -m "请输入 $VOLUME_PATH 的 VeraCrypt 密码（只输一次）。"
     fi
 
     # 先只解开加密层，探测文件系统/卷标，再决定访问目录。
