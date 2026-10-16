@@ -46,7 +46,7 @@
 | `lightdm-gtk-background.sh` | 设置 LightDM GTK greeter 背景图 | 好（还原 conf） |
 | `wechat-recv-writable.sh` | GNOME：Alt+Shift+M 把微信接收文件目录设为可写（自动发现账号） | 好（还原原快捷键） |
 | `udisks-automount.sh` | 交互控制分区/整盘自动挂载：读写、只读、不自动、忽略（udev + udisks2；可选 GNOME 全局开关） | 好（删规则/清策略） |
-| `git-github-proxy.sh` | GitHub SSH：平时直连；失败时用 `clone`/`pull`/`push` 经本机 SOCKS5（可在上层目录指定子文件夹） | 好（删 SSH 配置块） |
+| `git-github-proxy.sh` | GitHub：平时直连；失败时按仓库地址走 SOCKS（HTTPS）或 SSH 代理（可在上层目录指定子文件夹） | 好（删 SSH 配置块） |
 | `_template.sh` | 新脚本模板 | — |
 
 ## 示例

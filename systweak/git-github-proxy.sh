@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# GitHub SSH 代理：平时直连 github.com；某次失败时用本脚本走 SOCKS5。
+# GitHub 代理：平时直连；某次失败时用本脚本走 SOCKS5。
+# 仓库是 HTTPS 就走 HTTP 代理，是 SSH 就走 SSH 代理，不把 HTTPS 改成 SSH。
 # 不会改全局 ALL_PROXY，也不会把所有 GitHub 默认改成代理。
 #
 # 用法:
@@ -176,39 +177,31 @@ remove_ssh_block() {
 	log "已从 $SSH_CONFIG 去掉 ${HOST_ALIAS} 配置块"
 }
 
-# 把各种仓库写法改成 git@github-proxy:owner/repo.git
-to_proxy_url() {
-	local in="$1" owner repo
+# 只改 SSH 地址的主机名。HTTPS 保持原样，另外用 http.proxy。
+to_ssh_proxy_url() {
+	local in="$1"
 	case "$in" in
 	git@"${HOST_ALIAS}":*)
 		printf '%s\n' "$in"
-		return 0
 		;;
 	git@github.com:*)
 		printf '%s\n' "git@${HOST_ALIAS}:${in#git@github.com:}"
-		return 0
 		;;
 	ssh://git@github.com/*)
 		printf '%s\n' "git@${HOST_ALIAS}:${in#ssh://git@github.com/}"
-		return 0
 		;;
-	https://github.com/* | http://github.com/*)
-		in="${in#https://github.com/}"
-		in="${in#http://github.com/}"
-		in="${in%.git}"
-		printf 'git@%s:%s.git\n' "$HOST_ALIAS" "$in"
-		return 0
-		;;
-	*/*)
-		# owner/repo 或 owner/repo.git
-		if [[ "$in" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\.git)?$ ]]; then
-			in="${in%.git}"
-			printf 'git@%s:%s.git\n' "$HOST_ALIAS" "$in"
-			return 0
-		fi
+	*)
+		return 1
 		;;
 	esac
-	die "无法识别仓库地址: $in（例: owner/repo 或 git@github.com:owner/repo.git）"
+}
+
+url_kind() {
+	case "$1" in
+	https://github.com/* | http://github.com/*) printf 'https\n' ;;
+	git@github.com:* | ssh://git@github.com/* | git@"${HOST_ALIAS}":*) printf 'ssh\n' ;;
+	*) return 1 ;;
+	esac
 }
 
 # github.com SSH/HTTPS -> 提取 owner/repo，再拼直连或代理
@@ -287,13 +280,34 @@ cmd_test() {
 }
 
 cmd_clone() {
-	[[ $# -ge 1 ]] || die "用法: $(basename "$0") clone <owner/repo|git@github.com:...> [git clone 参数...]"
-	local url="$1"
+	[[ $# -ge 1 ]] || die "用法: $(basename "$0") clone <https://...|git@github.com:...|owner/repo> [git clone 参数...]"
+	local url="$1" proxied
 	shift
-	ensure_ssh_ready
-	url=$(to_proxy_url "$url")
-	log "经代理克隆: $url"
-	git clone "$@" "$url"
+	require_proxy_up
+	case "$url" in
+	https://github.com/* | http://github.com/*)
+		log "HTTPS 经 SOCKS5 ${SOCKS} 克隆: $url"
+		git -c "http.proxy=socks5h://${SOCKS}" clone "$@" "$url"
+		;;
+	git@github.com:* | ssh://git@github.com/* | git@"${HOST_ALIAS}":*)
+		ensure_ssh_ready
+		proxied=$(to_ssh_proxy_url "$url")
+		log "SSH 经 ${HOST_ALIAS} 克隆: $proxied"
+		git clone "$@" "$proxied"
+		;;
+	*/*)
+		if [[ "$url" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\.git)?$ ]]; then
+			url="https://github.com/${url%.git}.git"
+			log "没写协议，按 HTTPS 经 SOCKS5 ${SOCKS} 克隆: $url"
+			git -c "http.proxy=socks5h://${SOCKS}" clone "$@" "$url"
+			return
+		fi
+		die "无法识别仓库地址: $url（例: https://github.com/owner/repo.git 或 git@github.com:owner/repo.git）"
+		;;
+	*)
+		die "无法识别仓库地址: $url（例: https://github.com/owner/repo.git 或 git@github.com:owner/repo.git）"
+		;;
+	esac
 }
 
 # 第一个参数若是已有 git 仓库目录，则用它（方便在仓库上层调用）；否则用当前目录。
@@ -323,7 +337,7 @@ require_git_repo() {
 	die "不是 git 仓库: ${repo}（可在上层目录指定文件夹，例如: $(basename "$0") pull <文件夹>）"
 }
 
-# 指定仓库：把 origin 临时改成代理 URL 跑一条 git 子命令（不改磁盘上的 origin）
+# 按 origin 现有协议走代理，不改磁盘上的地址，也不把 HTTPS 改成 SSH。
 cmd_git_via_proxy() {
 	local sub="$1"
 	shift
@@ -332,14 +346,42 @@ cmd_git_via_proxy() {
 		shift
 	fi
 	require_git_repo "$repo"
-	ensure_ssh_ready
-	local origin path proxy_url
-	origin=$(git -C "$repo" remote get-url origin 2>/dev/null) || die "没有 origin: $repo"
-	path=$(github_path_from_url "$origin") || die "origin 不是 GitHub 地址: $origin"
-	proxy_url="git@${HOST_ALIAS}:${path}.git"
+	local u kind need_http=0 need_ssh=0 tmp="" rc=0
+	local -a git_args=() urls=()
+	mapfile -t urls < <(
+		{
+			git -C "$repo" config --get-all remote.origin.url || true
+			git -C "$repo" config --get-all remote.origin.pushurl || true
+		} | awk 'NF && !seen[$0]++'
+	)
+	[[ ${#urls[@]} -gt 0 ]] || die "没有 origin: $repo"
+	for u in "${urls[@]}"; do
+		kind=$(url_kind "$u") || die "origin 不是 GitHub 地址: $u"
+		case "$kind" in
+		https) need_http=1 ;;
+		ssh) need_ssh=1 ;;
+		esac
+	done
+	require_proxy_up
 	log "仓库: $repo"
-	log "临时经代理 ${sub}: $proxy_url"
-	git -C "$repo" -c "remote.origin.url=${proxy_url}" "$sub" "$@"
+	if [[ "$need_http" -eq 1 ]]; then
+		git_args+=(-c "http.proxy=socks5h://${SOCKS}")
+		log "HTTPS 经 SOCKS5 ${SOCKS}（地址不变）"
+	fi
+	if [[ "$need_ssh" -eq 1 ]]; then
+		ensure_ssh_ready
+		tmp=$(mktemp)
+		cat >"$tmp" <<EOF
+[url "git@${HOST_ALIAS}:"]
+	insteadOf = git@github.com:
+	insteadOf = ssh://git@github.com/
+EOF
+		git_args+=(-c "include.path=${tmp}")
+		log "SSH 经 ${HOST_ALIAS} -> ssh.github.com:443"
+	fi
+	git -C "$repo" "${git_args[@]}" "$sub" "$@" || rc=$?
+	[[ -n "$tmp" ]] && rm -f "$tmp"
+	return "$rc"
 }
 
 cmd_set_url() {
@@ -349,9 +391,13 @@ cmd_set_url() {
 	fi
 	[[ $# -eq 0 ]] || die "用法: $(basename "$0") set-url [文件夹]"
 	require_git_repo "$repo"
-	ensure_ssh_ready
-	local origin path
+	local origin path kind
 	origin=$(git -C "$repo" remote get-url origin 2>/dev/null) || die "没有 origin: $repo"
+	kind=$(url_kind "$origin") || die "origin 不是 GitHub 地址: $origin"
+	if [[ "$kind" == https ]]; then
+		die "这个仓库是 HTTPS，地址不用改。pull/push 会按 HTTPS 走 SOCKS。"
+	fi
+	ensure_ssh_ready
 	path=$(github_path_from_url "$origin") || die "origin 不是 GitHub 地址: $origin"
 	git -C "$repo" remote set-url origin "git@${HOST_ALIAS}:${path}.git"
 	log "origin 已改为: $(git -C "$repo" remote get-url origin)"
@@ -369,8 +415,12 @@ cmd_unset_url() {
 	fi
 	[[ $# -eq 0 ]] || die "用法: $(basename "$0") unset-url [文件夹]"
 	require_git_repo "$repo"
-	local origin path
+	local origin path kind
 	origin=$(git -C "$repo" remote get-url origin 2>/dev/null) || die "没有 origin: $repo"
+	kind=$(url_kind "$origin") || die "origin 不是 GitHub 地址: $origin"
+	if [[ "$kind" == https ]]; then
+		die "origin 已是 HTTPS，没有改过地址。"
+	fi
 	path=$(github_path_from_url "$origin") || die "origin 不是 GitHub 地址: $origin"
 	git -C "$repo" remote set-url origin "git@github.com:${path}.git"
 	log "origin 已改回: $(git -C "$repo" remote get-url origin)"
@@ -385,22 +435,23 @@ usage() {
   --undo      去掉本脚本写入的配置块
   --status    看 SOCKS5 端口与 SSH 配置
 
-失败时走代理（平时不用）:
-  test                              ssh -T 测代理通道
-  clone <仓库> [参数...]            经代理克隆
+失败时走代理（平时不用，按仓库现有地址选 HTTP 或 SSH）:
+  test                              ssh -T 测 SSH 代理通道
+  clone <仓库> [参数...]            https:// 走 SOCKS；git@ 走 SSH
   pull [文件夹] [git参数...]        临时经代理 pull（不改 origin）
   push [文件夹] [git参数...]        临时经代理 push（不改 origin）
   fetch [文件夹] [git参数...]       临时经代理 fetch
-  set-url [文件夹]                  永久把 origin 改成 github-proxy
-  unset-url [文件夹]                origin 改回 git@github.com:...
+  set-url [文件夹]                  仅 SSH 仓库：永久把 origin 改成 github-proxy
+  unset-url [文件夹]                SSH 仓库改回 git@github.com:...
 
   文件夹可省略：省略则用当前目录。可在仓库上层直接指定子目录。
+  只写 owner/repo 时按 HTTPS。
 
 例子:
   $(basename "$0") --apply
-  $(basename "$0") clone rmshadows/rm_scripts
+  $(basename "$0") clone https://github.com/rmshadows/rm_scripts.git
   $(basename "$0") clone git@github.com:rmshadows/rm_scripts.git --depth=1 --single-branch
-  # 在 Project/ 下对子仓库操作：
+  # 在 Project/ 下对子仓库操作（HTTPS 仓库走 SOCKS，SSH 仓库走 github-proxy）:
   $(basename "$0") pull rm_scripts
   $(basename "$0") push rm_scripts
   $(basename "$0") pull rm_scripts --rebase
