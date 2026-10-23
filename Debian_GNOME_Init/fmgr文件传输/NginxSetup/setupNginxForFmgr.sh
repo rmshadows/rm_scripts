@@ -333,11 +333,17 @@ do_install() {
     FMGR_DST="$FMGR_PARENT/fmgr"
     ok "目标：$FMGR_DST"
 
-    if ! command -v nginx >/dev/null 2>&1; then
+    if ! command -v nginx >/dev/null 2>&1 && [ ! -x /usr/sbin/nginx ]; then
         log "安装 nginx..."
         apt update
         DEBIAN_FRONTEND=noninteractive apt install -y nginx
     else ok "nginx 已安装"; fi
+
+    if dpkg-query -W -f '${Status}' apache2 2>/dev/null | grep -q 'install ok installed' || [ -x /usr/sbin/apache2ctl ]; then
+        log "停止并禁止 Apache2 开机启动（与 nginx 二选一）..."
+        systemctl stop apache2.service 2>/dev/null || true
+        systemctl disable apache2.service 2>/dev/null || true
+    fi
 
     if ! command -v php-fpm >/dev/null 2>&1 && ! ls /usr/sbin/php*-fpm >/dev/null 2>&1; then
         log "安装 php-fpm..."

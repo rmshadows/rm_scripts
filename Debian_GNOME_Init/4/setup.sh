@@ -190,13 +190,24 @@ source $venv_libs_dir/bin/activate" >$act
 	fi
 fi
 
+# 包是否处于已安装（普通用户 PATH 往往没有 /usr/sbin，不能靠 command -v）。
+web_pkg_installed() {
+	dpkg-query -W -f '${Status}' "$1" 2>/dev/null | grep -q 'install ok installed'
+}
+
+# 停掉并禁止开机启动。unit 不存在时忽略。
+stop_disable_web() {
+	local unit="$1"
+	prompt -x "停止并禁止开机启动: ${unit}"
+	sudo systemctl stop "${unit}.service" 2>/dev/null || true
+	sudo systemctl disable "${unit}.service" 2>/dev/null || true
+}
+
 # 安装配置Apache2（与 Nginx 二选一：装 Apache 前会停用 Nginx，装 Nginx 前会停用 Apache）
 if [ "$SET_INSTALL_APACHE2" -eq 1 ]; then
-	# 若已安装 Nginx，先停止并禁用，避免与 Apache 同占 80
-	if [ -x "$(command -v nginx)" ]; then
-		prompt -x 'Stop nginx...'
-		sudo systemctl stop nginx.service
-		sudo systemctl disable nginx.service
+	# 若已安装 Nginx，先停止并禁止开机启动，避免与 Apache 同占 80
+	if web_pkg_installed nginx || [ -x /usr/sbin/nginx ]; then
+		stop_disable_web nginx
 	fi
 	prompt -x "安装Apache2"
 	doApt install apache2
@@ -304,11 +315,9 @@ fi
 
 # 安装配置Nginx（与 Apache 二选一：装 Nginx 前会停用 Apache）
 if [ "$SET_INSTALL_NGINX" -eq 1 ]; then
-	# 若已安装 Apache，先停止并禁用，避免与 Nginx 同占 80
-	if [ -x "$(command -v apache2ctl)" ]; then
-		prompt -x 'Stop apache2...'
-		sudo systemctl stop apache2.service
-		sudo systemctl disable apache2.service
+	# 若已安装 Apache，先停止并禁止开机启动，避免与 Nginx 同占 80
+	if web_pkg_installed apache2 || [ -x /usr/sbin/apache2ctl ]; then
+		stop_disable_web apache2
 	fi
 	prompt -x "Install nginx..."
 	doApt install nginx
