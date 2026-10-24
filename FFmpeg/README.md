@@ -30,11 +30,7 @@ file '3.MP4'
 
 ## FFmpegMergeVideosAndAudio.sh
 
-将视频和音频合并成成品视频
-
-注意修改输入的视频、音频文件，以及**视频时长**！！
-
-`ffmpeg -an -i input_video.MP4 -stream_loop -1 -i input_audio.mp3 -c:v copy -t 1:23:50 output.MP4`
+将视频和音频合并成成品视频。音频不够长时循环，成品长度默认等于视频时长。`VIDEO_DURATION` 留空即自动读取，需要固定长度时再手写。
 
 ## GenerateCover
 
@@ -50,9 +46,7 @@ file '3.MP4'
 
 ## FFmpegConcat
 
->注意视频的音频采样率要一致
-
-合并视频
+合并当前文件夹内同一扩展名的全部文件，不进入子目录。`./FFmpegConcat.sh mp4`，省略参数时用脚本里的 `EXT`。按文件名自然排序。编码、分辨率、音频采样率需要一致。
 
 ## FFmpegAudioSampleRate
 
