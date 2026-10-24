@@ -1,85 +1,86 @@
 #!/usr/bin/env bash
-# 0-PDF2IMG.sh
+# Text_PDF_to_Img_PDF.sh
 #
-# input/ 下 PDF → 栅格化转图 → 再合成 PDF → 转 A4，输出到 output/
+# input/ 下的文字 PDF → 每一页栅格化 → 合成图片版 PDF → output/
+#
+# 全部页面按原顺序保留。支持子目录，相对路径会原样出现在 output/。
+# 不修改、不清空 input/。渲染直接对准目标纸张，不再经 JPG 中转和 Ghostscript。
 #
 # 关联文件：
-#   pdf_select_pages_to_jpg.py   步骤1：PDF 拆页转 JPG（output/<pdf名>/1.jpg）
-#   image2Pdf.py                 步骤3：JPG 合回 PDF（生成 output.pdf）
-#   pdf_to_a4_gs.sh              步骤5：Ghostscript 统一转 A3（PAPER_SIZE=a3）
-#   m_PDF.py / m_System.py / m_Log.py   上述 Python 脚本的公共依赖
-#   说明：PDF 栅格化转图再合成流水线；
+#   pdf_to_image_pdf.py
 #
+# 依赖：
+#   sudo apt install poppler-utils
+#   python3 包：pypdf
+#
+# 用法：
+#   ./Text_PDF_to_Img_PDF.sh
+#   ./Text_PDF_to_Img_PDF.sh --dpi 200 --paper A3 --orientation auto
+#   ./Text_PDF_to_Img_PDF.sh --input input --output output --jobs 4
+#
+# 无命令行参数时，使用下方配置。默认 A4 竖版，与原先 pdf_to_a4_gs.sh 的成稿一致。
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+export PYTHONUNBUFFERED=1
 
+# ========== 配置区域（直接改这里即可）==========
 INPUT_DIR="input"
 OUTPUT_DIR="output"
 
-mkdir -p "$INPUT_DIR" "$OUTPUT_DIR"
+# 输出到纸面上的分辨率。300 适合打印，150/200 更快。
+DPI=300
+# 目标纸张：A3 / A4 / A5 / Letter / Legal
+PAPER="A4"
+# auto：横页出横版，竖页出竖版
+# portrait：全部放进竖版纸
+# landscape：全部放进横版纸
+ORIENTATION="portrait"
+JPEG_QUALITY=90
+# 同时处理几个 PDF。0 = 按 CPU 自动。单个多页 PDF 会把核心用在按页渲染上。
+JOBS=0
+# 渲染 DPI 上限，避免特别小的页面被放大到占满内存。
+MAX_RENDER_DPI=600
+# =============================================
 
-# 先保存 input 中的 PDF 列表（后续会清空 input 放图片）
-mapfile -t PDF_FILES < <(find "$INPUT_DIR" -maxdepth 1 -type f -iname '*.pdf' | sort)
+usage() {
+    sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+    exit 1
+}
 
-if [[ ${#PDF_FILES[@]} -eq 0 ]]; then
-    echo "input 文件夹中没有 PDF 文件，请先放入 PDF 后重试。"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --input) INPUT_DIR="${2:-}"; shift 2 ;;
+        --output) OUTPUT_DIR="${2:-}"; shift 2 ;;
+        --dpi) DPI="${2:-}"; shift 2 ;;
+        --paper) PAPER="${2:-}"; shift 2 ;;
+        --orientation) ORIENTATION="${2:-}"; shift 2 ;;
+        --quality) JPEG_QUALITY="${2:-}"; shift 2 ;;
+        --jobs) JOBS="${2:-}"; shift 2 ;;
+        --max-render-dpi) MAX_RENDER_DPI="${2:-}"; shift 2 ;;
+        -h|--help) usage ;;
+        *) echo "未知参数：$1" >&2; usage ;;
+    esac
+done
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "错误：未找到 python3" >&2
+    exit 1
+fi
+if ! command -v pdftoppm >/dev/null 2>&1; then
+    echo "错误：未找到 pdftoppm" >&2
+    echo "请安装：sudo apt install poppler-utils" >&2
     exit 1
 fi
 
-# 步骤1: PDF 拆页转 JPG → output/<pdf名>/1.jpg
-python3 pdf_select_pages_to_jpg.py
-
-# 步骤2-4: 逐个 PDF 走「JPG → 再合成 PDF」
-for pdf in "${PDF_FILES[@]}"; do
-    pdf_name="$(basename "$pdf")"
-    pdf_base="${pdf_name%.pdf}"
-    jpg="${OUTPUT_DIR}/${pdf_base}/1.jpg"
-    final_pdf="${OUTPUT_DIR}/${pdf_name}"
-
-    if [[ ! -f "$jpg" ]]; then
-        echo "警告: 未找到 ${jpg}，跳过 ${pdf_name}"
-        continue
-    fi
-
-    echo ">>> 处理: ${pdf_name}"
-
-    # 步骤2: 清空 input，放入生成的 1.jpg
-    rm -f "$INPUT_DIR"/*
-    cp "$jpg" "$INPUT_DIR/1.jpg"
-
-    # 步骤3: 图片转 PDF（在当前目录生成 output.pdf）
-    python3 image2Pdf.py
-
-    # 步骤4: 取出 output.pdf，命名为与原 PDF 一致，放入 output 文件夹
-    mv -f output.pdf "$final_pdf"
-
-    # 删除中间产物图片目录
-    rm -rf "${OUTPUT_DIR}/${pdf_base}"
-
-    echo ">>> 完成: ${final_pdf}"
-done
-
-# 清理 input 中的临时图片
-rm -f "$INPUT_DIR"/*
-
-# 确保 output 只保留 PDF（清除可能残留的子目录）
-find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-
-# 步骤5: 将 output 中的 PDF 统一转为 A3（pdf_to_a4_gs.sh 内 PAPER_SIZE=a3）
-shopt -s nullglob
-GENERATED_PDFS=("$OUTPUT_DIR"/*.pdf)
-
-if [[ ${#GENERATED_PDFS[@]} -gt 0 ]]; then
-    echo ">>> 开始 A3 转换..."
-    for pdf in "${GENERATED_PDFS[@]}"; do
-        mv "$pdf" "$INPUT_DIR/"
-    done
-    bash pdf_to_a4_gs.sh --all
-    rm -f "$INPUT_DIR"/*.pdf
-    echo ">>> A3 转换完成"
-fi
-
-echo "全部处理完成！"
+exec python3 pdf_to_image_pdf.py \
+    --input "$INPUT_DIR" \
+    --output "$OUTPUT_DIR" \
+    --dpi "$DPI" \
+    --paper "$PAPER" \
+    --orientation "$ORIENTATION" \
+    --jpeg-quality "$JPEG_QUALITY" \
+    --jobs "$JOBS" \
+    --max-render-dpi "$MAX_RENDER_DPI"
