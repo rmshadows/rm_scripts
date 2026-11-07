@@ -443,6 +443,7 @@ alias sshpwdconnect='pwdconnect(){sshpass -p "$1" ssh};pwdconnect'
 
 # 代理
 alias all_proxy_sock5='export ALL_PROXY=socks5://127.0.0.1:10808'
+alias all_proxy_http='export ALL_PROXY=http://127.0.0.1:10808'
 
 # 应用程序
 # alias ffmpegss='ffmpegCutVideo(){ffmpeg -ss $3 -to $4 -i $1 -vcodec copy -acodec copy $2};ffmpegCutVideo'
