@@ -16,6 +16,10 @@ if [ "$?" -ne 0 ]; then
     echo "\033[0;31m Source Profile.sh: An error occurred and exited. \033[0m"
     exit 1
 fi
+if [ -f "$SCRIPT_DIR/../otp/mount-lib.sh" ]; then
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/../otp/mount-lib.sh"
+fi
 
 # 函数：检查单个挂载点是否挂载
 check_mount_point() {
@@ -170,7 +174,15 @@ mountBitlockerDisk() {
         # sudo umount /home/bitlocker
         # prompt -x "Try to mount (sudo dislocker "$pdev" -u -- "$dislockMount") ..."
         prompt -x "Try to mount (sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount") ..."
-        if [ "$keyMode" -eq 0 ]; then
+        dl_rc=1
+        if [ "${otpMode:-1}" = "1" ]; then
+            if ! declare -F bitlocker_open_with_otp >/dev/null 2>&1; then
+                prompt -e "otpMode=1，但没有加载 ../otp/mount-lib.sh。"
+                exit 1
+            fi
+            bitlocker_open_with_otp
+            dl_rc=$?
+        elif [ "$keyMode" -eq 0 ]; then
             prompt -m "Decryption with password (-u)."
             # 判断是否提供了密码
             if [ -n "$keyPass" ]; then
@@ -184,6 +196,7 @@ mountBitlockerDisk() {
                 # sudo dislocker "$pdev" -u -- "$dislockMount"
                 sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount"
             fi
+            dl_rc=$?
         elif [ "$keyMode" -eq 1 ]; then
             prompt -m "Decryption with recovery key (-p)."
             # https://linux.cn/article-14008-1.html
@@ -199,12 +212,13 @@ mountBitlockerDisk() {
                 # sudo dislocker "$pdev" -p -- "$dislockMount"
                 sudo "$DISLOCKER_BIN" "$pdev" -p -- "$dislockMount"
             fi
+            dl_rc=$?
         else
             print_result_banner fail "挂载失败" "keyMode 只能是 0 或 1，当前是 $keyMode"
             exit 1
         fi
 
-        if [ "$?" -ne 0 ]; then
+        if [ "$dl_rc" -ne 0 ]; then
             print_result_banner fail "挂载失败" "解密失败"
             exit 1
         fi

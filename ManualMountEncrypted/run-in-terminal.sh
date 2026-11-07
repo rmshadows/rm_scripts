@@ -6,7 +6,7 @@
 #
 # 选项（也可仍用环境变量 HOLD / TERM_CMD）:
 #   -t, --term <终端>   指定终端，如 xterm、gnome-terminal
-#   -H, --hold          跑完按回车再关（看出错）
+#   -H, --hold          跑完按任意键再关（默认就是这样；HOLD=0 则跑完即关）
 #   -h, --help          帮助
 #
 # 例:
@@ -18,7 +18,9 @@
 # 未指定 --term / TERM_CMD 时自动找；Debian 优先 x-terminal-emulator。
 set -u
 
+# 默认 1：命令跑完停住，按任意键（含回车）再关窗。环境变量 HOLD=0 则跑完立刻关。-H 也是设成 1。
 HOLD="${HOLD:-1}"
+# 默认空：按下面的顺序自动选终端。-t / --term / 环境变量 TERM_CMD 指定具体程序。
 TERM_CMD="${TERM_CMD:-}"
 
 die() { echo "[x] $*" >&2; exit 1; }
@@ -109,7 +111,8 @@ for a in "$@"; do
 done
 
 if [[ "$HOLD" == "1" ]]; then
-  INNER="${q_cmd}; ec=\$?; echo; echo \"[结束，退出码 \$ec]\"; read -r -p '按回车关闭…' _"
+  # -n 1：任意一键就返回，回车也算。终端由 bash 暂时改成非规范模式，所以不用专门按回车。
+  INNER="${q_cmd}; ec=\$?; echo; echo \"[结束，退出码 \$ec]\"; read -r -n 1 -s -p '按任意键关闭…' _; echo"
 else
   INNER="${q_cmd}"
 fi

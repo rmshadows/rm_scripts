@@ -13,6 +13,10 @@ if [ "$?" -ne 0 ]; then
   echo "\033[0;31m Source Profile.sh: An error occurred and exited. \033[0m"
   exit 1
 fi
+if [ -f "$SCRIPT_DIR/../otp/mount-lib.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/../otp/mount-lib.sh"
+fi
 
 if [ -n "${DISLOCKER_CUSTOM:-}" ]; then
   DISLOCKER_BIN="$DISLOCKER_CUSTOM"
@@ -73,30 +77,40 @@ fi
 
 ## 开始解密
 prompt -x "Try to mount (sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount") ..."
-if [ "$keyMode" -eq 0 ]; then
+dl_rc=1
+if [ "${otpMode:-1}" = "1" ]; then
+  if ! declare -F bitlocker_open_with_otp >/dev/null 2>&1; then
+    prompt -e "otpMode=1，但没有加载 ../otp/mount-lib.sh。"
+    exit 1
+  fi
+  bitlocker_open_with_otp
+  dl_rc=$?
+elif [ "$keyMode" -eq 0 ]; then
   prompt -m "Decryption with password (-u)."
-  if [ -n "$keyPass" ]; then
+  if [ -n "${keyPass:-}" ]; then
     echo "Using provided Bitlocker password..."
     sudo "$DISLOCKER_BIN" "$pdev" -u"$keyPass" "$dislockMount"
   else
     echo "Enter Bitlocker password when prompted..."
     sudo "$DISLOCKER_BIN" "$pdev" -u -- "$dislockMount"
   fi
+  dl_rc=$?
 elif [ "$keyMode" -eq 1 ]; then
   prompt -m "Decryption with recovery key (-p)."
-  if [ -n "$keyPass" ]; then
+  if [ -n "${keyPass:-}" ]; then
     echo "Using provided Bitlocker recovery key..."
     sudo "$DISLOCKER_BIN" "$pdev" -p"$keyPass" "$dislockMount"
   else
     echo "Enter Bitlocker password when prompted..."
     sudo "$DISLOCKER_BIN" "$pdev" -p -- "$dislockMount"
   fi
+  dl_rc=$?
 else
   print_result_banner fail "挂载失败" "keyMode 只能是 0 或 1，当前是 $keyMode"
   exit 1
 fi
 
-if [ "$?" -ne 0 ]; then
+if [ "$dl_rc" -ne 0 ]; then
   print_result_banner fail "挂载失败" "解密失败"
   exit 1
 fi

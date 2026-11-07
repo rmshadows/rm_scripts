@@ -57,6 +57,40 @@ cd BitLocker   # 或 VeraCrypt
 
 > `keyPass` **不要**写进 `config.sh` 再打包：密码会进 `*-packed.sh`（明文）。交互输入更安全。
 
+## 一次性码
+
+同事电脑上不要敲卷口令。卷头认的口令不变。一次性码只用来解开你 U 盘上的一个槽，槽里是加密后的卷口令。挂载成功后，脚本删掉这个槽，纸上那条码就不能再推出卷口令。
+
+键盘记录器记到的是这条码。它自己打不开卷。槽文件如果在你插入 U 盘之前就被整盘拷走，再配上这条码，仍然可以解出卷口令。所以槽放在自己带着的 U 盘里，用的时候才插上。
+
+不用 TOTP。验证器的 6 位数要靠一把长期密钥加当前时间算出来。时间是公开的；密钥若放在解密那台电脑上，对方不必看键盘就能自己算。6 位数只有一百万种，也不能拿来加密槽文件。
+
+在自己电脑上生成（会问两次卷口令，只打印码，不把码写进文件）：
+
+```bash
+chmod +x ManualMountEncrypted/otp/enroll.sh
+cd /你想先放下的目录
+./ManualMountEncrypted/otp/enroll.sh
+```
+
+不写目录就生成在当前文件夹，之后把 `slot-*` 或 `key-*` 剪到 U 盘。写了路径就直接生成到那个目录。
+
+`config.sh` 里 `otpMode` 默认是 `1`：卷口令和一次性码都能用。`keyPass` 写了内容就直接用这口令，不再询问。`keyPass` 留空时，提示里可以输入纸上的一条码，也可以直接输入卷口令。像一次性码但找不到对应槽时，不会把它当成卷口令。`otpMode=0` 则只走原来的卷口令。`otpSlotDir` 留空就在确认是一次性码之后再问槽目录。
+
+一次生成多条，默认 10 条。每一条只能成功用一次，用掉的是那一个文件，其余还在。
+
+长码仍是默认。要好输入的数字，用 `--pin`（默认 8 位，可写到 20 位）。PIN 和长码一样只打印一次，不写进文件。8 到 20 位纯数字会先当作 PIN。
+
+不想敲，用 `--keyfile`。每个 `key-` 文件自己带了解开材料，放进 `otpSlotDir` 那个目录就会用掉一个并删除，不用输入。这种文件被拷走就能解开，直到你用过并删掉它。
+
+```bash
+./ManualMountEncrypted/otp/enroll.sh --pin 8
+./ManualMountEncrypted/otp/enroll.sh --pin 16
+./ManualMountEncrypted/otp/enroll.sh --keyfile
+```
+
+需要本机有 `python3` 和 `openssl`。重新 `./pack_shc.sh` 之后，打包结果里会带上解开槽的程序，不会带上槽文件和码。
+
 ### 安装 shc
 
 **Debian / Ubuntu 官方源通常没有 `shc` 包**（`apt install shc` 会报「无法定位软件包」）。从源码安装：
@@ -124,4 +158,4 @@ Mod4 Shift b :Exec /path/to/run-in-terminal.sh -t xterm -H /path/to/BitLocker/bu
 
 ### 其它桌面
 
-快捷键命令栏同样填：`run-in-terminal.sh` + 选项 + **你的**可执行文件绝对路径即可。仍可用环境变量 `TERM_CMD` / `HOLD=1`，与 `-t` / `-H` 等价。
+快捷键命令栏同样填：`run-in-terminal.sh` + 选项 + **你的**可执行文件绝对路径即可。默认跑完停住，按任意键关窗。`HOLD=0` 则跑完即关。环境变量 `TERM_CMD` / `HOLD=1` 与 `-t` / `-H` 等价。

@@ -53,6 +53,27 @@ strip_shebang() {
   awk 'NR==1 && /^#!/ { next } { print }' "$f"
 }
 
+# 把一次性码脚本嵌进合并结果。槽文件本身不打包。
+append_otp_embed() {
+  local otp_dir="$SCRIPT_DIR/../otp"
+  [[ -f "$otp_dir/mount-lib.sh" ]] || die "缺少 $otp_dir/mount-lib.sh"
+  [[ -f "$otp_dir/slot.py" ]] || die "缺少 $otp_dir/slot.py"
+  echo "# ---- otp/mount-lib.sh ----"
+  strip_shebang "$otp_dir/mount-lib.sh"
+  echo
+  echo "# 打包时嵌入 slot.py。运行时写到 STATE_DIR，同事电脑不必带着源码目录。"
+  echo "otp_write_embedded_py() {"
+  echo '  local dest="${STATE_DIR}/slot.py"'
+  echo '  mkdir -p "$STATE_DIR"'
+  echo '  base64 -d >"$dest" <<'\''B64'\'''
+  base64 -w 76 "$otp_dir/slot.py"
+  echo "B64"
+  echo '  chmod 700 "$dest"'
+  echo '  OTP_PY="$dest"'
+  echo "}"
+  echo
+}
+
 # 取出 mountB.sh 里的函数段（不含开头 source、不含末尾主流程）
 mountb_funcs() {
   awk '
@@ -112,6 +133,7 @@ fi
 PATHFIX
   echo "# ---- mountB.sh 函数 ----"
   mountb_funcs
+  append_otp_embed
   cat <<'MAIN'
 
 # 覆盖：状态目录固定用 STATE_DIR

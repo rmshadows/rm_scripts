@@ -280,9 +280,34 @@ build_vc_crypto_args() {
     return 0
 }
 
+# 一次性码在 ../otp/mount-lib.sh。打包后的脚本里这些函数已经嵌好。
+_otp_load() {
+    if declare -F otp_slot_loaded >/dev/null 2>&1; then
+        return 0
+    fi
+    local here otp
+    here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    otp="$here/../otp/mount-lib.sh"
+    if [ -f "$otp" ]; then
+        # shellcheck disable=SC1090
+        source "$otp"
+        return 0
+    fi
+    return 1
+}
+
 # 配置里没写密码就在终端问一次。问到的结果放进 keyPass，后面只试这一次。
+# otpMode=1（默认）：keyPass 有内容就用它；留空则一次性码和卷口令都能输入。
 ensure_volume_password() {
     local pass
+    if [ "${otpMode:-1}" = "1" ]; then
+        if ! _otp_load; then
+            prompt -e "找不到一次性码脚本 ../otp/mount-lib.sh。"
+            return 1
+        fi
+        otp_accept_either
+        return $?
+    fi
     if [ -n "${keyPass:-}" ]; then
         prompt -m "使用 config.sh 里的密码解密 $VOLUME_PATH"
         return 0
@@ -390,7 +415,17 @@ open_crypto_slot() {
             fi
             if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
                 prompt -e "解密超过 ${t} 秒没有结果。密码错误时有的 veracrypt 会一直等，已经停掉。"
+                if [ "${OTP_ARMED:-0}" = "1" ]; then
+                    prompt -w "解密没成功，槽还留着，这条码还能再用。"
+                fi
                 return 1
+            fi
+            if [ "${OTP_ARMED:-0}" = "1" ]; then
+                if [ "$rc" -eq 0 ]; then
+                    otp_burn_used_slot
+                else
+                    prompt -w "解密没成功，槽还留着，这条码还能再用。"
+                fi
             fi
             return "$rc"
         fi
@@ -406,6 +441,21 @@ open_crypto_slot() {
     args=(--map="$TCPLAY_MAP" --device="$dev")
     if [ -n "${keyFile:-}" ]; then
         args+=(--keyfile="$keyFile" --prompt-passphrase)
+    fi
+    if [ "${OTP_ARMED:-0}" = "1" ]; then
+        if ! ensure_sudo_ready; then
+            prompt -e "sudo 没有通过，没法解密。"
+            tcplay_release_loop || true
+            return 1
+        fi
+        prompt -i "把解开的口令交给 tcplay，不放进命令行。"
+        if ! otp_feed_tty sudo -n "$TCPLAY_BIN" "${args[@]}"; then
+            prompt -w "解密没成功，槽还留着，这条码还能再用。"
+            tcplay_release_loop || true
+            return 1
+        fi
+        otp_burn_used_slot
+        return 0
     fi
     if [ -n "${keyPass:-}" ]; then
         prompt -w "tcplay 不读 config.sh 里的 keyPass，请在它自己的提示里再输入一次密码。"
