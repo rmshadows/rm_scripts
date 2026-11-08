@@ -40,11 +40,14 @@
 | `denoise.sh` | `_denoise.m4a` | 轻量降底噪（可不开） |
 | `prepare_vibe.sh` | `_vibe.wav` | 单声道 16 kHz，给 vibe |
 | `split_chunks.sh` | `_part001…` | 按时长切段 |
+| `to_simplified.sh` | `_simp.原扩展名` | 繁体转简体，不联网 |
 | `run_workflow.sh` | 串起上面几步 | 一条龙 |
 
 输入格式：ffmpeg 能解的常见音频都可（m4a / mp3 / wav / flac 等）。中间步骤多输出 AAC `.m4a`；vibe 默认输出 `.wav`。
 
 已存在同名输出时不覆盖，确认替换加 `-y`。
+
+繁体稿、字幕转简体：`./to_simplified.sh 会议.txt 字幕.srt`，或 `./to_simplified.sh ./稿子文件夹`。默认处理 txt、csv、tsv、srt、md、markdown、ass、vtt，只看这一层，不进入子目录。依赖本机 OpenCC，转换时不联网。默认连常见词一起转（軟體→软件）；只想逐字转换时，把脚本里的 `OPENCC_CONFIG` 改成 `t2s`。
 
 想边听边调静音参数时，用 `./preview_silence.py 会议.wav`。它在浏览器里打开，只压缩你选中的十几秒；滑块松开就同时给出原声和压过的声音。整段录音仍用页面底部给出的 `compress_silence.sh` 命令。
 
