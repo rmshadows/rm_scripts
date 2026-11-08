@@ -30,18 +30,6 @@ readMount="/media/${_MEDIA_USER}/${mountName}"
 keyMode=0
 # 没有密码就保持注释。写在这里会进入进程列表，交互输入更安全。
 # keyPass=""
-# 0: 只使用卷口令 / 恢复密钥    1: 两者和一次性码都能用（默认）
-# 一次性码没有种子。../otp/enroll.sh 每次随机生成一串，只显示在屏幕上。
-# 槽文件里是用这串码加密后的卷口令，不含码本身。
-# 1 时：keyPass 有内容就直接用，不再询问。keyPass 留空则输入一次性码或卷口令均可。
-# 用掉一条就只删那一条。生成 10 条就是 10 次。
-# 数字 PIN：../otp/enroll.sh --pin 8   （8 到 20 位，生成在当前文件夹）
-# 密钥文件：../otp/enroll.sh --keyfile
-# 槽目录里的 key- 文件会直接用掉一个并删除，不用输入。卷头里的口令不会被改掉。
-# keyMode 仍决定交给 dislocker 的是口令（-u）还是恢复密钥（-p）。
-otpMode=1
-# 槽目录。留空则每次询问（U 盘路径不固定时用这个）。
-otpSlotDir=""
 
 # 留空则使用系统 dislocker。系统自带版本有问题时再指定，例如：
 # DISLOCKER_CUSTOM="./UOS-arm64/dislocker"
