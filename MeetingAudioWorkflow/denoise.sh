@@ -1,5 +1,6 @@
 #!/bin/bash
 # 轻量降底噪（ffmpeg afftdn）。干净录音不必跑；空调/风扇明显时再用。
+# 跑完对比降噪前后的平均电平和峰值。
 #
 # 用法：
 #   ./denoise.sh 会议_compressed_norm.m4a
@@ -90,6 +91,7 @@ done
 }
 
 command -v ffmpeg >/dev/null 2>&1 || die "未找到 ffmpeg"
+command -v ffprobe >/dev/null 2>&1 || die "未找到 ffprobe"
 
 NOISE_FLOOR="${NOISE_FLOOR%[dD][bB]}"
 awk -v nf="$NOISE_FLOOR" -v nr="$NOISE_REDUCTION" -v hp="$HIGHPASS_HZ" 'BEGIN {
@@ -98,8 +100,64 @@ awk -v nf="$NOISE_FLOOR" -v nr="$NOISE_REDUCTION" -v hp="$HIGHPASS_HZ" 'BEGIN {
 	if (hp !~ /^[0-9]+(\.[0-9]+)?$/) exit 1
 }' || die "降噪参数不合法。reduction 要在 0.01～1。"
 
+fmt_clock() {
+	awk -v t="$1" 'BEGIN {
+		if (t !~ /^-?[0-9]+(\.[0-9]+)?$/) { printf "%s", t; exit }
+		t += 0
+		if (t < 0) t = 0
+		s = int(t + 0.5)
+		h = int(s / 3600)
+		m = int(s / 60) % 60
+		s = s % 60
+		if (h > 0) printf "%d:%02d:%02d", h, m, s
+		else printf "%d:%02d", m, s
+	}'
+}
+
+human_size() {
+	awk -v n="$1" 'BEGIN {
+		if (n !~ /^[0-9]+$/) { printf "%s", n; exit }
+		if (n >= 1048576) printf "%.1f MB", n / 1048576
+		else if (n >= 1024) printf "%.0f KB", n / 1024
+		else printf "%d B", n
+	}'
+}
+
+duration_of() {
+	ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$1"
+}
+
+# 打出 mean max，单位 dB。读不到就空。
+volume_pair() {
+	local err mean max
+	err=$(mktemp)
+	if ffmpeg -hide_banner -nostats -i "$1" -af volumedetect -f null - >"$err" 2>&1; then
+		mean=$(awk '
+			/mean_volume:/ {
+				if (match($0, /mean_volume:[[:space:]]*-?[0-9]+(\.[0-9]+)?/)) {
+					s = substr($0, RSTART, RLENGTH)
+					sub(/^.*:[[:space:]]*/, "", s)
+					print s
+					exit
+				}
+			}' "$err")
+		max=$(awk '
+			/max_volume:/ {
+				if (match($0, /max_volume:[[:space:]]*-?[0-9]+(\.[0-9]+)?/)) {
+					s = substr($0, RSTART, RLENGTH)
+					sub(/^.*:[[:space:]]*/, "", s)
+					print s
+					exit
+				}
+			}' "$err")
+	fi
+	rm -f "$err"
+	printf '%s %s\n' "${mean:-}" "${max:-}"
+}
+
 process_one() {
-	local in="$1" dir base stem out af
+	local in="$1" dir base stem out af err
+	local before after mean1 max1 mean2 max2
 	[[ -f "$in" ]] || die "找不到文件: $in"
 	dir=$(dirname "$in")
 	base=$(basename "$in")
@@ -115,12 +173,53 @@ process_one() {
 		af="highpass=f=${HIGHPASS_HZ},${af}"
 	fi
 
-	echo "降噪: $in → $out（nf=${NOISE_FLOOR} nr=${NOISE_REDUCTION}）"
-	ffmpeg -hide_banner -y -i "$in" \
-		-af "$af" \
+	echo "处理: $in"
+	echo "正在看降噪前的电平…"
+	read -r mean1 max1 < <(volume_pair "$in")
+
+	err=$(mktemp)
+	echo "正在写出: $out"
+	if ! ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
+		-af "$af" -map_chapters -1 \
 		-c:a aac -b:a "$BITRATE" -movflags +faststart \
-		"$out"
-	echo "完成: $out"
+		"$out" 2>"$err"; then
+		cat "$err" >&2
+		rm -f "$err"
+		die "写出失败: $out"
+	fi
+	rm -f "$err"
+
+	echo "正在看降噪后的电平…"
+	read -r mean2 max2 < <(volume_pair "$out")
+
+	echo
+	echo "---------- 总结 ----------"
+	echo "文件: $in"
+	if awk -v hp="$HIGHPASS_HZ" 'BEGIN{exit !(hp+0 > 0)}'; then
+		echo "参数: 噪声地板 ${NOISE_FLOOR} dB，强度 ${NOISE_REDUCTION}，高通 ${HIGHPASS_HZ} Hz"
+	else
+		echo "参数: 噪声地板 ${NOISE_FLOOR} dB，强度 ${NOISE_REDUCTION}，未做高通"
+	fi
+	if [[ -n "$mean1" && -n "$max1" ]]; then
+		echo "降噪前: 平均 ${mean1} dB，峰值 ${max1} dB"
+	else
+		echo "降噪前: 没读到电平"
+	fi
+	if [[ -n "$mean2" && -n "$max2" ]]; then
+		echo "降噪后: 平均 ${mean2} dB，峰值 ${max2} dB"
+	else
+		echo "降噪后: 没读到电平"
+	fi
+	if [[ -n "$mean1" && -n "$mean2" ]]; then
+		awk -v a="$mean1" -v b="$mean2" -v nr="$NOISE_REDUCTION" 'BEGIN {
+			d = b - a
+			if (d <= -1) printf "变化: 平均电平下降 %.1f dB，底噪被压下去一些。\n", -d
+			else if (d >= 1) printf "变化: 平均电平上升 %.1f dB。\n", d
+			else print "变化: 平均电平几乎没变。底噪不明显，或者噪声地板设得偏低。"
+			if (nr + 0 >= 0.7) print "提示: 强度偏高，若字头发糊，把强度降到 0.3。"
+		}'
+	fi
+	echo "已写出: $out（$(human_size "$(stat -c %s "$out")")，$(fmt_clock "$(duration_of "$out")")）"
 }
 
 for f in "$@"; do

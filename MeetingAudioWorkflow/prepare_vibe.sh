@@ -1,5 +1,6 @@
 #!/bin/bash
 # 转成 vibe / 语音模型更省事的格式：单声道、16 kHz、WAV。
+# 跑完对比输入和输出的声道、采样率、体积。
 #
 # 用法：
 #   ./prepare_vibe.sh 会议_compressed_norm.m4a
@@ -89,6 +90,7 @@ done
 }
 
 command -v ffmpeg >/dev/null 2>&1 || die "未找到 ffmpeg"
+command -v ffprobe >/dev/null 2>&1 || die "未找到 ffprobe"
 
 case "$OUTPUT_FORMAT" in
 wav | m4a) ;;
@@ -100,8 +102,40 @@ awk -v r="$SAMPLE_RATE" -v c="$CHANNELS" 'BEGIN {
 	if (c !~ /^[12]$/) exit 1
 }' || die "采样率至少 8000，声道只能是 1 或 2。"
 
+fmt_clock() {
+	awk -v t="$1" 'BEGIN {
+		if (t !~ /^-?[0-9]+(\.[0-9]+)?$/) { printf "%s", t; exit }
+		t += 0
+		if (t < 0) t = 0
+		s = int(t + 0.5)
+		h = int(s / 3600)
+		m = int(s / 60) % 60
+		s = s % 60
+		if (h > 0) printf "%d:%02d:%02d", h, m, s
+		else printf "%d:%02d", m, s
+	}'
+}
+
+human_size() {
+	awk -v n="$1" 'BEGIN {
+		if (n !~ /^[0-9]+$/) { printf "%s", n; exit }
+		if (n >= 1048576) printf "%.1f MB", n / 1048576
+		else if (n >= 1024) printf "%.0f KB", n / 1024
+		else printf "%d B", n
+	}'
+}
+
+audio_brief() {
+	local f="$1" ch sr dur sz
+	ch=$(ffprobe -v error -select_streams a:0 -show_entries stream=channels -of default=nw=1:nk=1 "$f" || true)
+	sr=$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of default=nw=1:nk=1 "$f" || true)
+	dur=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$f" || true)
+	sz=$(stat -c %s "$f")
+	printf '%s 声道，%s Hz，%s，%s' "${ch:-?}" "${sr:-?}" "$(fmt_clock "$dur")" "$(human_size "$sz")"
+}
+
 process_one() {
-	local in="$1" dir base stem out
+	local in="$1" dir base stem out err in_brief
 	[[ -f "$in" ]] || die "找不到文件: $in"
 	dir=$(dirname "$in")
 	base=$(basename "$in")
@@ -112,18 +146,42 @@ process_one() {
 		die "输出已存在: $out（加 -y 覆盖）"
 	fi
 
-	echo "准备 vibe: $in → $out（${CHANNELS}ch ${SAMPLE_RATE}Hz）"
+	in_brief=$(audio_brief "$in")
+	echo "处理: $in"
+	echo "正在转成 ${CHANNELS} 声道 ${SAMPLE_RATE} Hz ${OUTPUT_FORMAT}…"
+	err=$(mktemp)
 	if [[ "$OUTPUT_FORMAT" == "wav" ]]; then
-		ffmpeg -hide_banner -y -i "$in" \
+		if ! ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
+			-map_chapters -1 \
 			-ac "$CHANNELS" -ar "$SAMPLE_RATE" -c:a pcm_s16le \
-			"$out"
+			"$out" 2>"$err"; then
+			cat "$err" >&2
+			rm -f "$err"
+			die "写出失败: $out"
+		fi
 	else
-		ffmpeg -hide_banner -y -i "$in" \
+		if ! ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
+			-map_chapters -1 \
 			-ac "$CHANNELS" -ar "$SAMPLE_RATE" \
 			-c:a aac -b:a "$BITRATE" -movflags +faststart \
-			"$out"
+			"$out" 2>"$err"; then
+			cat "$err" >&2
+			rm -f "$err"
+			die "写出失败: $out"
+		fi
 	fi
-	echo "完成: $out"
+	rm -f "$err"
+
+	echo
+	echo "---------- 总结 ----------"
+	echo "输入: ${in_brief}"
+	echo "输出: $(audio_brief "$out")"
+	echo "已写出: $out"
+	if [[ "$OUTPUT_FORMAT" == "wav" ]]; then
+		echo "说明: ${CHANNELS} 声道 ${SAMPLE_RATE} Hz 的未压缩 WAV，给 vibe / 转写用。体积通常比压缩格式大。"
+	else
+		echo "说明: 已收成 ${CHANNELS} 声道 ${SAMPLE_RATE} Hz 的 m4a，给 vibe / 转写用。"
+	fi
 }
 
 for f in "$@"; do
