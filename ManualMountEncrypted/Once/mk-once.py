@@ -14,7 +14,7 @@ import secrets
 import stat
 import sys
 
-# 内存约 128*N*r。N=2**16、r=8 时约 64MiB。同事电脑太小就改小 N。
+# 内存约 128*N*r。N=2**16、r=8 时约 64MiB。对方机器太小就改小 N。
 N = 1 << 16
 R = 8
 P = 1
@@ -709,7 +709,7 @@ def ask_temp(kind: str, digits: int) -> str:
         first = clean_pin(read_tty(f"数字 PIN（至少 {digits} 位）: "), digits)
         second = clean_pin(read_tty("再输入一次数字 PIN: "), digits)
     else:
-        first = read_tty("临时口令（同事电脑上要输入的，不是卷口令）: ")
+        first = read_tty("临时口令（第三方环境要输入的，不是卷口令）: ")
         second = read_tty("再输入一次临时口令: ")
         if not first:
             raise OnceError("临时口令是空的。没有生成。")

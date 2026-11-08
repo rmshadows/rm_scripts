@@ -1,33 +1,70 @@
-# 会议录音
+# 会议录音处理
 
-这个目录用来处理会议录音。第一步是把长时间没人说话的段落压短，方便回听。静音只缩短，不剪掉，句子之间仍留着停顿。
-
-## 压缩静音
+方便回听，也方便丢给 vibe / 转写。静音只缩短不剪掉；后面可拉齐音量、降噪、转成 vibe 友好格式，长会再切段。
 
 依赖系统里的 `ffmpeg` 和 `ffprobe`。
 
+## 推荐用法（一条龙）
+
 ```bash
-./compress_silence.sh 会议.m4a
-./compress_silence.sh --dry-run 会议.wav
-./compress_silence.sh --speed 6 --max-pause 0.8 录音1.m4a 录音2.mp3
+./run_workflow.sh 会议.m4a
+./run_workflow.sh --denoise 会议.m4a          # 底噪明显再开
+./run_workflow.sh --denoise --split 会议.m4a  # 再按 25 分钟切段
+./run_workflow.sh -y --speed 6 会议.m4a       # -y 覆盖；多余选项传给压静音
 ```
 
-输出写在原文件旁边，文件名加 `_compressed`，格式是 `.m4a`。已存在时不覆盖，确认要替换再加 `-y`。
+默认顺序：
 
-没有长静音时不写新文件。把 `MIN_SILENCE` 调小，或把 `NOISE_DB` 调到 `-35` 这类没那么低的值，可以让更多空隙被算进去。
+1. **压静音** → `原名_compressed.m4a`
+2. **拉齐音量** → `原名_compressed_norm.m4a`
+3. **准备 vibe** → `原名_compressed_norm_vibe.wav`（单声道 16 kHz）
 
-## 默认参数
+加 `--denoise` 时，归一化后再出 `*_denoise.m4a`，再转 vibe。加 `--split` 时，在最终文件旁切出 `*_part001…`。
 
-阈值写在 `compress_silence.sh` 顶部，改完即对以后每次生效。命令行只覆盖这一次。
+没有长静音时，压静音步骤不写新文件，后面步骤直接用原文件继续。
 
-| 脚本里的变量 | 命令行 | 默认 | 作用 |
+## 分步跑
+
+```bash
+./compress_silence.sh 会议.m4a
+./normalize_loudness.sh 会议_compressed.m4a
+./denoise.sh 会议_compressed_norm.m4a          # 可选
+./prepare_vibe.sh 会议_compressed_norm.m4a
+./split_chunks.sh --minutes 25 会议_compressed_norm_vibe.wav   # 可选
+```
+
+| 脚本 | 默认产物后缀 | 作用 |
+| --- | --- | --- |
+| `compress_silence.sh` | `_compressed.m4a` | 长静音加快，短停顿保留 |
+| `normalize_loudness.sh` | `_norm.m4a` | loudnorm 拉齐音量 |
+| `denoise.sh` | `_denoise.m4a` | 轻量降底噪（可不开） |
+| `prepare_vibe.sh` | `_vibe.wav` | 单声道 16 kHz，给 vibe |
+| `split_chunks.sh` | `_part001…` | 按时长切段 |
+| `run_workflow.sh` | 串起上面几步 | 一条龙 |
+
+输入格式：ffmpeg 能解的常见音频都可（m4a / mp3 / wav / flac 等）。中间步骤多输出 AAC `.m4a`；vibe 默认输出 `.wav`。
+
+已存在同名输出时不覆盖，确认替换加 `-y`。
+
+## 压静音参数
+
+写在 `compress_silence.sh` 顶部，命令行只覆盖这一次。
+
+| 变量 | 命令行 | 默认 | 作用 |
 | --- | --- | --- | --- |
 | `NOISE_DB` | `--noise-db` | `-40` | 低于这个电平（dB）才算静音 |
-| `MIN_SILENCE` | `--min-silence` | `0.80` | 短于这么多秒的空隙保持原速 |
-| `SPEED` | `--speed` | `4` | 长静音的加快倍数 |
-| `MIN_KEEP` | `--min-keep` | `0.35` | 压缩后这段静音至少留这么多秒 |
-| `EDGE_PAD` | `--edge-pad` | `0.10` | 静音两端各留这么多秒原速，避免切到字头字尾 |
-| `MAX_PAUSE` | `--max-pause` | `1.20` | 压缩后整段停顿的上限（秒）。`0` 表示只按倍数缩短 |
+| `MIN_SILENCE` | `--min-silence` | `0.80` | 短于此时长的空隙保持原速 |
+| `SPEED` | `--speed` | `4` | 长静音加快倍数 |
+| `MIN_KEEP` | `--min-keep` | `0.35` | 压缩后至少保留的静音 |
+| `EDGE_PAD` | `--edge-pad` | `0.10` | 静音两端原速，避免切到字头字尾 |
+| `MAX_PAUSE` | `--max-pause` | `1.20` | 压缩后停顿上限；`0` 只按倍数缩短 |
 | `BITRATE` | `--bitrate` | `96k` | 输出 AAC 码率 |
 
 `--dry-run` 只列出将要加速的时间段。
+
+## 其他步骤要点
+
+- **拉齐音量**：目标约 `-16` LUFS。人声忽大忽小时很有用。
+- **降噪**：干净会议室别开。字头发糊就把 `denoise.sh` 里的 `NOISE_REDUCTION` 调小（如 `0.3`）。
+- **prepare vibe**：默认 `1` 声道、`16000` Hz、`wav`。要更小文件可用 `./prepare_vibe.sh -f m4a`。
+- **切段**：默认 25 分钟；短于一段的文件会跳过。
