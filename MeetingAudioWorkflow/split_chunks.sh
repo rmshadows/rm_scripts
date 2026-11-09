@@ -1,14 +1,14 @@
 #!/bin/bash
-# 把长录音切成多段，方便上传 vibe / 重试。默认按 25 分钟一段。
-# 跑完列出每一段的时长和体积；不够一段就说明没切。
+# 把长录音切成多段再交给 vibe。整段太长时，识别会从某一分钟起反复同一句。
+# 默认 20 分钟一段。不够一段就说明没切，并列出每一段的时长。
 #
 # 用法：
-#   ./split_chunks.sh 会议_vibe.wav
-#   ./split_chunks.sh --minutes 20 -y 会议_compressed_norm.m4a
+#   ./split_chunks.sh 会议_compressed.m4a
+#   ./split_chunks.sh --minutes 15 -y 会议_vibe.wav
 
 # ===== 默认参数（直接改这里）=====
-# 每段多少分钟。
-CHUNK_MINUTES=25
+# 每段多少分钟。20 分钟给 vibe 比较稳，再长容易后半段崩掉。
+CHUNK_MINUTES=20
 OUTPUT_SUFFIX=_part
 # =================================
 
@@ -133,29 +133,44 @@ process_one() {
 		rm -f "${dir}/${stem}${OUTPUT_SUFFIX}"[0-9][0-9][0-9]."${ext}"
 	fi
 
-	echo "正在按每 ${CHUNK_MINUTES} 分钟切开…"
+	local expect last_print seen now ffpid
+	expect=$(awk -v d="$dur" -v s="$sec" 'BEGIN{ n=int(d/s); if (d > n*s+0.5) n++; if (n<1) n=1; print n }')
+	echo "正在按每 ${CHUNK_MINUTES} 分钟切开，预计 ${expect} 段。"
+	echo "每写完一段报一次；超过 20 秒没写完，会再报仍在切。"
 	err=$(mktemp)
 	# 重新编码，避免 copy 在任意时间点切开失败。
 	if [[ "$ext" == "wav" ]]; then
-		if ! ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
+		ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
 			-map_chapters -1 \
-			-f segment -segment_time "$sec" -reset_timestamps 1 \
+			-f segment -segment_time "$sec" -segment_start_number 1 -reset_timestamps 1 \
 			-c:a pcm_s16le \
-			"$pattern" 2>"$err"; then
-			cat "$err" >&2
-			rm -f "$err"
-			die "切段失败: $in"
-		fi
+			"$pattern" >"$err" 2>&1 &
 	else
-		if ! ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
+		ffmpeg -hide_banner -nostats -loglevel error -y -i "$in" \
 			-map_chapters -1 \
-			-f segment -segment_time "$sec" -reset_timestamps 1 \
+			-f segment -segment_time "$sec" -segment_start_number 1 -reset_timestamps 1 \
 			-c:a aac -b:a 96k \
-			"$pattern" 2>"$err"; then
-			cat "$err" >&2
-			rm -f "$err"
-			die "切段失败: $in"
+			"$pattern" >"$err" 2>&1 &
+	fi
+	ffpid=$!
+	seen=0
+	last_print=$SECONDS
+	while kill -0 "$ffpid" 2>/dev/null; do
+		sleep 1
+		now=$(find "$dir" -maxdepth 1 -type f -name "${stem}${OUTPUT_SUFFIX}[0-9][0-9][0-9].${ext}" | wc -l)
+		if (( now > seen )); then
+			echo "已写出 ${now}/${expect} 段"
+			seen=$now
+			last_print=$SECONDS
+		elif (( SECONDS - last_print >= 20 )); then
+			echo "仍在切第 $((seen + 1)) 段…"
+			last_print=$SECONDS
 		fi
+	done
+	if ! wait "$ffpid"; then
+		cat "$err" >&2
+		rm -f "$err"
+		die "切段失败: $in"
 	fi
 	rm -f "$err"
 

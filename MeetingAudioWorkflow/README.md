@@ -9,7 +9,7 @@
 ```bash
 ./run_workflow.sh 会议.m4a
 ./run_workflow.sh --denoise 会议.m4a          # 底噪明显再开
-./run_workflow.sh --denoise --split 会议.m4a  # 再按 25 分钟切段
+./run_workflow.sh --denoise --split 会议.m4a  # 再按 20 分钟切段
 ./run_workflow.sh -y --speed 6 会议.m4a       # -y 覆盖；多余选项传给压静音
 ```
 
@@ -30,7 +30,7 @@
 ./normalize_loudness.sh 会议_compressed.m4a
 ./denoise.sh 会议_compressed_norm.m4a          # 可选
 ./prepare_vibe.sh 会议_compressed_norm.m4a
-./split_chunks.sh --minutes 25 会议_compressed_norm_vibe.wav   # 可选
+./split_chunks.sh 会议_compressed.m4a                       # 默认 20 分钟一段，再送 vibe
 ```
 
 | 脚本 | 默认产物后缀 | 作用 |
@@ -72,4 +72,4 @@
 - **拉齐音量**：目标约 `-16` LUFS。人声忽大忽小时很有用。
 - **降噪**：干净会议室别开。字头发糊就把 `denoise.sh` 里的 `NOISE_REDUCTION` 调小（如 `0.3`）。
 - **prepare vibe**：默认 `1` 声道、`16000` Hz、`wav`。要更小文件可用 `./prepare_vibe.sh -f m4a`。
-- **切段**：默认 25 分钟；短于一段的文件会跳过。
+- **切段**：默认 20 分钟。整段识别时，vibe 可能在半小时后开始反复同一句；短于一段的文件会跳过。
