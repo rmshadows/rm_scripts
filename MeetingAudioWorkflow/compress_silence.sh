@@ -372,9 +372,102 @@ build_slice_graph() {
 	awk -v o="$offset" 'END { printf "%.6f %.6f\n", o, ($2 - o) + 0.08 }' "$list"
 }
 
+# 读 ffmpeg -progress 文件，打出最近一次的已处理微秒，以及是否结束。
+read_ffmpeg_progress() {
+	local file="$1"
+	[[ -f "$file" ]] || {
+		printf '0 0\n'
+		return
+	}
+	awk '
+		/^out_time_us=/ { us = substr($0, index($0, "=") + 1) }
+		/^out_time_ms=/ { if (us == "") us = substr($0, index($0, "=") + 1) }
+		/^progress=/ { st = substr($0, index($0, "=") + 1) }
+		END {
+			if (us == "") us = 0
+			end = (st == "end") ? 1 : 0
+			printf "%d %d\n", us + 0, end
+		}
+	' "$file"
+}
+
+# 每隔几秒或每前进约 5% 打一行。参数：进度文件 总秒数 标签
+watch_one_progress() {
+	local file="$1" total="$2" label="$3"
+	local last_pct=-1 last_print=$SECONDS us end pct now
+	while true; do
+		sleep 1
+		read -r us end < <(read_ffmpeg_progress "$file")
+		pct=$(awk -v u="$us" -v t="$total" 'BEGIN {
+			if (t + 0 <= 0) { print 0; exit }
+			p = int(100 * (u / 1000000) / t)
+			if (p > 100) p = 100
+			if (p < 0) p = 0
+			print p
+		}')
+		now=$(awk -v u="$us" 'BEGIN { printf "%.3f", u / 1000000 }')
+		if { [[ "$last_pct" -lt 0 ]] && [[ "$pct" -ge 1 ]]; } \
+			|| [[ "$pct" -ge $((last_pct + 5)) ]] \
+			|| [[ $((SECONDS - last_print)) -ge 20 ]]; then
+			echo "${label}  ${pct}%  $(fmt_clock "$now") / $(fmt_clock "$total")"
+			last_pct=$pct
+			last_print=$SECONDS
+		fi
+		[[ "$end" -eq 1 || "$pct" -ge 100 ]] && break
+	done
+}
+
+# 多路写出时，按各路已处理时长合计。参数：目录 标签
+watch_many_progress() {
+	local dir="$1" label="$2"
+	local last_pct=-1 last_print=$SECONDS
+	local total=0 done_sec pct n done_n weight us end f base now
+	shopt -s nullglob
+	local weights=("$dir"/weight_*)
+	[[ "${#weights[@]}" -gt 0 ]] || return 0
+	for f in "${weights[@]}"; do
+		total=$(awk -v a="$total" -v b="$(cat "$f")" 'BEGIN{printf "%.6f", a+b}')
+	done
+	n=${#weights[@]}
+	while true; do
+		sleep 1
+		[[ -f "$dir/stop_watch" ]] && break
+		done_sec=0
+		done_n=0
+		for f in "$dir"/weight_*; do
+			weight=$(cat "$f")
+			base=$(basename "$f")
+			base=${base#weight_}
+			read -r us end < <(read_ffmpeg_progress "$dir/prog_${base}")
+			[[ "$end" -eq 1 ]] && done_n=$((done_n + 1))
+			now=$(awk -v u="$us" 'BEGIN{printf "%.6f", u/1000000}')
+			done_sec=$(awk -v a="$done_sec" -v b="$now" -v w="$weight" 'BEGIN{
+				if (b > w) b = w
+				if (b < 0) b = 0
+				printf "%.6f", a + b
+			}')
+		done
+		pct=$(awk -v d="$done_sec" -v t="$total" 'BEGIN{
+			if (t+0<=0) { print 0; exit }
+			p=int(100*d/t)
+			if (p>100) p=100
+			if (p<0) p=0
+			print p
+		}')
+		if { [[ "$last_pct" -lt 0 ]] && [[ "$pct" -ge 1 ]]; } \
+			|| [[ "$pct" -ge $((last_pct + 5)) ]] \
+			|| [[ $((SECONDS - last_print)) -ge 20 ]]; then
+			echo "${label}  ${pct}%  ${done_n}/${n} 路完成  $(fmt_clock "$done_sec") / $(fmt_clock "$total")"
+			last_pct=$pct
+			last_print=$SECONDS
+		fi
+		[[ "$done_n" -ge "$n" && "$n" -gt 0 ]] && break
+	done
+}
+
 # 只解码这一段时间，滤完写成 wav。失败时错误在 err 里。
 encode_slice() {
-	local src="$1" ss="$2" tlen="$3" graph="$4" wav="$5" err="$6"
+	local src="$1" ss="$2" tlen="$3" graph="$4" wav="$5" err="$6" prog="$7"
 	local -a complex_opt
 	if [[ "$FF_FILTER_MODE" == "file" ]]; then
 		complex_opt=(-/filter_complex "$graph")
@@ -384,6 +477,7 @@ encode_slice() {
 	ffmpeg -hide_banner -nostats -loglevel error -y \
 		-ss "$ss" -t "$tlen" -i "$src" \
 		"${complex_opt[@]}" -map '[out]' \
+		-progress "$prog" \
 		-c:a pcm_s16le "$wav" >"$err" 2>&1
 }
 
@@ -487,9 +581,23 @@ process_one() {
 
 	echo "处理: $in"
 	echo "正在看电平和静音（阈值 ${NOISE_DB} dB，短于 ${MIN_SILENCE}s 的空隙忽略）…"
-	ffmpeg -hide_banner -nostats -i "$in" \
+	local detect_prog detect_watch
+	detect_prog=$(mktemp)
+	watch_one_progress "$detect_prog" "$dur" "检测" &
+	detect_watch=$!
+	if ! ffmpeg -hide_banner -nostats -i "$in" \
 		-af "silencedetect=n=${NOISE_DB}dB:d=${MIN_SILENCE},asetnsamples=n=${samples}:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=${level_file}" \
-		-f null - >"$log" 2>&1 || die "ffmpeg 检测静音失败: $in"
+		-progress "$detect_prog" \
+		-f null - >"$log" 2>&1; then
+		kill "$detect_watch" 2>/dev/null || true
+		wait "$detect_watch" 2>/dev/null || true
+		rm -f "$detect_prog"
+		die "ffmpeg 检测静音失败: $in"
+	fi
+	kill "$detect_watch" 2>/dev/null || true
+	wait "$detect_watch" 2>/dev/null || true
+	rm -f "$detect_prog"
+	echo "检测  100%  $(fmt_clock "$dur") / $(fmt_clock "$dur")"
 
 	build_segments "$log" "$dur" >"$seg_file" 2>"${seg_file}.stats" || die "划分静音段失败: $in"
 	stats=$(cat "${seg_file}.stats")
@@ -608,19 +716,34 @@ process_one() {
 	else
 		echo "正在用 ${#lists[@]} 路同时写出: $out"
 	fi
+	echo "下面每约 5% 或 20 秒更新一次。长时间停在同一百分比，表示这一路还在算。"
 
-	local idx=0 slice
+	local idx=0 slice write_watch fail=0
+	local -a write_pids=()
 	for list in "${lists[@]}"; do
 		slice=$(printf '%03d' "$idx")
 		read -r ss tlen < <(build_slice_graph "$list" "$part_dir/graph_${slice}")
+		awk '{ d += ($2 - $1) / $3 } END { printf "%.6f\n", d + 0.05 }' "$list" >"$part_dir/weight_${slice}"
+		: >"$part_dir/prog_${slice}"
 		encode_slice "$in" "$ss" "$tlen" "$part_dir/graph_${slice}" \
-			"$part_dir/part_${slice}.wav" "$part_dir/err_${slice}" &
+			"$part_dir/part_${slice}.wav" "$part_dir/err_${slice}" \
+			"$part_dir/prog_${slice}" &
+		write_pids+=("$!")
 		idx=$((idx + 1))
 	done
-	wait || {
+	watch_many_progress "$part_dir" "写出" &
+	write_watch=$!
+	for idx in "${write_pids[@]}"; do
+		wait "$idx" || fail=1
+	done
+	touch "$part_dir/stop_watch"
+	kill "$write_watch" 2>/dev/null || true
+	wait "$write_watch" 2>/dev/null || true
+	if [[ "$fail" -ne 0 ]]; then
 		cat "$part_dir"/err_* >&2 || true
 		die "其中一路写出失败: $in"
-	}
+	fi
+	echo "写出  100%  ${#lists[@]}/${#lists[@]} 路完成"
 
 	local joined="$part_dir/joined.wav" concat_list="$part_dir/concat.txt"
 	: >"$concat_list"
@@ -633,12 +756,24 @@ process_one() {
 		cat "$errfile" >&2
 		die "拼回失败: $out"
 	fi
+	local joined_dur pack_prog pack_watch
+	joined_dur=$(duration_of "$joined")
+	pack_prog="$part_dir/prog_pack"
+	echo "正在封装成 m4a…"
+	watch_one_progress "$pack_prog" "$joined_dur" "封装" &
+	pack_watch=$!
 	if ! ffmpeg -hide_banner -nostats -loglevel error -y -i "$joined" \
 		-map_chapters -1 -c:a aac -b:a "$BITRATE" -movflags +faststart \
+		-progress "$pack_prog" \
 		"$out" 2>"$errfile"; then
+		kill "$pack_watch" 2>/dev/null || true
+		wait "$pack_watch" 2>/dev/null || true
 		cat "$errfile" >&2
 		die "写出失败: $out"
 	fi
+	kill "$pack_watch" 2>/dev/null || true
+	wait "$pack_watch" 2>/dev/null || true
+	echo "封装  100%  $(fmt_clock "$joined_dur") / $(fmt_clock "$joined_dur")"
 
 	out_dur=$(duration_of "$out")
 	out_saved=$(awk -v a="$dur" -v b="$out_dur" 'BEGIN{printf "%.3f", a-b}')
