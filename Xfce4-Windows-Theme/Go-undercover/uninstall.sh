@@ -1,92 +1,122 @@
 #!/bin/bash
-# Undo Script for go-undercover
-# Matches style of original installer
+# 卸掉 deploy.sh 装进系统的主题和本工具写过的快捷键。
+# 不卸载 xfce4。REMOVE_PACKAGES=1 时只删除 config.sh 里的 EXTRA_PACKAGES。
+# 用法：sudo ./uninstall.sh
+# 必须从桌面用户 sudo 上来，才能清掉这个用户会话里的快捷键。
+set -euo pipefail
 
-# Colors
-b='\033[1m'
-u='\033[4m'
-bl='\E[30m'
-r='\E[31m'
-g='\E[32m'
-y='\E[33m'
-bu='\E[34m'
-m='\E[35m'
-c='\E[36m'
-w='\E[37m'
-endc='\E[0m'
-enda='\033[0m'
+HERE=$(cd "$(dirname "$0")" && pwd)
+# shellcheck disable=SC1091
+source "$HERE/config.sh"
 
-function showlogo {
-    clear
-echo """
- 
-    _________           _____  __      _________           _________                         
-    __  ____/_____      __  / / /____________  /_____________  ____/________   ______________
-    _  / __ _  __ \     _  / / /__  __ \  __  /_  _ \_  ___/  /    _  __ \_ | / /  _ \_  ___/
-    / /_/ / / /_/ /     / /_/ / _  / / / /_/ / /  __/  /   / /___  / /_/ /_ |/ //  __/  /    
-    \____/  \____/      \____/  /_/ /_/\__,_/  \___//_/    \____/  \____/_____/ \___//_/     
-                                Sofiane Hamlaoui | 2019
-""";
-    echo
+STAMP_REL=".local/share/go-undercover/managed-shortcuts.txt"
+WIN_REL=".config/autostart/xcape-whisker.desktop"
+CHANNEL="xfce4-keyboard-shortcuts"
+
+remove_path() {
+	local target="$1" desc="$2"
+	if [[ -e "$target" ]]; then
+		rm -rf "$target"
+		echo "已删除  ${desc}"
+	else
+		echo "没有    ${desc}"
+	fi
 }
 
-function checkroot {
-  showlogo
-  if [[ $(id -u) = 0 ]]; then
-    echo -e " Checking For ROOT: ${g}PASSED${endc}"
-    echo ""
-  else
-    echo -e " Checking For ROOT: ${r}FAILED${endc}
- ${y}This Script Needs To Run As ROOT${endc}"
-    echo ""
-    echo -e " ${g}Go-Undercover Uninstaller${enda} Will Now Exit"
-    echo
-    sleep 1
-    exit
-  fi
+session_remove() {
+	local stamp="${HOME}/${STAMP_REL}" win="${HOME}/${WIN_REL}"
+	if [[ -z "${DISPLAY:-}" ]]; then
+		export DISPLAY=:0
+	fi
+	if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
+		export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+	fi
+	if [[ -x /usr/bin/go-undercover && -f "${HOME}/.local/share/go-undercover/lock" ]]; then
+		if [[ -S "/run/user/$(id -u)/bus" ]]; then
+			/usr/bin/go-undercover --disable || true
+			echo "已恢复打开 Windows 外观之前的桌面。"
+		else
+			echo "Windows 外观还开着，但当前没有图形会话，没法自动恢复。登录后再运行一次 ./uninstall.sh。" >&2
+		fi
+	fi
+	if [[ -f "$stamp" && -S "/run/user/$(id -u)/bus" ]] && command -v xfconf-query >/dev/null 2>&1; then
+		while IFS=$'\t' read -r kind prop val; do
+			[[ -z "${kind:-}" ]] && continue
+			case "$kind" in
+				commands | xfwm4)
+					cur=$(xfconf-query -c "$CHANNEL" -p "$prop" 2>/dev/null || true)
+					if [[ "$cur" == "$val" ]]; then
+						xfconf-query -c "$CHANNEL" -p "$prop" -r >/dev/null
+						echo "已去掉快捷键  ${prop}"
+					else
+						echo "保留快捷键  ${prop}  （已经改成别的）"
+					fi
+					;;
+				xcape)
+					if [[ -f "$win" ]] && grep -q "managed-by-go-undercover" "$win"; then
+						rm -f "$win"
+						pkill -x xcape 2>/dev/null || true
+						echo "已去掉单击 Win"
+					fi
+					;;
+			esac
+		done <"$stamp"
+		rm -f "$stamp"
+	elif [[ -f "$stamp" ]]; then
+		echo "快捷键记录还在，当前没有图形会话。登录后再运行一次 ./uninstall.sh 才会清掉。"
+	fi
+	rm -f "${HOME}/.local/share/go-undercover/deploy.state"
 }
 
-function remove_if_exists {
-    TARGET="$1"
-    DESC="$2"
+if [[ "${1:-}" == "--session" ]]; then
+	session_remove
+	exit 0
+fi
 
-    if [ -e "$TARGET" ]; then
-        echo -e " ${g}[-] Removing ${DESC}${endc}"
-        rm -rf "$TARGET"
-    else
-        echo -e " ${y}[-] ${DESC} Not Found, Skipping...${endc}"
-    fi
-}
+if [[ "$(id -u)" -ne 0 ]]; then
+	echo "请用 sudo 运行：" >&2
+	echo "  sudo ./uninstall.sh" >&2
+	exit 1
+fi
 
-function uninstall {
-    showlogo && checkroot
-    clear
-    showlogo
-    echo ""
-    echo -e "\e[31m[-] Uninstalling go-undercover .... !\e[0m"
-    echo ""
+target="${SUDO_USER:-}"
+if [[ -z "$target" || "$target" == "root" ]]; then
+	echo "请从桌面用户执行：sudo ./uninstall.sh" >&2
+	echo "直接用 root 跑清不到你会话里的配置。" >&2
+	exit 1
+fi
 
-    # Theme
-    remove_if_exists "/usr/share/themes/Windows-10" "Windows-10 Theme"
+target_home=$(getent passwd "$target" | cut -d: -f6)
+target_uid=$(id -u "$target")
+sudo -u "$target" env \
+	HOME="$target_home" \
+	USER="$target" \
+	LOGNAME="$target" \
+	DISPLAY="${DISPLAY:-:0}" \
+	XAUTHORITY="${target_home}/.Xauthority" \
+	XDG_RUNTIME_DIR="/run/user/${target_uid}" \
+	DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${target_uid}/bus" \
+	bash "$HERE/uninstall.sh" --session
 
-    # Icons
-    remove_if_exists "/usr/share/icons/Windows-10-Icons" "Windows-10 Icons"
+remove_path /usr/share/themes/Windows-10 "Windows-10 主题"
+remove_path /usr/share/icons/Windows-10-Icons "Windows-10 图标"
+remove_path /usr/share/go-undercover "go-undercover 数据"
+remove_path /usr/bin/go-undercover "go-undercover 命令"
+remove_path /usr/share/icons/go-undercover.svg "图标"
+remove_path /usr/share/applications/go-undercover.desktop "菜单项"
 
-    # go-undercover files
-    remove_if_exists "/usr/share/go-undercover" "go-undercover directory"
-    remove_if_exists "/usr/bin/go-undercover" "go-undercover executable"
-    remove_if_exists "/usr/share/icons/go-undercover.svg" "go-undercover icon"
-    remove_if_exists "/usr/share/applications/go-undercover.desktop" "desktop entry"
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+	gtk-update-icon-cache /usr/share/icons >/dev/null 2>&1 || true
+fi
+if command -v update-desktop-database >/dev/null 2>&1; then
+	update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+fi
 
-    echo ""
-    echo -e "${g}[-] Cleaning icon & desktop cache...${endc}"
-    gtk-update-icon-cache /usr/share/icons >/dev/null 2>&1 || true
-    update-desktop-database >/dev/null 2>&1 || true
+if [[ "${REMOVE_PACKAGES}" == "1" ]]; then
+	echo "正在删除额外软件包：${EXTRA_PACKAGES}"
+	apt-get remove -y $EXTRA_PACKAGES
+else
+	echo "软件包保留。要连 xcape、i3lock、flameshot 一起删，把 config.sh 里的 REMOVE_PACKAGES 改成 1 再运行。"
+fi
 
-    echo ""
-    echo -e "\e[32m[✓] System restored to pre go-undercover state.\e[0m"
-    echo ""
-}
-
-# main
-uninstall
+echo "卸载完成。xfce4 本身还在。"

@@ -196,7 +196,8 @@ class DesktopConfig(object):
     def to_file(self, filename):
         if filename.endswith('.gz'):
             mode = 'w:gz'
-        elif filename.endswith('.bz2'):
+        elif filename.endswith('.bz2') or filename.endswith('.bz'):
+            # go-undercover.sh 用的是 .tar.bz。只认 .bz2 时会存成不压缩的 tar。
             mode = 'w:bz2'
         else:
             mode = 'w'

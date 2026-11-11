@@ -1,4 +1,3 @@
 #!/bin/bash
-sudo apt install xfce4 xfce4-whiskermenu-plugin xfce4-pulseaudio-plugin \
-  xfce4-power-manager-plugins xfce4-notifyd python3-gi libnotify-bin \
-  fonts-liberation
+# 旧入口。软件包、主题、快捷键都由 deploy.sh 按 config.sh 处理。
+exec "$(cd "$(dirname "$0")" && pwd)/deploy.sh" "$@"
