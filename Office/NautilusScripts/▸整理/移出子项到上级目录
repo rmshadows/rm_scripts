@@ -1,5 +1,11 @@
 #!/bin/bash
-source ~/.zshrc
+# 文件管理器用 bash 跑右键，不读 bashrc/zshrc。
+# 自定义路径：~/.config/office/python-venv 写一行目录。
+if [ -f "$HOME/.local/share/nautilus/lib/Office/nautilus_env.sh" ]; then
+  . "$HOME/.local/share/nautilus/lib/Office/nautilus_env.sh"
+elif [ -f "$HOME/.python_venv_activate" ]; then
+  . "$HOME/.python_venv_activate" 2>/dev/null || true
+fi
 # 获取当前脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 # 自 scripts/ 或其子目录向上找到含 lib/Office 的 nautilus 根
@@ -30,5 +36,5 @@ cp "$LIB_DIR/move_subdirfiles_here.sh" "$selected_item"/../move_subdirfiles_here
 # 完成后显示信息框
 # zenity --info --text="请复制到终端运行：./Office2txt.sh \"$selected_item\""
 # gnome-terminal --working-directory="$(pwd)"
-gnome-terminal --working-directory="$(pwd)" -- bash -c "./move_subdirfiles_here.sh ; exec zsh"
+gnome-terminal --working-directory="$(pwd)" -- bash -c "./move_subdirfiles_here.sh ; echo \"按任意键关闭终端...\"; read -r -n 1"
 

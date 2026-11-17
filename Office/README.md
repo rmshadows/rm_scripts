@@ -8,7 +8,37 @@ Github：https://github.com/rmshadows/
 
 ## 目录
 
-* **0-Off-init.sh**：Office 依赖一键安装（**默认含 Nautilus 右键依赖**）。系统工具走 apt；**Python 库 pip→`~/.PythonVenv`**。`./0-Off-init.sh --yes`；不要右键包时加 `--without-nautilus`。
+* **0-Off-init.sh**：依赖安装并复制到文件管理器右键。两种虚拟环境模式，改脚本顶部 `VENV_MODE`，或用命令行：
+  * **1 / auto**（默认）：自动检测，有就用。看当前终端（`VIRTUAL_ENV` 或 conda 的 `CONDA_PREFIX`），再看 `~/.config/office/python-venv`、`~/.python_venv_activate`、`~/.PythonVenv`，都没有才新建。`./0-Off-init.sh --venv-auto`
+  * **2 / fixed**：固定目录，没有就新建，有就沿用。目录写在 `FIXED_VENV_DIR`，留空就是 `~/.PythonVenv`。不看当前终端。`./0-Off-init.sh --venv-fixed` 或 `./0-Off-init.sh --venv-fixed ~/myenv`
+  * 模式 1 里还可以写 `MANUAL_VENV_DIR`，或临时 `PYTHON_VENV_DIR=/路径 ./0-Off-init.sh`。激活命令写入 bashrc 和 zshrc。右键不读这两个文件，读配置文件。装完会打印每一项以后改哪里。`./0-Off-init.sh --status` 只看检测结果和修改位置。
+
+### 安装以后改哪里
+
+| 要改的 | 去哪改 |
+| --- | --- |
+| 虚拟环境模式 | 脚本顶部 `VENV_MODE`：`auto`/`1` 自动检测有就用，`fixed`/`2` 固定目录。或 `--venv-auto`、`--venv-fixed [目录]` |
+| 模式 2 的目录 | 脚本顶部 `FIXED_VENV_DIR`，留空是 `~/.PythonVenv`。没有就新建，有就沿用 |
+| 模式 1 里锁定目录 | `0-Off-init.sh` 顶部 `MANUAL_VENV_DIR`，改完重新运行 |
+| 只换以后终端和右键用的目录 | `~/.config/office/python-venv`，一行绝对路径 |
+| 临时指定一次 | `PYTHON_VENV_DIR=/路径 ./0-Off-init.sh` |
+| 新开终端是否自动启用 | `~/.bashrc`、`~/.zshrc` 里 `# --- office python venv begin ---` 到 `end` |
+| 右键加载逻辑 | `~/.local/share/nautilus/lib/Office/nautilus_env.sh` |
+| 右键菜单 / 脚本库 | `~/.local/share/nautilus/scripts` 、 `~/.local/share/nautilus/lib/Office` |
+| 右键相关 apt、ImageGPS、pip 镜像 | 脚本顶部 `WITH_NAUTILUS`、`WITH_IMAGEGPS`、`PYPI_INDEX`，或 `--without-nautilus`、`--with-imagegps`、`PYPI_INDEX_URL` |
+| apt / pip 包名单 | 脚本中部 `APT_CORE`、`APT_SOFT`、`APT_NAUTILUS`、`PIP_CORE_MAP` 等 |
+
+### 三个路径分别是什么
+
+这三个不是同一类东西。安装选定环境之后，前两个会被写成指向那个环境；第三个才是环境本体。
+
+| 路径 | 是什么 | 谁读它 |
+| --- | --- | --- |
+| `~/.PythonVenv` | 默认的虚拟环境目录，里面有 `bin/python` 和装好的包。模式 2 留空时用它；模式 1 在终端、配置、activate 都没有时，有就沿用，没有就新建在这里。 | 安装脚本的最后一步；右键在前两个都没用上时，才 `source` 这里的 `bin/activate` |
+| `~/.config/office/python-venv` | 一行文字，内容是环境目录的绝对路径。这台机器现在是 conda 的 `dev`。改这一行就换右键和新终端用的目录，不用改 bashrc/zshrc。 | 右键的 `nautilus_env.sh` 最先读它；`bashrc`/`zshrc` 里 office 那段也先读它 |
+| `~/.python_venv_activate` | 几行 shell，用来把上面那个目录启用起来。普通 venv 是 `. "目录/bin/activate"`；conda 没有 activate 脚本，就写成 `export PATH` 和 `VIRTUAL_ENV`。当前窗口要马上用：`. ~/.python_venv_activate` | 配置文件指向的目录用不了时，右键和 shell 启动脚本退回读它 |
+
+右键读的顺序：`~/.config/office/python-venv` 里的目录能用就停；不能用再执行 `~/.python_venv_activate`；再不行才用 `~/.PythonVenv`。文件管理器不会读 `bashrc`/`zshrc`。
 
 * **aes\_encrypt.sh**：用于对文件进行 AES 加密的脚本。
 * **encdec.sh**：此脚本用于对指定文件进行 AES-256-CBC 加密和解密

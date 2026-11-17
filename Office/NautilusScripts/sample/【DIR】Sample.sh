@@ -28,7 +28,13 @@ OUTPUT_PREFIX="result"               # 输出文件名前缀（用于区分，�
 # --------------------------------------
 
 # shell 环境初始化（可选）
-source ~/.zshrc 2>/dev/null || true
+# 文件管理器用 bash 跑右键，不读 bashrc/zshrc。
+# 自定义路径：~/.config/office/python-venv 写一行目录。
+if [ -f "$HOME/.local/share/nautilus/lib/Office/nautilus_env.sh" ]; then
+  . "$HOME/.local/share/nautilus/lib/Office/nautilus_env.sh"
+elif [ -f "$HOME/.python_venv_activate" ]; then
+  . "$HOME/.python_venv_activate" 2>/dev/null || true
+fi
 
 set -euo pipefail
 

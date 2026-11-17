@@ -22,7 +22,13 @@
 # ===============================================
 
 # 初始化 shell 环境（可选）
-source ~/.zshrc 2>/dev/null || true
+# 文件管理器用 bash 跑右键，不读 bashrc/zshrc。
+# 自定义路径：~/.config/office/python-venv 写一行目录。
+if [ -f "$HOME/.local/share/nautilus/lib/Office/nautilus_env.sh" ]; then
+  . "$HOME/.local/share/nautilus/lib/Office/nautilus_env.sh"
+elif [ -f "$HOME/.python_venv_activate" ]; then
+  . "$HOME/.python_venv_activate" 2>/dev/null || true
+fi
 
 # ===== 基础路径设置 =====
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"           # 当前脚本所在目录
@@ -51,7 +57,7 @@ cp "${FILES[0]}" "$TMP_TOOL_DIR/"
 
 cd "$TMP_TOOL_DIR" || exit 1
 # ===== 执行脚本 =====
-xfce4-terminal --working-directory="$TMP_TOOL_DIR" -e "bash -c 'source ~/.zshrc 2>/dev/null || true;bash ./\"$LIB_NAME\" \"${FILES[0]}\"; echo \"按任意键关闭终端...\"; read -r -n 1'"
+xfce4-terminal --working-directory="$TMP_TOOL_DIR" -e "bash -c '. \"$HOME/.python_venv_activate\" 2>/dev/null || true;bash ./\"$LIB_NAME\" \"${FILES[0]}\"; echo \"按任意键关闭终端...\"; read -r -n 1'"
 
 # ===== 复制输出结果（示例假设生成 PDF） =====
 # OUTPUT_NAME="处理结果.pdf"  # 根据实际修改
