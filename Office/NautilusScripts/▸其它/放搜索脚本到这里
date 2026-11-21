@@ -1,0 +1,86 @@
+#!/bin/bash
+# 在右击的这个目录放一份 rgsearch.sh，之后在该目录执行 ./rgsearch.sh '关键字'。
+# 来源优先用本仓库 Office/rgsearch.sh，安装后用文件管理器库里的那份。
+set -euo pipefail
+
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "搜索脚本" "$*"
+  else
+    echo "$*"
+  fi
+}
+
+fail() {
+  notify "$*"
+  echo "$0: $*" >&2
+  exit 1
+}
+
+# 右击文件夹就放进该文件夹；右击文件就放进它所在的目录。
+# 空白处右击时没有 $1，改读文件管理器当前地址。
+target_dir() {
+  local uri path
+  if [[ -n "${1:-}" && -d "$1" ]]; then
+    printf '%s\n' "$(readlink -f "$1")"
+    return 0
+  fi
+  if [[ -n "${1:-}" && -e "$1" ]]; then
+    printf '%s\n' "$(readlink -f "$(dirname "$1")")"
+    return 0
+  fi
+  uri="${NAUTILUS_SCRIPT_CURRENT_URI:-}"
+  if [[ "$uri" == file://* ]]; then
+    path="$(python3 -c 'import sys,urllib.parse; print(urllib.parse.unquote(sys.argv[1][7:]))' "$uri")"
+    if [[ -d "$path" ]]; then
+      printf '%s\n' "$(readlink -f "$path")"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+# 从脚本所在位置往上找 rgsearch.sh，安装后的库目录作最后一档。
+find_src() {
+  local d
+  d="$(dirname "$(readlink -f "$0")")"
+  while [[ "$d" != "/" ]]; do
+    if [[ -f "$d/rgsearch.sh" ]]; then
+      printf '%s\n' "$d/rgsearch.sh"
+      return 0
+    fi
+    if [[ -f "$d/lib/Office/rgsearch.sh" ]]; then
+      printf '%s\n' "$d/lib/Office/rgsearch.sh"
+      return 0
+    fi
+    d="$(dirname "$d")"
+  done
+  if [[ -f "$HOME/.local/share/nautilus/lib/Office/rgsearch.sh" ]]; then
+    printf '%s\n' "$HOME/.local/share/nautilus/lib/Office/rgsearch.sh"
+    return 0
+  fi
+  return 1
+}
+
+src="$(find_src)" || fail "找不到 rgsearch.sh。先在 Office 目录运行一次 ./0-Off-init.sh"
+dir="$(target_dir "${1:-}")" || fail "没有得到当前目录。请右击一个文件夹，或在文件夹空白处右击"
+dest="$dir/rgsearch.sh"
+
+if [[ "$(readlink -f "$src")" == "$(readlink -f "$dest" 2>/dev/null || true)" ]]; then
+  chmod +x "$dest" || true
+  notify "这里已经是搜索脚本本身：$dest"
+  exit 0
+fi
+
+if [[ -e "$dest" ]] && cmp -s "$src" "$dest"; then
+  chmod +x "$dest" || true
+  notify "这里已经有同一份：$dest"
+  exit 0
+fi
+if [[ -e "$dest" ]] && command -v zenity >/dev/null 2>&1; then
+  zenity --question --title="搜索脚本" --text="这里已经有 rgsearch.sh，用 Office 里的这份覆盖？" || exit 0
+fi
+
+cp -f "$src" "$dest"
+chmod +x "$dest"
+notify "已放到 $dest。在该目录执行 ./rgsearch.sh '关键字'"
