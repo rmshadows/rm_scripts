@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # 覆盖某个文件夹里的文件内容后再删除，降低误删后被工具找回的可能。
+# 只处理文件内容；文件名 / journal 等元数据痕迹见同目录 ext4-find / ext4-wipe。
 # 依赖：coreutils 的 shred、find（Debian 默认就有）。
 #
-# 用法：
+# 用法（在 shred/ 下）：
 #   ./shred_folder.sh
 #   ./shred_folder.sh /path/to/dir
 #
